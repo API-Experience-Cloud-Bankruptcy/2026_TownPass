@@ -3,17 +3,19 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { text } from '../domain/match';
 import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE } from '../domain/route';
 import { benefitLabel, itemFlags, sourceExcerpt, statusPlain } from '../presentation';
-import { inPlan, itemsById, results, state, tab, togglePlan } from '../store';
+import { detailAnswers, detailResults, inPlan, itemsById, state, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import RouteSteps from './RouteSteps.vue';
 
 const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
+const ChecklistView = defineAsyncComponent(() => import('./ChecklistView.vue'));
+const pdfOpen = ref(false);
 const formOpen = ref(false);
 watch([() => state.detailId, () => state.session.target], () => { formOpen.value = false; });
 
 const item = computed(() => (state.detailId ? itemsById.value.get(state.detailId) : undefined));
-const result = computed(() => (item.value ? results.value.get(item.value.id) : undefined));
-const route = computed(() => (item.value ? buildRoute(item.value, state.session.answers) : null));
+const result = computed(() => (item.value ? detailResults.value.get(item.value.id) : undefined));
+const route = computed(() => (item.value ? buildRoute(item.value, detailAnswers.value) : null));
 const sub = computed(() => (item.value ? [benefitLabel(item.value), text(item.value.provider?.name)].filter(Boolean).join('・') : ''));
 const benefit = computed(() => text(item.value?.benefit?.raw));
 const benefitPreview = computed(() => sourceExcerpt(benefit.value, 100));
@@ -68,15 +70,18 @@ function kindOf(type: string) {
     <section class="block card" aria-labelledby="d-start-h">
       <h2 id="d-start-h" class="section-title">想申請的話</h2>
       <div class="actions">
-        <button v-if="!added" type="button" class="btn btn--primary btn--block" @click="togglePlan(item.id)">{{ state.session.target === 'other' ? '加入家人檢核表' : '加入行動單，開始準備' }}</button>
+        <button v-if="state.detailTarget === 'other'" type="button" class="btn btn--primary btn--block" :aria-expanded="pdfOpen" aria-controls="detail-pdf" @click="pdfOpen = !pdfOpen">{{ pdfOpen ? '關閉 PDF 預覽' : '匯出申請準備 PDF' }}</button>
+        <button v-else-if="!added" type="button" class="btn btn--primary btn--block" @click="togglePlan(item.id)">加入行動單，開始準備</button>
         <p v-else class="inline-actions">
-          <span class="row__mark">{{ state.session.target === 'other' ? '已加入家人檢核表' : '已在行動單' }}</span>
+          <span class="row__mark">已在行動單</span>
           <button type="button" class="btn btn--text" @click="togglePlan(item.id)">移除<span class="sr-only">：{{ item.name }}</span></button>
         </p>
-        <button v-if="added && state.session.target === 'other'" type="button" class="btn btn--primary btn--block" @click="tab('plan')">製作 A4 檢核表 PDF</button>
-        <p v-if="state.session.target === 'other'" class="muted">可再加入其他資源，一起整理成 PDF 交給家人。</p>
         <ExternalLink v-if="applyLink" :url="applyLink.url" :label="`看申請方法：${applyLink.label}`" :tag="SOURCE_KIND_LABEL[applyLink.sourceKind]" />
       </div>
+    </section>
+
+    <section v-if="pdfOpen && state.detailTarget === 'other'" id="detail-pdf" aria-label="匯出這項補助的申請準備 PDF">
+      <ChecklistView :item="item" />
     </section>
 
     <div class="card-stack">
@@ -84,7 +89,7 @@ function kindOf(type: string) {
       <details class="more card card--list" :open="formOpen" @toggle="formOpen = ($event.target as HTMLDetailsElement).open">
         <summary>申請表與填寫</summary>
         <div class="more__body">
-          <FormFillPanel v-if="formOpen" :key="`${item.id}:${state.session.target}`" :item="item" :target="state.session.target" />
+          <FormFillPanel v-if="formOpen" :key="`${item.id}:${state.detailTarget}`" :item="item" :target="state.detailTarget" />
         </div>
       </details>
       <div class="more-group card card--list">

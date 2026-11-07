@@ -12,6 +12,8 @@ import {
   hasPersonalData,
   loadPrefs,
   loadSession,
+  loadPersonalPlan,
+  PERSONAL_PLAN_KEY,
   purgeLegacySession,
   savePrefs,
   saveSession,
@@ -39,6 +41,8 @@ interface State {
   loadError: string;
   notice: string;
   session: SessionState;
+  personalPlan: SessionState;
+  detailTarget: Target;
   prefs: Prefs;
   qIndex: number;
   questionPool: Question[] | null;
@@ -47,7 +51,7 @@ interface State {
   runVisited: string[];
   showIneligible: boolean;
   /** 從詳情頁進入求助時帶入的資源與步驟 */
-  helpContext: { itemId: string | null; stepText?: string };
+  helpContext: { itemId: string | null; stepText?: string; target?: Target };
 }
 
 export const state = reactive<State>({
@@ -60,6 +64,8 @@ export const state = reactive<State>({
   loadError: '',
   notice: '',
   session: (purgeLegacySession(), loadSession()),
+  personalPlan: loadPersonalPlan(),
+  detailTarget: 'self',
   prefs: loadPrefs(),
   qIndex: 0,
   questionPool: null,
@@ -70,17 +76,16 @@ export const state = reactive<State>({
   helpContext: { itemId: null },
 });
 
-export const planSync = new ActionPlanSync(() => savedPlan(state.session, state.catalog?.items), (plan) => {
-  // 帳號的行動單不帶資格答案；換到不同查詢對象時不沿用前一人的本機回答。
-  if (state.session.target !== plan.target) resetPerson(plan.target);
-  Object.assign(state.session, plan);
+export const planSync = new ActionPlanSync(() => savedPlan(state.personalPlan, state.catalog?.items), (plan) => {
+  Object.assign(state.personalPlan, plan);
   if (state.catalog) {
-    const { notice, ...patch } = migrateSession(state.session, state.catalog);
-    Object.assign(state.session, patch);
+    const { notice, ...patch } = migrateSession(state.personalPlan, state.catalog);
+    Object.assign(state.personalPlan, patch);
     if (notice) state.notice = notice;
   }
 });
-watch(() => JSON.stringify(savedPlan(state.session, state.catalog?.items)), () => planSync.changed());
+watch(() => JSON.stringify(savedPlan(state.personalPlan, state.catalog?.items)), () => planSync.changed());
+watch(() => state.personalPlan, p => saveSession(p, undefined, PERSONAL_PLAN_KEY), { deep: true });
 
 export const pendingResume = ref(false);
 export const conversationEpoch = ref(0);
@@ -119,6 +124,10 @@ const candidateQuestions = computed<Question[]>(() =>
 export const questions = computed<Question[]>(() => state.questionPool === null ? candidateQuestions.value : state.questionRoute);
 
 export const results = computed(() => evaluateAll(catalogItems.value, state.session.answers));
+export const planResults = computed(() => evaluateAll(catalogItems.value, state.personalPlan.answers));
+export const detailAnswers = computed(() => state.detailTarget === 'other' ? state.session.answers : state.session.target === 'self' && state.history[state.history.length - 1] !== 'plan' ? state.session.answers : state.personalPlan.answers);
+export const detailResults = computed(() => evaluateAll(catalogItems.value, detailAnswers.value));
+export const otherStepDone = reactive<Record<string, number[]>>({});
 /** 查詢對象回答的戶籍，用於篩選只適用特定縣市的文件。 */
 export const answeredRegion = computed(() => state.session.answers.region);
 
@@ -158,19 +167,23 @@ export const questionInsight = computed(()=> {
 });
 
 export const planItems = computed(() =>
-  state.session.planIds.map((id) => itemsById.value.get(id)).filter((x): x is Subsidy => !!x),
+  state.personalPlan.planIds.map((id) => itemsById.value.get(id)).filter((x): x is Subsidy => !!x),
 );
 
 /** 已填條件（用於輸出預覽，預設不加入）。 */
-export const conditionEntries = computed<ConditionEntry[]>(() => {
+function conditionsFor(answers: Answers, target: Target): ConditionEntry[] {
   const out: ConditionEntry[] = [];
   for (const q of state.bank?.questions ?? []) {
-    const value = answerOf(state.session.answers, q.field);
+    const value = answerOf(answers, q.field);
     if (value === undefined || out.some((c) => c.field === q.field)) continue;
-    out.push({ field: q.field, line: `${titleFor(q, state.session.target ?? 'self').replace(/？$/, '')}：${describeAnswer(q, value)}` });
+    out.push({ field: q.field, line: `${titleFor(q, target).replace(/？$/, '')}：${describeAnswer(q, value)}` });
   }
   return out;
-});
+}
+export const conditionEntries = computed(() => conditionsFor(state.session.answers, state.session.target ?? 'self'));
+export const planConditions = computed(() => conditionsFor(state.personalPlan.answers, 'self'));
+export const planConditionLines = computed(() => planConditions.value.map(c => c.line));
+export const helpConditions = computed(() => conditionsFor(state.helpContext.target === 'other' || state.session.target === 'self' ? state.session.answers : state.personalPlan.answers, state.helpContext.target ?? 'self'));
 
 export const conditionLines = computed(() => conditionEntries.value.map((c) => c.line));
 
@@ -196,7 +209,9 @@ export async function init(): Promise<void> {
     state.session.engineVersion=patch.engineVersion;
     state.session.answers=patch.answers;
     state.session.seenQuestions=patch.seenQuestions;
-    if (patch.notice) state.notice = patch.notice;
+    const { notice: personalNotice, ...personalPatch } = migrateSession(state.personalPlan, catalog);
+    Object.assign(state.personalPlan, personalPatch);
+    if (patch.notice || personalNotice) state.notice = [...new Set([patch.notice, personalNotice].filter(Boolean))].join('');
     state.questionPool = null;
     state.questionRoute = [];
     state.qIndex = 0;
@@ -224,6 +239,7 @@ export function back(): void {
 
 /** 直接切換主要分頁，清掉返回紀錄。 */
 export function tab(view: View): void {
+  if (view === 'plan' && state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
   if (view === 'home' && !CHAT_VIEWS.includes(state.view) && lastChatView !== 'home') {
     pendingResume.value = true;
     return;
@@ -240,9 +256,7 @@ export function continueConversation(): void {
 
 /** 開新對話只重設對話；已加入的行動單與勾選進度保留。 */
 export function newConversation(): void {
-  const plan = savedPlan(state.session);
   resetPerson(null);
-  Object.assign(state.session, plan);
   state.notice = '';
 }
 
@@ -281,12 +295,14 @@ export function confirmPending(): void {
   else if (pending) {
     resetPerson(pending);
     if (destination !== 'home') go(destination);
-    state.notice = '已換人並清除前一位的答案、行動單與進度。';
+    state.notice = '已換人並清除前一位的查詢答案；自己的行動單已保留。';
   }
 }
 
-/** 換人：清除答案、行動單、進度。 */
+/** 換人只清除查詢，自己的行動單獨立保留。 */
 export function resetPerson(target: Target | null): void {
+  if (state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
+  for (const id of Object.keys(otherStepDone)) delete otherStepDone[id];
   pendingResume.value = false;
   lastChatView = 'home';
   conversationEpoch.value += 1;
@@ -314,6 +330,7 @@ export function resetPerson(target: Target | null): void {
 export function clearAllData(): void {
   clearSession();
   resetPerson(null);
+  state.personalPlan = { ...emptySession('self'), catalogVersion: state.personalPlan.catalogVersion, rulesVersion: state.personalPlan.rulesVersion, engineVersion: state.personalPlan.engineVersion };
   state.notice = '已清除這次的答案、行動單與進度；資料庫清除結果請看保存狀態。';
 }
 
@@ -464,34 +481,39 @@ export function answer(question: Question, value: string | number | boolean | un
 }
 
 export function openDetail(id: string): void {
+  state.detailTarget = CHAT_VIEWS.includes(state.view) && state.session.target === 'other' ? 'other' : 'self';
   state.detailId = id;
   go('detail');
 }
 
 export function inPlan(id: string): boolean {
-  return state.session.planIds.includes(id);
+  return state.personalPlan.planIds.includes(id);
 }
 
 export function togglePlan(id: string): void {
-  const ids = state.session.planIds;
-  state.session.planIds = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+  if (state.view === 'detail' && state.detailTarget === 'other') return;
+  const ids = state.personalPlan.planIds;
+  if (!ids.includes(id) && state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
+  state.personalPlan.planIds = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
 }
 
 export function toggleDoc(key: string): void {
-  const checks = { ...state.session.docChecks };
+  const checks = { ...state.personalPlan.docChecks };
   if (checks[key]) delete checks[key];
   else checks[key] = true;
-  state.session.docChecks = checks;
+  state.personalPlan.docChecks = checks;
 }
 
 export function toggleStep(id: string, index: number): void {
-  const done = new Set(state.session.stepDone[id] ?? []);
+  if (state.detailTarget === 'self' && !inPlan(id)) return;
+  const progress = state.detailTarget === 'other' ? otherStepDone : state.personalPlan.stepDone;
+  const done = new Set(progress[id] ?? []);
   if (done.has(index)) done.delete(index);
   else done.add(index);
-  state.session.stepDone = { ...state.session.stepDone, [id]: [...done].sort((a, b) => a - b) };
+  progress[id] = [...done].sort((a, b) => a - b);
 }
 
 export function openHelp(itemId: string | null, stepText?: string): void {
-  state.helpContext = { itemId, stepText };
+  state.helpContext = { itemId, stepText, target: state.view === 'detail' ? state.detailTarget : state.view === 'plan' ? 'self' : state.session.target ?? 'self' };
   go('help');
 }

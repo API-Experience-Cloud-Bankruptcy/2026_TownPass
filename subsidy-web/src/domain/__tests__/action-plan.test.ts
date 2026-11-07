@@ -25,9 +25,11 @@ describe('行動單傳輸白名單', () => {
     const fetcher = vi.fn(async (_input: string, _init?: RequestInit) => new Response(JSON.stringify(response(plan(['A']), 1))));
     const api = new PlanApi(fetcher);
     await api.write(plan(['A']), 0);
+    expect(fetcher.mock.calls[0]![0]).toContain('/api/personal-action-plan');
     expect(JSON.parse(fetcher.mock.calls[0]![1]!.body as string)).toEqual({ plan: plan(['A']), revision: 0 });
     expect(fetcher.mock.calls[0]![1]).toMatchObject({ method: 'PUT', cache: 'no-store', keepalive: true });
     await expect(new PlanApi(async () => new Response('{}')).read()).rejects.toBeInstanceOf(PlanError);
+    await expect(new PlanApi(async () => new Response(JSON.stringify(response({ ...plan(['A']), target: 'other' })))).read()).rejects.toBeInstanceOf(PlanError);
     await expect(new PlanApi(async () => new Response('', { status: 409 })).write(plan(), 0)).rejects.toMatchObject({ status: 409 });
   });
 });

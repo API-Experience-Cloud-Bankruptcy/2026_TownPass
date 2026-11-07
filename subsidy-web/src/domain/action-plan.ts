@@ -57,12 +57,12 @@ export class PlanApi {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
     try {
-      const res = await this.fetcher(`${apiBase()}/api/action-plan`, { ...init, cache: 'no-store', signal: controller.signal });
+      const res = await this.fetcher(`${apiBase()}/api/personal-action-plan`, { ...init, cache: 'no-store', signal: controller.signal });
       if (!res.ok) throw new PlanError(res.status);
       const value = await res.json() as PlanResponse;
       if (value?.mode !== 'demo' || !Number.isSafeInteger(value.revision) || value.revision < 0
         || typeof value.profile?.id !== 'string' || typeof value.profile.realName !== 'string'
-        || !(value.plan === null || validPlan(value.plan))) throw new PlanError(502);
+        || !(value.plan === null || validPlan(value.plan) && value.plan.target === 'self')) throw new PlanError(502);
       return value;
     } catch (error) {
       throw error instanceof PlanError ? error : new PlanError(0);

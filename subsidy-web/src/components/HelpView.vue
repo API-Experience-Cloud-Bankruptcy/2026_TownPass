@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { buildHelpText } from '../domain/export';
 import { stuckAdvice, STUCK_OPTIONS, type StuckReason } from '../domain/route';
 import { isInTownPass, call1999 } from '../townpass';
-import { back, conditionLines, pickConditions, itemsById, planItems, state } from '../store';
+import { back, helpConditions, itemsById, planItems, state } from '../store';
 import ShareBox from './ShareBox.vue';
 
 const reason = ref<StuckReason | null>(null);
@@ -47,14 +47,15 @@ watch(
 );
 
 const choices = computed(() => {
-  const list = [...planItems.value];
+  const list = state.helpContext.target === 'other' ? [] : [...planItems.value];
   const ctx = state.helpContext.itemId ? itemsById.value.get(state.helpContext.itemId) : undefined;
   if (ctx && !list.some((i) => i.id === ctx.id)) list.unshift(ctx);
   return list;
 });
 const item = computed(() => (itemId.value ? itemsById.value.get(itemId.value) ?? null : null));
 const advice = computed(() => (item.value && reason.value ? stuckAdvice(item.value, reason.value, stepText.value) : null));
-const includedValid = computed(() => pickConditions(included.value));
+const conditionLines = computed(() => helpConditions.value.map(c => c.line));
+const includedValid = computed(() => helpConditions.value.filter(c => included.value.includes(c.line)));
 
 const helpText = computed(() =>
   reason.value
@@ -64,7 +65,7 @@ const helpText = computed(() =>
           sourceLabel: state.catalog?.sourceLabel ?? '未載入',
           generatedAt: new Date(),
         },
-        target: state.session.target ?? 'self',
+        target: state.helpContext.target ?? 'self',
         reason: reason.value,
         item: item.value,
         stepText: stepText.value,

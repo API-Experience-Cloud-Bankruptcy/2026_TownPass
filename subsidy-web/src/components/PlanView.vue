@@ -3,13 +3,12 @@ import { computed, nextTick, ref } from 'vue';
 import { mergeDocuments, OTHER_REGION_TITLE, regionText } from '../domain/documents';
 import { buildPlanText } from '../domain/export';
 import { buildRoute } from '../domain/route';
-import { conditionLines, pickConditions, openDetail, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
+import { planConditionLines, planConditions, openDetail, planItems, planResults, state, tab, toggleDoc, togglePlan } from '../store';
 import { progressText } from '../presentation';
 import ShareBox from './ShareBox.vue';
 import StepDots from './StepDots.vue';
-import ChecklistView from './ChecklistView.vue';
 
-const merged = computed(() => mergeDocuments(planItems.value, state.session.answers));
+const merged = computed(() => mergeDocuments(planItems.value, state.personalPlan.answers));
 const included = ref<string[]>([]);
 const stage = ref<'resources' | 'documents' | 'export'>('resources');
 const stageNo = computed(() => ({ resources: 1, documents: 2, export: 3 })[stage.value]);
@@ -19,7 +18,7 @@ async function setStage(next: typeof stage.value) {
   await nextTick();
   stageHeading.value?.focus();
 }
-const includedValid = computed(() => pickConditions(included.value));
+const includedValid = computed(() => planConditions.value.filter(c => included.value.includes(c.line)));
 
 const planText = computed(() =>
   buildPlanText({
@@ -28,28 +27,27 @@ const planText = computed(() =>
       sourceLabel: state.catalog?.sourceLabel ?? '未載入',
       generatedAt: new Date(),
     },
-    target: state.session.target ?? 'self',
+    target: 'self',
     items: planItems.value,
-    results: results.value,
+    results: planResults.value,
     conditions: includedValid.value,
-    docChecks: state.session.docChecks,
-    stepDone: state.session.stepDone,
-    documentAnswers: state.session.answers,
+    docChecks: state.personalPlan.docChecks,
+    stepDone: state.personalPlan.stepDone,
+    documentAnswers: state.personalPlan.answers,
   }),
 );
 
 function progressOf(id: string) {
   const item = planItems.value.find((i) => i.id === id);
   const total = item ? buildRoute(item).steps.length : 0;
-  const done = (state.session.stepDone[id] ?? []).filter((n) => n < total).length;
+  const done = (state.personalPlan.stepDone[id] ?? []).filter((n) => n < total).length;
   return { total, done };
 }
-const preparedDocs = computed(() => merged.value.documents.filter((d) => state.session.docChecks[d.key]).length);
+const preparedDocs = computed(() => merged.value.documents.filter((d) => state.personalPlan.docChecks[d.key]).length);
 </script>
 
 <template>
-  <ChecklistView v-if="state.session.target === 'other'" />
-  <div v-else class="view">
+  <div class="view">
     <div class="view-head card card--hero no-print">
       <h1 id="view-title" class="view-title" tabindex="-1">行動單</h1>
       <p class="muted">準備用的清單，不是核准或送件證明</p>
@@ -86,7 +84,7 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
         <ul class="rows">
           <li v-for="d in merged.documents" :key="d.key">
             <label class="check">
-              <input type="checkbox" :checked="!!state.session.docChecks[d.key]" @change="toggleDoc(d.key)" />
+              <input type="checkbox" :checked="!!state.personalPlan.docChecks[d.key]" @change="toggleDoc(d.key)" />
               <span class="check__body">
                 <span>{{ d.name }}<span v-if="d.required === false" class="muted">（非必要）</span></span>
                 <span v-if="d.hasVariant" class="muted">同名但要求不同，請分開準備</span>
@@ -102,7 +100,7 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
           <ul class="rows">
             <li v-for="d in merged.otherRegion" :key="d.key">
               <label class="check">
-                <input type="checkbox" :checked="!!state.session.docChecks[d.key]" @change="toggleDoc(d.key)" />
+                <input type="checkbox" :checked="!!state.personalPlan.docChecks[d.key]" @change="toggleDoc(d.key)" />
                 <span class="check__body">
                   <span>{{ d.name }}<span v-if="d.required === false" class="muted">（非必要）</span></span>
                   <span class="muted">{{ regionText(d.regions) }}</span>
@@ -126,7 +124,7 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
           title="福利行動單"
           :body="planText"
           filename="福利行動單.txt"
-          :conditions="conditionLines"
+          :conditions="planConditionLines"
           printable
         />
       </div>

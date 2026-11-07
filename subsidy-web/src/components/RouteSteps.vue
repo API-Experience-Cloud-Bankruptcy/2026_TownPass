@@ -3,17 +3,18 @@ import { computed } from 'vue';
 import { buildRoute, SOURCE_KIND_LABEL } from '../domain/route';
 import type { Subsidy } from '../domain/types';
 import { currentStepIndex, progressText, sourceExcerpt } from '../presentation';
-import { openHelp, state, toggleStep } from '../store';
+import { detailAnswers, inPlan, openHelp, otherStepDone, state, toggleStep } from '../store';
 import ExternalLink from './ExternalLink.vue';
 
 /** hideDeadline：詳情頁已在「要先注意」列出期限時不重複。 */
 const props = defineProps<{ item: Subsidy; hideDeadline?: boolean }>();
-const route = computed(() => buildRoute(props.item, state.session.answers));
+const route = computed(() => buildRoute(props.item, detailAnswers.value));
 const documentGroups = computed(() => [
   { label: '地區或判斷依據待確認', documents: route.value.pendingDocuments },
   { label: '其他縣市的規定', documents: route.value.otherDocuments },
 ].filter((group) => group.documents.length));
-const done = computed(() => new Set(state.session.stepDone[props.item.id] ?? []));
+const done = computed(() => new Set((state.detailTarget === 'other' ? otherStepDone : state.personalPlan.stepDone)[props.item.id] ?? []));
+const canCheck = computed(() => state.detailTarget === 'other' || inPlan(props.item.id));
 const total = computed(() => route.value.steps.length);
 const current = computed(() => currentStepIndex(total.value, done.value));
 const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.has(i)).length);
@@ -34,7 +35,7 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
       </details>
       <p v-if="sourceExcerpt(route.steps[current] ?? '') !== route.steps[current]" class="muted">以上為原文節錄，完整要求請展開確認。</p>
       <div class="actions">
-        <button type="button" class="btn btn--block" @click="toggleStep(item.id, current)">這步準備好了</button>
+        <button v-if="canCheck" type="button" class="btn btn--block" @click="toggleStep(item.id, current)">這步準備好了</button>
         <button type="button" class="btn btn--text" @click="openHelp(item.id, route.steps[current])">這一步做不到</button>
       </div>
       <p class="muted">勾選只記錄準備，不會送件</p>
@@ -58,7 +59,7 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
         <ol class="steps">
           <li v-for="(step, i) in route.steps" :key="i">
             <label class="check">
-              <input type="checkbox" :checked="done.has(i)" @change="toggleStep(item.id, i)" />
+              <input type="checkbox" :checked="done.has(i)" :disabled="!canCheck" @change="toggleStep(item.id, i)" />
               <span class="check__body">
                 <span>{{ i + 1 }}. {{ sourceExcerpt(step) }}</span>
               </span>

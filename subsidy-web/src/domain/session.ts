@@ -7,6 +7,7 @@ import { MAX_AGE } from './questions';
 import type { Answers, Target } from './types';
 
 export const SESSION_KEY = 'welfare-tong:session:v1';
+export const PERSONAL_PLAN_KEY = 'welfare-tong:personal-plan:v1';
 export const PREFS_KEY = 'welfare-tong:prefs:v1';
 
 export interface SessionState {
@@ -100,10 +101,10 @@ function sanitizeAnswers(v: unknown): Answers {
   return out;
 }
 
-export function loadSession(storage: StorageLike | null = defaultStorage()): SessionState {
+export function loadSession(storage: StorageLike | null = defaultStorage(), key = SESSION_KEY): SessionState {
   if (!storage) return emptySession();
   try {
-    const raw = storage.getItem(SESSION_KEY);
+    const raw = storage.getItem(key);
     if (!raw) return emptySession();
     const s = JSON.parse(raw) as Partial<SessionState>;
     if (s.v !== 1) return emptySession();
@@ -133,14 +134,23 @@ export function loadSession(storage: StorageLike | null = defaultStorage()): Ses
   }
 }
 
-export function saveSession(state: SessionState, storage: StorageLike | null = defaultStorage()): boolean {
+export function saveSession(state: SessionState, storage: StorageLike | null = defaultStorage(), key = SESSION_KEY): boolean {
   if (!storage) return false;
   try {
-    storage.setItem(SESSION_KEY, JSON.stringify({ ...state, savedAt: new Date().toISOString() }));
+    storage.setItem(key, JSON.stringify({ ...state, savedAt: new Date().toISOString() }));
     return true;
   } catch {
     return false;
   }
+}
+
+/** 本人行動單與這次查詢分開；舊版他人檢核表不當成本人行動單。 */
+export function loadPersonalPlan(storage: StorageLike | null = defaultStorage()): SessionState {
+  let hasPersonal = false;
+  try { hasPersonal = !!storage?.getItem(PERSONAL_PLAN_KEY); } catch { /* 儲存空間不可用 */ }
+  const saved = loadSession(storage, hasPersonal ? PERSONAL_PLAN_KEY : SESSION_KEY);
+  if (saved.target === 'other') return emptySession('self');
+  return { ...saved, target: 'self', situation: null, query: '', seenQuestions: [] };
 }
 
 export function clearSession(

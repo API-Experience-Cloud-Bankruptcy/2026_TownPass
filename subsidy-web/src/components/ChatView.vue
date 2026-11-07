@@ -263,7 +263,7 @@ const context = computed<InterpretationContext>(() => {
     : view.value === 'needs' || view.value === 'search'
       ? [{ id: 'explore', label: '還不確定，帶我找' }, ...SITUATIONS.map(s => ({ id: `need:${s.id}`, label: s.label, description: s.hint }))]
       : q ? [...(q.options ?? []).map((o, i) => ({ id: `option:${i}`, label: o.label, description: optionalText(o, 'description') })), { id: 'skip', label: '不知道，先跳過' }, { id: 'results', label: '先看目前結果' }]
-        : [{ id: 'needs', label: '換需求' }, { id: 'help', label: '找人幫忙' }, ...(canRefine.value ? [{ id: 'continue', label: '再回答幾題，繼續縮小' }] : []), ...(planItems.value.length ? [{ id: 'plan', label: target.value === 'other' ? '製作 A4 檢核表' : '看行動單' }] : [])];
+        : [{ id: 'needs', label: '換需求' }, { id: 'help', label: '找人幫忙' }, ...(canRefine.value ? [{ id: 'continue', label: '再回答幾題，繼續縮小' }] : []), ...(target.value === 'self' && planItems.value.length ? [{ id: 'plan', label: '看行動單' }] : [])];
   return {
     stage: view.value as InterpretationContext['stage'], target: state.session.target, choices,
     ...(q ? { question: { id: q.id, field: q.field, title: titleFor(q, target.value), kind: q.kind, min: q.min, max: q.max, options: choices.filter(c => c.id.startsWith('option:')) } } : {}),
@@ -747,11 +747,11 @@ async function onInput() {
           <div class="replies" role="group" aria-label="查詢對象">
             <button type="button" class="reply" aria-label="幫自己找" @click="requestTarget('self')">
               <span class="reply__label">幫自己找</span>
-              <span class="reply__sub">依你的情況查詢，保存在行動單</span>
+              <span class="reply__sub">依你的情況查詢，可加入行動單</span>
             </button>
             <button type="button" class="reply" aria-label="幫家人或別人找" @click="requestTarget('other')">
               <span class="reply__label">幫家人或別人找</span>
-              <span class="reply__sub">依對方情況查詢，列印 A4 檢核表</span>
+              <span class="reply__sub">依對方情況查詢，匯出申請準備 PDF</span>
             </button>
           </div>
         </template>
@@ -917,8 +917,8 @@ async function onInput() {
                   <button v-if="canRefine" type="button" class="reply reply--primary" @click="continueQuestions">
                     <span class="reply__label">{{ answeredCount ? '再回答幾題，繼續縮小' : '回答幾題，縮小範圍' }}</span>
                   </button>
-                  <button v-if="planItems.length" type="button" class="reply" @click="tab('plan')">
-                    <span class="reply__label">{{ state.session.target === 'other' ? '製作 A4 檢核表' : '看行動單' }}（{{ planItems.length }} 項）</span>
+                  <button v-if="target === 'self' && planItems.length" type="button" class="reply" @click="tab('plan')">
+                    <span class="reply__label">看行動單（{{ planItems.length }} 項）</span>
                   </button>
                   <div class="replies__row">
                     <button v-if="answeredCount" type="button" class="reply reply--quiet" @click="redoAnswers"><span class="reply__label">改答案</span></button>

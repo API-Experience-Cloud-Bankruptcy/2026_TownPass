@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { afterEach, vi } from 'vitest';
 import { clearSession, defaultStorage, emptySession, hasPersonalData, loadPrefs, loadSession, prefsStorage, purgeLegacySession, savePrefs, saveSession, SESSION_KEY, PREFS_KEY, switchPerson } from '../session';
+import { loadPersonalPlan, PERSONAL_PLAN_KEY } from '../session';
 
 function memory() {
   const map = new Map<string, string>();
@@ -31,6 +32,18 @@ describe('儲存位置', () => {
 });
 
 describe('本機保存', () => {
+  it('本人行動單獨立保存，不把舊版他人資料或目前查詢條件當成本人資料', () => {
+    const storage = memory();
+    saveSession({ ...emptySession('other'), answers: { age: 72 }, planIds: ['other'] }, storage);
+    expect(loadPersonalPlan(storage)).toEqual(emptySession('self'));
+    const self = { ...emptySession('self'), answers: { age: 30 }, planIds: ['self'], stepDone: { self: [0] } };
+    saveSession(self, storage, PERSONAL_PLAN_KEY);
+    expect(loadPersonalPlan(storage)).toMatchObject({ ...self, savedAt: expect.any(String) });
+    expect(loadSession(storage).target).toBe('other');
+    storage.removeItem(PERSONAL_PLAN_KEY);
+    saveSession(self, storage);
+    expect(loadPersonalPlan(storage)).toMatchObject({ ...self, savedAt: expect.any(String) });
+  });
   it('保存後可還原答案與進度', () => {
     const s = memory();
     const state = { ...emptySession('other'), answers: { age: 72, region: '臺北市' }, planIds: ['A'], stepDone: { A: [0] } };

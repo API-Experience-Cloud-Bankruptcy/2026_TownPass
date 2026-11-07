@@ -260,15 +260,15 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 已完成福利通前後端核心流程，並升級為依答案重排的動態問答：217 筆完整資料 API 與逐筆探索映射、來源綁定必要條件、本機保守初篩、不確定需求的生活情境探索、辦理路線、文件準備、求助及行動單輸出。題目來自共用模板，不由執行時 AI 生成；探索方向與資格判斷分開。詳細範圍及驗證見 `README.md` 與 `../docs/welfare-implementation-contract.md`。
 
-行動單持久化：`domain/action-plan.ts` 透過 `/api/action-plan` 讀寫 SQLite，僅保存資源與準備進度，不傳資格答案／聊天原句。後端須明確啟用 `DEMO_MODE=1`；App、瀏覽器與 DB 共用 `assets/mock_data/account.json` 的虛擬測試者，非正式台北通登入。資料欄位與限制見 `../docs/townpass-profile.md`。保存狀態以後端回覆為準，revision 衝突不得靜默覆寫。`../scripts/install_macos_service.py --demo` 將 DB 放在 release 以外的持久目錄。
+行動單持久化：`domain/action-plan.ts` 透過 `/api/personal-action-plan` 讀寫 SQLite 的 `personal_action_plans`，本人行動單狀態為 `state.personalPlan`，與查詢 `state.session` 分開，舊 `/api/action-plan` 及資料表保留相容，僅保存資源與準備進度，不傳資格答案／聊天原句。後端須明確啟用 `DEMO_MODE=1`；App、瀏覽器與 DB 共用 `assets/mock_data/account.json` 的虛擬測試者，非正式台北通登入。資料欄位與限制見 `../docs/townpass-profile.md`。保存狀態以後端回覆為準，revision 衝突不得靜默覆寫。`../scripts/install_macos_service.py --demo` 將 DB 放在 release 以外的持久目錄。
 
-頂部品牌／分頁與底部對話輸入列不參與內容捲動；對話在 `.chat__log` 捲動，一般頁在 `.app-main` 捲動。返回找資源時提供續接選擇，初始招呼頁除外；開新對話保留行動單，換人／清除仍依確認內容清除。
+頂部品牌／分頁與底部對話輸入列不參與內容捲動；對話在 `.chat__log` 捲動，一般頁在 `.app-main` 捲動。返回找資源時提供續接選擇，初始招呼頁除外；開新對話保留行動單，換人只清除查詢；清除全部才清除本人行動單。
 
-UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊答案與行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。
+UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊查詢答案，保留獨立的本人行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。
 
 動態問答維護須涵蓋返回改答後恢復分支、已略過問題不重複追問、切需求清除不相關探索偏好，以及 catalog／資格／探索／模板版本更新後的工作階段失效。顯示的聚焦筆數不等於符合資格筆數；其他候選、時效不明與已截止項目須保留可查入口。
 
-替他人查詢的交付改為 A4 PDF 檢核表：`checklist.ts` 建共用內容、`checklist-pdf.ts` 本機產生實際 PDF（TTF 完整嵌入以避免閱讀器缺字，不改成未驗證的 subset），`ChecklistView.vue` 預覽／下載；本人線上行動單保留。PDF 需保留完整條件、待確認、來源與文件差異，個人填答沿用欄位揭露控制；內容變更撤銷舊檔。字型為附授權的本站 Noto Sans TC，按需載入，不用 CDN。App 的 `share_pdf` 由 printing 開啟系統分享選單，回覆不代表已保存或送出；新增外掛需重新建置 App。
+替他人查詢的交付為詳情頁單筆 A4 PDF 檢核表：`checklist.ts` 建共用內容、`checklist-pdf.ts` 本機產生實際 PDF（TTF 完整嵌入以避免閱讀器缺字，不改成未驗證的 subset），`ChecklistView.vue` 接收當前資源並在詳情內預覽／下載，不寫入本人行動單；總覽詳情只有本人行動單入口，主要「行動單」分頁不隨查詢對象改名或換頁。PDF 需保留完整條件、待確認、來源與文件差異，個人填答沿用欄位揭露控制；內容變更撤銷舊檔。字型為附授權的本站 Noto Sans TC，按需載入，不用 CDN。App 的 `share_pdf` 由 printing 開啟系統分享選單，回覆不代表已保存或送出；新增外掛需重新建置 App。
 
 資源詳情的「申請表與填寫」按需載入 `FormFillPanel`；本人資料須逐項確認，編輯、撤銷、關閉或換資源／對象即清除確認與舊 PDF。`/api/forms/{file}` 提供空白官方 PDF，搬移後端執行檔時須設定 `FORMS_DIR`；macOS 安裝工具會複製空白表單到各 release。已知共用表單的錯位姓名欄禁止自動填入並提示手寫。
 

@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { buildChecklist } from '../domain/checklist';
 import { mergeDocuments } from '../domain/documents';
 import { copyText, type PlanInput } from '../domain/export';
 import { sharePdfFile } from '../domain/pdf-file';
-import { conditionLines, openDetail, pickConditions, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
+import { conditionLines, otherStepDone, pickConditions, results, state } from '../store';
+import type { Subsidy } from '../domain/types';
 import { isInTownPass } from '../townpass';
 
+const props = defineProps<{ item: Subsidy }>();
+const planItems = computed(() => [props.item]);
+const docChecks = ref<Record<string, boolean>>({});
+function toggleDoc(key: string) { docChecks.value = { ...docChecks.value, [key]: !docChecks.value[key] }; }
 const included = ref<string[]>([]);
 const generatedAt = new Date();
 const input = computed<PlanInput>(() => ({
   meta: { catalogVersion: state.catalog?.version ?? '未載入', sourceLabel: state.catalog?.sourceLabel ?? '未載入', generatedAt },
   target: 'other', items: planItems.value, results: results.value,
-  conditions: pickConditions(included.value), docChecks: state.session.docChecks, stepDone: state.session.stepDone, documentAnswers: state.session.answers,
+  conditions: pickConditions(included.value), docChecks: docChecks.value, stepDone: { [props.item.id]: otherStepDone[props.item.id] ?? [] }, documentAnswers: state.session.answers,
 }));
 const checklist = computed(() => buildChecklist(input.value));
 const merged = computed(() => mergeDocuments(planItems.value, state.session.answers));
@@ -84,39 +89,23 @@ const fullText = computed(() => [checklist.value.title, checklist.value.subtitle
   ...checklist.value.sections.flatMap(s => [s.title, ...s.blocks.map(b => `${b.kind === 'check' ? (b.checked ? '[已準備] ' : '[ ] ') : ''}${b.text}${b.url && !b.text.includes(b.url) ? `\n${b.url}` : ''}`)]),
 ].join('\n'));
 async function copy() { status.value = await copyText(fullText.value) ? '已複製完整檢核表文字。' : '無法自動複製，請長按下方全文選取。'; }
+onMounted(() => { void preview(); });
 </script>
 
 <template>
   <div class="view checklist-view">
     <div class="view-head card card--hero">
-      <h1 id="view-title" class="view-title" tabindex="-1">家人行動檢核表</h1>
-      <p class="lead">整理成 A4 PDF，交給家人照著準備、逐項打勾。</p>
-      <p class="muted">可合併多項資源，內容較多會自動分頁。檢核表不是核准或送件證明。</p>
+      <h2 class="section-title">申請準備 PDF</h2>
+      <p class="lead">將這項補助整理成 A4 PDF，交給對方照著準備。</p>
+      <p class="muted">內容較多會自動分頁。檢核表不是核准或送件證明。</p>
     </div>
-    <div v-if="!planItems.length" class="actions card">
-      <p>尚未選擇資源。到資源詳情按「加入家人檢核表」，再回來製作 PDF。</p>
-      <button type="button" class="btn btn--primary btn--block" @click="tab('home')">開始找資源</button>
-    </div>
-    <template v-else>
-      <section class="actions card" aria-labelledby="checklist-items-h">
-        <h2 id="checklist-items-h" class="section-title">要放進 PDF 的資源（{{ planItems.length }}）</h2>
-        <ul class="rows">
-          <li v-for="item in planItems" :key="item.id" class="row-static">
-            <span class="row__title">{{ item.name }}</span>
-            <span class="inline-actions">
-              <button type="button" class="btn btn--text" @click="openDetail(item.id)">查看內容<span class="sr-only">：{{ item.name }}</span></button>
-              <button type="button" class="btn btn--text" @click="togglePlan(item.id)">移除<span class="sr-only">：{{ item.name }}</span></button>
-            </span>
-          </li>
-        </ul>
-        <button type="button" class="btn btn--text" @click="tab('results')">繼續選資源</button>
-      </section>
+    <template v-if="planItems.length">
       <details v-if="merged.documents.length" class="more more--single card card--list">
         <summary>已經準備好的文件（選填）</summary>
         <div class="more__body">
           <p class="muted">勾選會帶到 PDF；未勾選的項目保留空格，讓家人在紙上打勾。</p>
           <label v-for="doc in merged.documents" :key="doc.key" class="check">
-            <input type="checkbox" :checked="!!state.session.docChecks[doc.key]" @change="toggleDoc(doc.key)" />
+            <input type="checkbox" :checked="!!docChecks[doc.key]" @change="toggleDoc(doc.key)" />
             <span class="check__body">
               <span>{{ doc.name }}{{ doc.required === false ? '（非必要）' : '' }}</span>
               <span v-if="doc.hasVariant" class="muted">同名但要求不同，請分開準備</span>

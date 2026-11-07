@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { emptySession } from '../domain/session';
 import { makeSubsidy } from '../domain/__tests__/fixtures';
 import {
   answerAndAdvance, applyConfirmedFacts, back, confirmPending, go, pendingSwitch, questions,
   requestNewPerson, requestTarget, resetPerson, searchResources, selectNeed,
   startQuestions, state, tab,
   pendingResume, continueConversation, newConversation, conversationEpoch,
+  openDetail, togglePlan, toggleStep, planResults, detailAnswers, clearAllData,
 } from '../store';
 
 beforeEach(() => {
   resetPerson(null);
+  state.personalPlan = emptySession('self');
   pendingSwitch.value = null;
   state.loading = false;
   state.catalog = {
@@ -26,6 +29,38 @@ beforeEach(() => {
 });
 
 describe('逐頁找資源', () => {
+  it('幫別人找時，總覽詳情仍是本人行動單，不使用對方條件或進度', () => {
+    requestTarget('other');
+    state.session.answers = { age: 72, region: '其他縣市' };
+    state.personalPlan.answers = { age: 30, region: '臺北市' };
+    tab('browse'); openDetail('housing');
+    expect(state.detailTarget).toBe('self');
+    expect(detailAnswers.value).toEqual({ age: 30, region: '臺北市' });
+    togglePlan('housing'); toggleStep('housing', 0);
+    expect(state.personalPlan.planIds).toEqual(['housing']);
+    expect(state.personalPlan.stepDone).toEqual({ housing: [0] });
+    back(); expect(state.view).toBe('browse');
+    tab('results'); openDetail('housing');
+    expect(state.detailTarget).toBe('other');
+    expect(detailAnswers.value.age).toBe(72);
+    togglePlan('housing'); toggleStep('housing', 1);
+    expect(state.personalPlan.planIds).toEqual(['housing']);
+    expect(state.personalPlan.stepDone).toEqual({ housing: [0] });
+    expect(planResults.value.get('housing')).toBeDefined();
+  });
+  it('行動單詳情以本人資料顯示；清除全部才移除本人行動單', () => {
+    state.personalPlan = { ...emptySession('self'), planIds: ['housing'], answers: { age: 30 }, stepDone: { housing: [0] } };
+    requestTarget('other'); state.session.answers = { age: 72 };
+    tab('plan'); openDetail('housing');
+    expect(state.detailTarget).toBe('self');
+    expect(detailAnswers.value.age).toBe(30);
+    resetPerson('other');
+    expect(state.personalPlan.planIds).toEqual(['housing']);
+    clearAllData();
+    expect(state.personalPlan.planIds).toEqual([]);
+    expect(state.personalPlan.answers).toEqual({});
+    expect(state.personalPlan.stepDone).toEqual({});
+  });
   it('從初始招呼頁離開再回來，不詢問續接', () => {
     tab('browse'); tab('home');
     expect(pendingResume.value).toBe(false); expect(state.view).toBe('home');
@@ -44,13 +79,13 @@ describe('逐頁找資源', () => {
 
   it('開新對話回到招呼頁，清除對話答案、保留行動單及勾選進度', () => {
     requestTarget('self'); selectNeed('housing'); state.session.answers = { age: 30 };
-    state.session.planIds = ['housing']; state.session.docChecks = { document: true }; state.session.stepDone = { housing: [0] };
+    state.personalPlan.planIds = ['housing']; state.personalPlan.docChecks = { document: true }; state.personalPlan.stepDone = { housing: [0] };
     const epoch = conversationEpoch.value;
     tab('plan'); tab('home'); newConversation();
     expect(state.view).toBe('home'); expect(pendingResume.value).toBe(false);
     expect(state.session.answers).toEqual({}); expect(state.session.situation).toBeNull();
-    expect(state.session.planIds).toEqual(['housing']); expect(state.session.docChecks).toEqual({ document: true });
-    expect(state.session.stepDone).toEqual({ housing: [0] }); expect(conversationEpoch.value).toBeGreaterThan(epoch);
+    expect(state.personalPlan.planIds).toEqual(['housing']); expect(state.personalPlan.docChecks).toEqual({ document: true });
+    expect(state.personalPlan.stepDone).toEqual({ housing: [0] }); expect(conversationEpoch.value).toBeGreaterThan(epoch);
     tab('browse'); tab('home'); expect(pendingResume.value).toBe(false);
   });
   it('對象選擇前進到需求，同一對象返回再選不清除答案', () => {
@@ -64,10 +99,10 @@ describe('逐頁找資源', () => {
     expect(pendingSwitch.value).toBeNull();
   });
 
-  it('換對象確認前保留資料，確認後清除並前進到需求', () => {
+  it('換對象只清除查詢答案，保留本人行動單與本人條件並前進到需求', () => {
     requestTarget('self');
     state.session.answers = { age: 60 };
-    state.session.planIds = ['housing'];
+    state.personalPlan.planIds = ['housing'];
     tab('home');
     requestTarget('other');
     expect(pendingSwitch.value).toBe('other');
@@ -77,7 +112,8 @@ describe('逐頁找資源', () => {
     expect(state.view).toBe('needs');
     expect(state.session.target).toBe('other');
     expect(state.session.answers).toEqual({});
-    expect(state.session.planIds).toEqual([]);
+    expect(state.personalPlan.planIds).toEqual(['housing']);
+    expect(state.personalPlan.answers).toEqual({ age: 60 });
     back();
     expect(state.view).toBe('home');
   });
@@ -97,7 +133,7 @@ describe('逐頁找資源', () => {
     requestTarget('self');
     state.session.query = '助學金';
     state.session.answers = { age: 60 };
-    state.session.planIds = ['housing'];
+    state.personalPlan.planIds = ['housing'];
     selectNeed('housing');
     expect(state.session.query).toBe('');
     expect(state.view).toBe('questions');
@@ -111,7 +147,7 @@ describe('逐頁找資源', () => {
     expect(state.session.query).toBe('助學金');
     expect(questions.value.map(q => q.id)).toEqual(['region', 'student']);
     expect(state.session.answers.age).toBe(60);
-    expect(state.session.planIds).toEqual(['housing']);
+    expect(state.personalPlan.planIds).toEqual(['housing']);
     back();
     expect(state.view).toBe('search');
   });
@@ -241,10 +277,10 @@ describe('使用者確認的語意候選條件', () => {
   it('整批驗證後套用，保留其他穩定答案與行動單，不再追問確認過的年齡', () => {
     requestTarget('self'); selectNeed('housing');
     state.session.answers = { region: '臺北市', age: 40 };
-    state.session.planIds = ['housing'];
+    state.personalPlan.planIds = ['housing'];
     expect(applyConfirmedFacts([fact(65)])).toBe(true);
     expect(state.session.answers).toMatchObject({ age: 65, region: '臺北市' });
-    expect(state.session.planIds).toEqual(['housing']);
+    expect(state.personalPlan.planIds).toEqual(['housing']);
     expect(questions.value.map(q => q.field)).not.toContain('age');
   });
   it('不明主體、跨人、多個同欄位、未支援值或超界，全部不變更', () => {
