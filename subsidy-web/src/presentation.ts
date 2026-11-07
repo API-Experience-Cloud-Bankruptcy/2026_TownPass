@@ -137,3 +137,61 @@ export function optionalText(source: unknown, key: string): string {
 export function numberUnit(question: { field: string }): string {
   return optionalText(question, 'unit') || (question.field === 'age' ? '歲' : '數字');
 }
+
+const ELLIPSIS = '…';
+
+/** 原文第一個非空句（以「。；;！？!?」或換行分句，不含分句標點）。沒有分句時回傳整段。 */
+export function firstSentence(raw: string): string {
+  return raw.split(/[。；;！？!?\n]/).map((part) => part.trim()).find(Boolean) ?? '';
+}
+
+/** 原文扣掉 part 後，是否還有標點與空白以外的內容。 */
+function hasMore(full: string, part: string): boolean {
+  const i = full.indexOf(part);
+  const rest = i >= 0 ? full.slice(0, i) + full.slice(i + part.length) : full;
+  return /[^\s。；;！？!?，、,]/.test(rest);
+}
+
+/** 補助內容原文：benefit.raw；沒有時用各金額條目的原文，以「；」串接。 */
+export function benefitOriginal(item: Subsidy): string {
+  const raw = text(item.benefit?.raw);
+  if (raw) return raw;
+  return (item.benefit?.amounts ?? [])
+    .map((a) => (a && typeof a === 'object' ? text((a as Record<string, unknown>).raw) : ''))
+    .filter(Boolean)
+    .join('；');
+}
+
+/**
+ * 詳情頁頂部的一句利益摘要：只取資料原文，不計算或補金額。
+ * 取補助內容原文第一句，前面補上資料的類型短標（第一句已含時不重複）；
+ * 沒有原文時只顯示類型短標。摘要只是原文一部分時以「…」結尾，完整原文另行顯示。
+ */
+export function benefitSummary(item: Subsidy): { text: string; partial: boolean } {
+  const full = benefitOriginal(item);
+  const kind = text(item.benefit?.kind) || text(item.classification?.benefit_type);
+  const body = firstSentence(full);
+  if (!body) return { text: kind, partial: false };
+  const partial = hasMore(full, body);
+  const head = kind && !body.includes(kind) ? `${kind}：${body}` : body;
+  return { text: partial ? head + ELLIPSIS : head, partial };
+}
+
+/**
+ * 步驟的一行摘要：先取第一句；超過 max 字時切在 max 字內最後一個「，、,」之前，
+ * 找不到才在 max 字硬切。只要摘要不是完整原文就以「…」結尾，完整原文放在展開區。
+ */
+export function stepSummary(step: string, max = 40): { text: string; partial: boolean } {
+  const full = step.trim();
+  let s = firstSentence(full);
+  const chars = [...s];
+  if (chars.length > max) {
+    let cut = -1;
+    chars.slice(0, max).forEach((c, i) => {
+      if ('，、,'.includes(c) && i > 0) cut = i;
+    });
+    s = chars.slice(0, cut > 0 ? cut : max).join('').trim();
+  }
+  const partial = hasMore(full, s);
+  return { text: partial ? s + ELLIPSIS : s, partial };
+}

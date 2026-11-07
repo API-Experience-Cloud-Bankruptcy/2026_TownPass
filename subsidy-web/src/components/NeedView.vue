@@ -17,10 +17,10 @@ const busy = computed(() => state.loading || !state.catalog);
     <p v-if="state.loading" class="muted" role="status">資料載入中</p>
 
     <div class="actions">
-      <button type="button" class="btn btn--primary btn--block btn--tall" :disabled="busy" @click="startExplore">
+      <button type="button" class="btn btn--primary btn--block btn--tall" aria-label="還不確定，帶我找" aria-describedby="need-explore-sub" :disabled="busy" @click="startExplore">
         <span class="btn__stack">
           <span>還不確定，帶我找</span>
-          <span class="btn__sub">從簡單的問題開始，逐步縮小範圍</span>
+          <span id="need-explore-sub" class="btn__sub">從簡單的問題開始，逐步縮小範圍</span>
         </span>
       </button>
     </div>
@@ -32,13 +32,15 @@ const busy = computed(() => state.loading || !state.catalog);
           <button
             type="button"
             class="row"
+            :aria-label="s.label"
+            :aria-describedby="s.hint ? `need-${s.id}-sub` : undefined"
             :disabled="busy"
             :aria-pressed="state.session.situation === s.id && !state.session.query"
             @click="selectNeed(s.id)"
           >
             <span class="row__main">
               <span class="row__title">{{ s.label }}</span>
-              <span v-if="s.hint" class="row__sub">{{ s.hint }}</span>
+              <span v-if="s.hint" :id="`need-${s.id}-sub`" class="row__sub">{{ s.hint }}</span>
             </span>
             <span class="row__chev" aria-hidden="true">›</span>
           </button>

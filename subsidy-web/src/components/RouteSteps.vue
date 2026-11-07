@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { buildRoute, SOURCE_KIND_LABEL } from '../domain/route';
 import type { Subsidy } from '../domain/types';
-import { currentStepIndex, progressText } from '../presentation';
+import { currentStepIndex, progressText, stepSummary } from '../presentation';
 import { openHelp, state, toggleStep } from '../store';
 import ExternalLink from './ExternalLink.vue';
 
@@ -13,6 +13,8 @@ const done = computed(() => new Set(state.session.stepDone[props.item.id] ?? [])
 const total = computed(() => route.value.steps.length);
 const current = computed(() => currentStepIndex(total.value, done.value));
 const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.has(i)).length);
+/** 每步一行摘要；摘要不完整時，原文放在「完整說明」展開區。 */
+const short = computed(() => route.value.steps.map((step) => stepSummary(step)));
 </script>
 
 <template>
@@ -23,7 +25,11 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
         <span class="dot dot--on" aria-hidden="true">{{ current + 1 }}</span>
         <span>下一步・{{ progressText(doneCount, total) }}</span>
       </p>
-      <p class="next__text">{{ route.steps[current] }}</p>
+      <p class="next__text">{{ short[current].text }}</p>
+      <details v-if="short[current].partial" class="more step-full">
+        <summary>完整說明</summary>
+        <div class="more__body"><p class="selectable">{{ route.steps[current] }}</p></div>
+      </details>
       <div class="actions">
         <button type="button" class="btn btn--block" @click="toggleStep(item.id, current)">這步準備好了</button>
         <button type="button" class="btn btn--text" @click="openHelp(item.id, route.steps[current])">這一步做不到</button>
@@ -52,9 +58,13 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
               <input type="checkbox" :checked="done.has(i)" @change="toggleStep(item.id, i)" />
               <span class="check__body">
                 <span v-if="i === current">{{ i + 1 }}. 上方的下一步</span>
-                <span v-else>{{ i + 1 }}. {{ step }}</span>
+                <span v-else>{{ i + 1 }}. {{ short[i].text }}</span>
               </span>
             </label>
+            <details v-if="i !== current && short[i].partial" class="more step-full">
+              <summary>完整說明<span class="sr-only">：第 {{ i + 1 }} 步</span></summary>
+              <div class="more__body"><p class="selectable">{{ step }}</p></div>
+            </details>
             <button v-if="i !== current" type="button" class="btn btn--text" @click="openHelp(item.id, step)">
               做不到<span class="sr-only">：{{ step }}</span>
             </button>

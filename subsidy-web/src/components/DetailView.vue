@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { text } from '../domain/match';
 import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE } from '../domain/route';
-import { benefitLabel, itemFlags, statusPlain } from '../presentation';
+import { benefitLabel, benefitOriginal, benefitSummary, itemFlags, statusPlain } from '../presentation';
 import { inPlan, itemsById, results, state, tab, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import RouteSteps from './RouteSteps.vue';
@@ -11,7 +11,9 @@ const item = computed(() => (state.detailId ? itemsById.value.get(state.detailId
 const result = computed(() => (item.value ? results.value.get(item.value.id) : undefined));
 const route = computed(() => (item.value ? buildRoute(item.value) : null));
 const sub = computed(() => (item.value ? [benefitLabel(item.value), text(item.value.provider?.name)].filter(Boolean).join('・') : ''));
-const benefit = computed(() => text(item.value?.benefit?.raw));
+const benefit = computed(() => (item.value ? benefitOriginal(item.value) : ''));
+/** 頂部一句：原文第一句加類型短標；只是原文一部分時，完整原文放在下方展開區。 */
+const headline = computed(() => (item.value ? benefitSummary(item.value) : { text: '', partial: false }));
 const summary = computed(() => text(item.value?.eligibility?.raw_summary));
 const flags = computed(() => (item.value ? itemFlags(item.value, result.value) : []));
 /** 受理情形原文；已在提醒列出時不重複。 */
@@ -37,7 +39,12 @@ function kindOf(type: string) {
 
     <section class="block" aria-labelledby="d-benefit-h">
       <h2 id="d-benefit-h" class="section-title">能提供什麼</h2>
-      <p class="selectable">{{ benefit || '原文沒有提供內容說明，請看官方說明頁或問承辦窗口' }}</p>
+      <p v-if="benefit" class="benefit-line selectable">{{ headline.text }}</p>
+      <p v-else>原文沒有提供內容說明，請看官方說明頁或問承辦窗口</p>
+      <details v-if="headline.partial" class="more more--single">
+        <summary>補助內容（原文）</summary>
+        <div class="more__body"><p class="selectable">{{ benefit }}</p></div>
+      </details>
     </section>
 
     <section class="block" aria-labelledby="d-limit-h">
