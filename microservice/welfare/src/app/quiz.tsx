@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -6,7 +7,7 @@ import { QUESTIONS } from '@/data';
 import type { Identity, Profile } from '@/data/welfare-schema';
 import { useApp, type Answers } from '@/lib/app-state';
 import { go } from '@/lib/nav';
-import { markAnswered, prefill } from '@/lib/prefill';
+import { firstUnanswered, markAnswered, prefill } from '@/lib/prefill';
 import { questionsFor, type Question } from '@/lib/questions-types';
 import { getUserInfo, profileFromAccount, type KnownProfile } from '@/lib/townpass';
 
@@ -17,8 +18,9 @@ const SETTLE_MS = 400;
 
 export default function Quiz() {
   const { loaded } = useApp();
+  const { resume } = useLocalSearchParams<{ resume?: string }>();
   // Start only after the saved session is restored, so a refresh resumes with the earlier answers.
-  return loaded ? <QuizSteps /> : <Screen title="回答問題">{null}</Screen>;
+  return loaded ? <QuizSteps resume={resume === '1'} /> : <Screen title="回答問題">{null}</Screen>;
 }
 
 /** Resume at the first question not yet answered; start over when all are answered. */
@@ -27,10 +29,13 @@ function firstOpen(questions: Question[], answered: string[] = []): number {
   return i < 0 ? 0 : i;
 }
 
-function QuizSteps() {
+function QuizSteps({ resume }: { resume: boolean }) {
   const { categories, answers, setAnswers, colors } = useApp();
   const questions = useMemo(() => questionsFor(QUESTIONS, categories), [categories]);
-  const [index, setIndex] = useState(() => firstOpen(questions, answers.answered));
+  // 「繼續回答」 also reopens skipped questions; 修改答案 resumes after the last one reached.
+  const [index, setIndex] = useState(() =>
+    resume ? Math.max(firstUnanswered(questions, answers), 0) : firstOpen(questions, answers.answered),
+  );
   const [draft, setDraft] = useState<Answers>(answers);
   const [settling, setSettling] = useState(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);

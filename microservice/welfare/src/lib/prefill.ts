@@ -8,6 +8,26 @@ export function markAnswered(a: Answers, questionId: string): Answers {
   return answered.includes(questionId) ? a : { ...a, answered: [...answered, questionId] };
 }
 
+/** Index of the first question that has no answer yet (skipped or never reached), or -1. */
+export function firstUnanswered(questions: Question[], a: Answers): number {
+  const p = a.profile;
+  const reached = (q: Question) => (a.answered ?? []).includes(q.id);
+  return questions.findIndex((q) => {
+    switch (q.kind) {
+      case 'birthYear':
+        return p.birthYear === undefined;
+      case 'single':
+        return p[q.field] === undefined;
+      case 'children':
+        return p.childrenUnder === undefined;
+      case 'identities':
+        return !reached(q) || q.options.some((o) => a.unknownIdentities.includes(o.identity));
+      case 'identityYesNo':
+        return !reached(q) || a.unknownIdentities.includes(q.identity);
+    }
+  });
+}
+
 /** Profile fields and identities that the given questions decide. */
 function decidedBy(questions: Question[], ids: string[]) {
   const fields = new Set<keyof Profile>();

@@ -1,5 +1,5 @@
 import type { Profile, WelfareItem } from '../data/welfare-schema';
-import { IDENTITY_LABEL, type MatchResult } from './match';
+import { IDENTITY_LABEL } from './match';
 
 const STUDENT: Record<NonNullable<Profile['student']>, string> = {
   elementary: '國小學生',
@@ -39,14 +39,4 @@ export function applyWays(item: WelfareItem): string {
   if (item.apply.counter) ways.push(`到${item.apply.counter}`);
   if (item.apply.phone) ways.push(`電話 ${item.apply.phone}`);
   return ways.join('，');
-}
-
-/** Text read aloud on the results page. */
-export function resultsSpeech(match: MatchResult[], maybe: MatchResult[]): string {
-  if (match.length + maybe.length === 0) return '目前沒有找到你可能符合的福利。可以按請人幫我，找人一起查。';
-  const parts = [`找到 ${match.length} 項你很可能符合的福利，還有 ${maybe.length} 項需要再確認。`];
-  [...match, ...maybe].slice(0, 6).forEach((r, i) => {
-    parts.push(`第 ${i + 1} 項，${r.item.name}。${r.item.plain}${r.item.amount ? `金額是${r.item.amount}。` : ''}`);
-  });
-  return parts.join('');
 }
