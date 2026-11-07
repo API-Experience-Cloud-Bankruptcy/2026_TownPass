@@ -147,52 +147,43 @@ fn content_versions_are_repeatable_and_change_with_input() {
 }
 
 #[test]
-fn clear_age_boundaries_are_the_only_hard_exclusions() {
-    let min = isolated_age(age_rule(
+fn reviewed_real_boundaries_exclude_independently_of_unknown_income() {
+    for (id, age, expected) in [
+        ("WEL-0055", 64.0, Fit::Ineligible),
+        ("WEL-0055", 65.0, Fit::Possible),
+        ("WEL-0106", 24.0, Fit::Ineligible),
+        ("WEL-0106", 25.0, Fit::Possible),
+        ("WEL-0106", 65.0, Fit::Possible),
+        ("WEL-0106", 66.0, Fit::Ineligible),
+        ("CT-0129", 17.0, Fit::Ineligible),
+        ("CT-0129", 18.0, Fit::Possible),
+        ("CT-0129", 24.0, Fit::Possible),
+        ("CT-0129", 25.0, Fit::Ineligible),
+        ("CT-0069", 55.0, Fit::Possible),
+        ("CT-0069", 65.0, Fit::Ineligible),
+    ] {
+        assert_eq!(
+            matcher::evaluate_at(
+                &entry(id),
+                &Profile {
+                    age: Some(age),
+                    ..Default::default()
+                },
+                "2026-11-07"
+            )
+            .fit,
+            expected,
+            "{id} {age}"
+        );
+    }
+    let unreviewed = isolated_age(age_rule(
         json!("申請人"),
         json!("year"),
         json!(65),
         Value::Null,
         "年滿65歲",
     ));
-    assert_eq!(fit(min.clone(), 64.99), Fit::Ineligible);
-    assert_eq!(fit(min.clone(), 65.0), Fit::Possible);
-    let max = isolated_age(age_rule(
-        json!("申請人"),
-        json!("year"),
-        Value::Null,
-        json!(25),
-        "未滿25歲",
-    ));
-    assert_eq!(fit(max.clone(), 24.99), Fit::Possible);
-    assert_eq!(fit(max, 25.0), Fit::Ineligible);
-    let inclusive = isolated_age(age_rule(
-        json!("申請人"),
-        json!("year"),
-        Value::Null,
-        json!(65),
-        "65歲以下",
-    ));
-    assert_eq!(fit(inclusive.clone(), 65.0), Fit::Possible);
-    assert_eq!(fit(inclusive, 65.01), Fit::Ineligible);
-    let range = isolated_age(age_rule(
-        json!("申請人"),
-        json!("year"),
-        json!(55),
-        json!(65),
-        "年滿55歲且未滿65歲",
-    ));
-    assert_eq!(fit(range.clone(), 55.0), Fit::Possible);
-    assert_eq!(fit(range, 65.0), Fit::Ineligible);
-    let e = Entry::from_value(min).unwrap();
-    assert!(filter_list(
-        &[e],
-        &ListQuery {
-            age: Some(10.0),
-            ..Default::default()
-        }
-    )
-    .is_empty());
+    assert_eq!(fit(unreviewed, 10.0), Fit::Possible);
 }
 
 #[test]
@@ -282,7 +273,7 @@ fn age_subject_units_exceptions_alternatives_and_unknowns_never_exclude() {
         ));
     assert_eq!(fit(multi, 55.0), Fit::Possible);
     for id in [
-        "CT-0113", "CT-0099", "WEL-0032", "WEL-0042", "WEL-0090", "WEL-0092", "WEL-0100",
+        "CT-0113", "CT-0099", "WEL-0032", "WEL-0042", "WEL-0090", "WEL-0092",
     ] {
         assert_eq!(
             evaluate(
@@ -384,7 +375,7 @@ fn fixed_questions_are_supported_by_actual_conditions_and_skips_are_absent() {
     assert!(region["title"].as_str().unwrap().contains("戶籍"));
     assert_eq!(
         region["options"],
-        json!([{"label":"臺北市","value":"臺北市"},{"label":"其他縣市","value":"其他縣市"}])
+        json!([{"label":"臺北市","value":"臺北市"},{"label":"臺北市以外","value":"其他縣市"}])
     );
     let student = questions
         .as_array()
@@ -421,7 +412,7 @@ async fn http_health_catalog_questions_and_facets_are_complete() {
     assert!(qs["version"]
         .as_str()
         .unwrap()
-        .ends_with(cat["version"].as_str().unwrap()));
+        .contains(cat["version"].as_str().unwrap()));
     assert_eq!(qs["questions"].as_array().unwrap().len(), 4);
     let (_, facet) = request(router.clone(), "GET", "/api/facets", None).await;
     assert_eq!(
@@ -509,7 +500,7 @@ async fn pagination_search_and_explicit_match_remain_available() {
         router,
         "POST",
         "/api/match",
-        Some(r#"{"region":"高雄市","is_student":false,"view":"full","limit":200}"#),
+        Some(r#"{"region":"高雄市","is_student":false,"view":"full","limit":200,"include_ineligible":true}"#),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -518,5 +509,403 @@ async fn pagination_search_and_explicit_match_remain_available() {
         .as_array()
         .unwrap()
         .iter()
-        .all(|item| item["match"]["fit"] == "possible"));
+        .all(|item| item["match"]["fit"] != "likely"));
+}
+
+#[test]
+fn all_real_records_bind_and_all_required_profile_age_matrices_run() {
+    let st = state();
+    assert_eq!(reviewed_rules::records().len(), 217);
+    assert_eq!(
+        st.entries.iter().filter(|e| e.reviewed.is_some()).count(),
+        217
+    );
+    assert_eq!(
+        reviewed_rules::records()
+            .iter()
+            .filter(|r| r.age_review == "required")
+            .count(),
+        27
+    );
+    assert_eq!(
+        reviewed_rules::records()
+            .iter()
+            .filter(|r| r.age_review == "deferred")
+            .count(),
+        43
+    );
+    for age in [0., 17., 18., 29., 40., 41., 65., 99.] {
+        for e in &st.entries {
+            let result = matcher::evaluate_at(
+                e,
+                &Profile {
+                    age: Some(age),
+                    ..Default::default()
+                },
+                "2026-11-07",
+            );
+            assert_ne!(result.fit, Fit::Likely, "{} age={age}", e.subsidy.id);
+        }
+    }
+    let expected = [
+        "WEL-0031", "WEL-0058", "WEL-0082", "WEL-0099", "WEL-0100", "WEL-0101", "WEL-0106",
+        "WEL-0110", "WEL-0111", "WEL-0122", "WEL-0125", "WEL-0126", "WEL-0128", "WEL-0137",
+        "CT-0027", "CT-0069", "CT-0076", "CT-0129", "CT-0130",
+    ];
+    let actual: std::collections::BTreeSet<_> = st
+        .entries
+        .iter()
+        .filter(|e| {
+            matcher::evaluate_at(
+                e,
+                &Profile {
+                    age: Some(99.),
+                    ..Default::default()
+                },
+                "2026-11-07",
+            )
+            .fit == Fit::Ineligible
+        })
+        .map(|e| e.subsidy.id.as_str())
+        .collect();
+    assert_eq!(actual, expected.into_iter().collect());
+    for id in [
+        "CT-0019", "CT-0148", "WEL-0032", "WEL-0042", "WEL-0077", "CT-0150", "CT-0151", "CT-0099",
+        "CT-0113", "WEL-0102", "WEL-0093", "WEL-0094", "CT-0093",
+    ] {
+        for age in [0., 17., 18., 29., 40., 41., 65., 99.] {
+            assert_eq!(
+                matcher::evaluate_at(
+                    &entry(id),
+                    &Profile {
+                        age: Some(age),
+                        ..Default::default()
+                    },
+                    "2026-11-07"
+                )
+                .fit,
+                Fit::Possible,
+                "{id} {age}"
+            );
+        }
+    }
+}
+
+#[test]
+fn birth_years_reference_dates_and_missing_dates_are_conservative() {
+    let e = entry("WEL-0082");
+    let rule = &e.reviewed.unwrap().requirements[0];
+    for (age, result) in [
+        (15., Some(false)),
+        (16., None),
+        (17., Some(true)),
+        (18., Some(true)),
+        (38., Some(true)),
+        (39., None),
+        (40., Some(false)),
+        (99., Some(false)),
+    ] {
+        assert_eq!(
+            reviewed_rules::verdict(
+                rule,
+                &Profile {
+                    age: Some(age),
+                    ..Default::default()
+                },
+                "2026-11-07"
+            ),
+            result,
+            "age {age}"
+        );
+    }
+    assert_eq!(
+        reviewed_rules::verdict(
+            rule,
+            &Profile {
+                age: Some(99.),
+                ..Default::default()
+            },
+            "unknown"
+        ),
+        None
+    );
+    assert_eq!(
+        reviewed_rules::verdict(
+            rule,
+            &Profile {
+                age: Some(99.),
+                ..Default::default()
+            },
+            "2026-02-30"
+        ),
+        None
+    );
+    assert_eq!(
+        reviewed_rules::verdict(
+            rule,
+            &Profile {
+                age: Some(40.),
+                ..Default::default()
+            },
+            "2027-11-07"
+        ),
+        None
+    );
+    assert_eq!(
+        reviewed_rules::date_parts("2024-02-29"),
+        Some((2024, 2, 29))
+    );
+    let e = entry("WEL-0128");
+    let rule = &e.reviewed.unwrap().requirements[0];
+    for (age, result) in [
+        (15., None),
+        (16., Some(true)),
+        (31., None),
+        (32., Some(false)),
+    ] {
+        assert_eq!(
+            reviewed_rules::verdict(
+                rule,
+                &Profile {
+                    age: Some(age),
+                    ..Default::default()
+                },
+                "2026-11-07"
+            ),
+            result
+        );
+    }
+}
+
+#[test]
+fn all_reviewed_numeric_boundaries_have_real_record_regressions() {
+    for row in reviewed_rules::records() {
+        for rule in row
+            .requirements
+            .iter()
+            .filter(|r| r.field == "age" && r.basis.as_deref() == Some("current_age"))
+        {
+            if let Some(min) = rule.min {
+                assert_eq!(
+                    reviewed_rules::verdict(
+                        rule,
+                        &Profile {
+                            age: Some(min - 1.),
+                            ..Default::default()
+                        },
+                        "2026-11-07"
+                    ),
+                    Some(false),
+                    "{} min",
+                    row.id
+                );
+                assert_eq!(
+                    reviewed_rules::verdict(
+                        rule,
+                        &Profile {
+                            age: Some(min),
+                            ..Default::default()
+                        },
+                        "2026-11-07"
+                    ),
+                    Some(true),
+                    "{} min",
+                    row.id
+                );
+            }
+            if let Some(max) = rule.max {
+                assert_eq!(
+                    reviewed_rules::verdict(
+                        rule,
+                        &Profile {
+                            age: Some(max + 1.),
+                            ..Default::default()
+                        },
+                        "2026-11-07"
+                    ),
+                    Some(false),
+                    "{} max",
+                    row.id
+                );
+                assert_eq!(
+                    reviewed_rules::verdict(
+                        rule,
+                        &Profile {
+                            age: Some(max),
+                            ..Default::default()
+                        },
+                        "2026-11-07"
+                    ),
+                    Some(rule.max_inclusive != Some(false)),
+                    "{} max",
+                    row.id
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn student_false_household_and_region_are_distinct_from_unknown_and_other_subjects() {
+    for id in ["WEL-0110", "WEL-0111"] {
+        let e = entry(id);
+        assert_eq!(
+            matcher::evaluate_at(
+                &e,
+                &Profile {
+                    is_student: Some(true),
+                    ..Default::default()
+                },
+                "2026-11-07"
+            )
+            .fit,
+            Fit::Ineligible
+        );
+        assert_eq!(
+            matcher::evaluate_at(
+                &e,
+                &Profile {
+                    is_student: Some(false),
+                    ..Default::default()
+                },
+                "2026-11-07"
+            )
+            .fit,
+            Fit::Possible
+        );
+        assert_eq!(evaluate(&e, &Profile::default()).fit, Fit::Possible);
+    }
+    for id in [
+        "CT-0104", "CT-0123", "CT-0126", "CT-0144", "CT-0145", "WEL-0089",
+    ] {
+        assert_eq!(
+            evaluate(
+                &entry(id),
+                &Profile {
+                    region: Some("其他縣市".into()),
+                    ..Default::default()
+                }
+            )
+            .fit,
+            Fit::Ineligible,
+            "{id}"
+        );
+        assert_eq!(
+            evaluate(&entry(id), &Profile::default()).fit,
+            Fit::Possible,
+            "{id}"
+        );
+    }
+    for id in ["WEL-0098", "CT-0113", "WEL-0037"] {
+        assert_eq!(
+            evaluate(
+                &entry(id),
+                &Profile {
+                    region: Some("其他縣市".into()),
+                    ..Default::default()
+                }
+            )
+            .fit,
+            Fit::Possible,
+            "{id}"
+        );
+    }
+    assert_eq!(
+        evaluate(
+            &entry("CT-0129"),
+            &Profile {
+                household_type: Some("general".into()),
+                ..Default::default()
+            }
+        )
+        .fit,
+        Fit::Ineligible
+    );
+    for id in ["CT-0132", "CT-0144", "CT-0145"] {
+        assert_eq!(
+            evaluate(
+                &entry(id),
+                &Profile {
+                    household_type: Some("general".into()),
+                    ..Default::default()
+                }
+            )
+            .fit,
+            Fit::Possible,
+            "{id}"
+        );
+    }
+}
+
+#[test]
+fn source_and_unknown_rule_mutations_invalidate_old_exclusions() {
+    let raw = entry("WEL-0082").original;
+    for (pointer, value) in [
+        ("/eligibility/raw_summary", json!("新例外")),
+        ("/source_meta/checked_date", json!("2030-01-01")),
+        (
+            "/source_meta/sources/0/url",
+            json!("https://example.org/changed"),
+        ),
+    ] {
+        let mut changed = raw.clone();
+        *changed.pointer_mut(pointer).unwrap() = value;
+        let e = Entry::from_value(changed).unwrap();
+        assert!(e.reviewed.is_none());
+        assert_eq!(
+            evaluate(
+                &e,
+                &Profile {
+                    age: Some(99.),
+                    ..Default::default()
+                }
+            )
+            .fit,
+            Fit::Possible
+        );
+    }
+    let mut changed = raw;
+    changed["eligibility"]["unknown_exception"] = json!("另有專案途徑");
+    assert!(Entry::from_value(changed).unwrap().reviewed.is_none());
+}
+
+#[test]
+fn hidden_age_in_taipei_applicability_is_reviewed_and_asked() {
+    let e = entry("WEL-0031");
+    assert!(e.subsidy.eligibility.age.is_empty());
+    for (age, expected) in [
+        (19., Fit::Ineligible),
+        (20., Fit::Possible),
+        (45., Fit::Possible),
+        (46., Fit::Ineligible),
+        (99., Fit::Ineligible),
+    ] {
+        assert_eq!(
+            matcher::evaluate_at(
+                &e,
+                &Profile {
+                    age: Some(age),
+                    ..Default::default()
+                },
+                "2026-11-07"
+            )
+            .fit,
+            expected
+        );
+    }
+    let questions = questions::build_questions(&[e]);
+    assert!(questions
+        .iter()
+        .find(|q| q.field == "age")
+        .unwrap()
+        .resource_ids
+        .contains(&"WEL-0031".into()));
+    let r = evaluate(
+        &entry("CT-0104"),
+        &Profile {
+            region: Some("其他縣市".into()),
+            ..Default::default()
+        },
+    );
+    assert!(!r.warnings.iter().any(|w| w.contains("不據 scope 排除")));
 }

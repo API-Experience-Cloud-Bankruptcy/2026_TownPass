@@ -36,6 +36,8 @@ interface State {
   session: SessionState;
   prefs: Prefs;
   qIndex: number;
+  questionPool: Question[] | null;
+  questionRoute: Question[];
   showIneligible: boolean;
   /** 從詳情頁進入求助時帶入的資源與步驟 */
   helpContext: { itemId: string | null; stepText?: string };
@@ -53,6 +55,8 @@ export const state = reactive<State>({
   session: (purgeLegacySession(), loadSession()),
   prefs: loadPrefs(),
   qIndex: 0,
+  questionPool: null,
+  questionRoute: [],
   showIneligible: false,
   helpContext: { itemId: null },
 });
@@ -78,9 +82,11 @@ export const candidates = computed(() =>
   state.catalog ? filterCatalog(state.catalog.items, state.session.situation, state.session.query) : [],
 );
 
-export const questions = computed<Question[]>(() =>
-  state.bank ? questionsFor(state.bank.questions, candidates.value.map((c) => c.id)) : [],
+const candidateQuestions = computed<Question[]>(() =>
+  state.bank ? questionsFor(state.bank.questions, candidates.value.map(c => c.id)) : [],
 );
+// Keep visited identities stable. Only answerAndAdvance rebuilds the future tail.
+export const questions = computed<Question[]>(() => state.questionPool === null ? candidateQuestions.value : state.questionRoute);
 
 export const results = computed(() => evaluateAll(state.catalog?.items ?? [], state.session.answers));
 
@@ -121,7 +127,12 @@ export async function init(): Promise<void> {
     state.session.stepDone = patch.stepDone;
     state.session.docChecks = patch.docChecks;
     state.session.catalogVersion = patch.catalogVersion;
+    state.session.rulesVersion = patch.rulesVersion;
     if (patch.notice) state.notice = patch.notice;
+    state.questionPool = null;
+    state.questionRoute = [];
+    state.qIndex = 0;
+    if (state.view === 'questions') startQuestions();
   } catch (error) {
     state.loadError = `資料載入失敗：${(error as Error).message}`;
   } finally {
@@ -190,9 +201,13 @@ export function confirmPending(): void {
 /** 換人：清除答案、行動單、進度。 */
 export function resetPerson(target: Target | null): void {
   const version = state.session.catalogVersion;
+  const rulesVersion = state.session.rulesVersion;
   state.session = target ? switchPerson(target) : emptySession();
   state.session.catalogVersion = version;
+  state.session.rulesVersion = rulesVersion;
   state.qIndex = 0;
+  state.questionPool = null;
+  state.questionRoute = [];
   lastAnswerAt = -Infinity;
   state.showIneligible = false;
   state.detailId = null;
@@ -209,6 +224,8 @@ export function clearAllData(): void {
 
 export function startQuestions(): void {
   state.qIndex = 0;
+  state.questionPool = [...candidateQuestions.value];
+  state.questionRoute = [...state.questionPool];
   lastAnswerAt = -Infinity;
   if (questions.value.length > 0) go('questions');
   else go('results');
@@ -239,9 +256,20 @@ export function answerAndAdvance(
   const question = questions.value[state.qIndex];
   if (state.view !== 'questions' || !question || question.id !== questionId || now - lastAnswerAt < 450) return false;
   lastAnswerAt = now;
+  const prefix = questions.value.slice(0, state.qIndex + 1);
   answer(question, value);
-  if (state.qIndex >= questions.value.length - 1) go('results');
-  else state.qIndex += 1;
+  // Future answers retained from an earlier run must not hide their own questions.
+  const knownFields = new Set(prefix.map(q => q.field));
+  const knownAnswers = Object.fromEntries(Object.entries(state.session.answers).filter(([field]) => knownFields.has(field)));
+  const partialResults = evaluateAll(candidates.value, knownAnswers);
+  const remainingIds = candidates.value.filter(item => partialResults.get(item.id)?.fit !== 'ineligible').map(item => item.id);
+  const useful = new Set(questionsFor(state.bank?.questions ?? [], remainingIds).map(q => q.id));
+  const pool = state.questionPool ?? candidateQuestions.value;
+  const position = pool.findIndex(q => q.id === questionId);
+  const tail = pool.slice(position + 1).filter(q => useful.has(q.id));
+  state.questionRoute = [...prefix, ...tail];
+  if (!tail.length) go('results');
+  else state.qIndex = prefix.length;
   return true;
 }
 

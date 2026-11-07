@@ -120,3 +120,44 @@ describe('逐頁找資源', () => {
     expect(questions.value).toEqual([]);
   });
 });
+
+// Full source records retain binding; these are not modified to fake review coverage.
+import { realItem } from '../domain/__tests__/real-data';
+import { buildLocalQuestions } from '../domain/questions';
+
+describe('依已答必要條件跳題，保持題目identity與返回',()=>{
+  function realRound() {
+    resetPerson('self');state.loading=false;
+    const items=[realItem('CT-0129')];
+    state.catalog={version:'real',origin:'snapshot',sourceLabel:'real',items};
+    state.bank={version:'reviewed',origin:'local',questions:buildLocalQuestions(items)};
+    startQuestions();
+  }
+  it('99歲排除全部候選即結束，不再問在學或身分；返回改18後恢復相關題',()=>{
+    realRound();const id=questions.value[0].id;
+    expect(questions.value[0].field).toBe('age');
+    expect(answerAndAdvance(id,99,1000)).toBe(true);
+    expect(state.view).toBe('results');expect(questions.value.map(q=>q.id)).toEqual([id]);
+    back();expect(state.view).toBe('questions');expect(questions.value[state.qIndex].id).toBe(id);
+    expect(answerAndAdvance(id,18,2000)).toBe(true);
+    expect(questions.value[state.qIndex].field).toBe('is_student');
+    const studentId=questions.value[state.qIndex].id;
+    expect(answerAndAdvance(id,99,3000)).toBe(false); // stale age handler cannot answer student
+    expect(answerAndAdvance(studentId,true,3500)).toBe(true);
+    expect(questions.value[state.qIndex].field).toBe('household_type');
+    back();expect(questions.value[state.qIndex].id).toBe(studentId);
+    expect(state.session.answers.is_student).toBe(true);
+  });
+  it('舊回答不可隱藏自己的修改題；返回更改後重新計算未來路徑',()=>{
+    realRound();state.session.answers={age:99,is_student:false,household_type:'general'};
+    const ageId=questions.value[0].id;
+    answerAndAdvance(ageId,18,1000);
+    expect(questions.value[state.qIndex].field).toBe('is_student');
+    answerAndAdvance(questions.value[state.qIndex].id,false,2000);
+    expect(state.view).toBe('results'); // false is a proven student conflict
+    back();back();expect(questions.value[state.qIndex].id).toBe(ageId);
+    answerAndAdvance(ageId,18,3000);
+    answerAndAdvance(questions.value[state.qIndex].id,true,4000);
+    expect(questions.value[state.qIndex].field).toBe('household_type');
+  });
+});

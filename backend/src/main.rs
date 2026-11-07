@@ -1,6 +1,7 @@
 mod matcher;
 mod models;
 mod questions;
+mod reviewed_rules;
 
 use axum::{
     extract::{
@@ -120,7 +121,9 @@ async fn catalog(State(st): State<Shared>) -> Json<Value> {
 }
 
 async fn question_bank(State(st): State<Shared>) -> Json<Value> {
-    Json(json!({"version": format!("questions-v1/{}", st.version), "questions": st.questions}))
+    Json(
+        json!({"version": format!("questions-v2/{}/{}", st.version, reviewed_rules::version()), "questions": st.questions}),
+    )
 }
 
 async fn list(

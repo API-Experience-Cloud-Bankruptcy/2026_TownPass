@@ -3,7 +3,8 @@
 // 只有明確可判斷的條件才排除；寧可全部 possible，也不給虛假 likely。
 // 原文欄位皆可能為 null，一律經 text() 安全處理。
 
-import { isApplicantAgeRule, isTaipeiRegion, LOW_TYPES } from './questions';
+import { isApplicantAgeRule, isTaipeiRegion } from './questions';
+import { reviewedChecks, reviewFor, taipeiToday } from './reviewed-rules';
 import type { AgeRule, Answers, MatchResult, PersonalNote, Subsidy } from './types';
 
 /** 任意原文值轉成安全字串；null/undefined/非字串回傳空字串。 */
@@ -48,38 +49,9 @@ export function ageBounds(rule: AgeRule): [boolean, boolean] | null {
   return hit ? [hit[1], hit[2]] : null;
 }
 
-const EMPTY_ARRAY_KEYS = ['income', 'residence', 'student', 'employment', 'disability', 'household', 'property', 'nationality', 'exclusions'];
-const AGE_RULE_KEYS = ['subject', 'min', 'max', 'unit', 'raw'];
-
-/**
- * 與後端 age_verdict 等效：只有唯一一條、完全理解的申請人年齡規則，且資格其他欄位、擴充原文、
- * 來源備註都沒有任何未解析內容時才能判斷；true 相符、false 不符、null 無法判斷。
- * 不靠關鍵字黑名單，因為替代條件可能寫在原文任何位置。
- */
-export function ageVerdict(item: Subsidy, age: number): boolean | null {
-  const el = item.eligibility as unknown as Record<string, unknown> | undefined;
-  const ages = arr(item.eligibility?.age);
-  if (!el || ages.length !== 1 || !Number.isFinite(age) || age < 0) return null;
-  const rule = ages[0];
-  const bounds = ageBounds(rule);
-  if (!bounds) return null;
-  const raw = text(rule.raw);
-  for (const [key, value] of Object.entries(el)) {
-    let understood: boolean;
-    if (key === 'age') understood = true;
-    else if (key === 'raw_summary') understood = value === null || value === undefined || (typeof value === 'string' && (!value.trim() || value.trim() === raw));
-    else if (key === 'taipei_applicability') understood = value === null || value === undefined || (typeof value === 'string' && !value.trim());
-    else if (EMPTY_ARRAY_KEYS.includes(key)) understood = Array.isArray(value) && value.length === 0;
-    else understood = false;
-    if (!understood) return null;
-  }
-  if (Object.keys(rule).some((k) => !AGE_RULE_KEYS.includes(k))) return null;
-  if (arr(item.extensions).length > 0) return null;
-  if (text(item.source_meta?.notes) || text(item.source_meta?.verification_note)) return null;
-  const [exMin, exMax] = bounds;
-  const lo = num(rule.min);
-  const hi = num(rule.max);
-  return (lo === null || (exMin ? age > lo : age >= lo)) && (hi === null || (exMax ? age < hi : age <= hi));
+/** Source-bound necessary age gate; unrelated unknown income does not cancel it. */
+export function ageVerdict(item: Subsidy, age: number, today = taipeiToday()): boolean | null {
+  return reviewedChecks(item, { age }, today).find(c => c.rule.field === 'age')?.verdict ?? null;
 }
 
 function deadlinePassed(item: Subsidy, today: string): string | null {
@@ -88,7 +60,7 @@ function deadlinePassed(item: Subsidy, today: string): string | null {
   return end.slice(0, 10) < today ? end.slice(0, 10) : null;
 }
 
-export function evaluate(item: Subsidy, answers: Answers, today = new Date().toISOString().slice(0, 10)): MatchResult {
+export function evaluate(item: Subsidy, answers: Answers, today = taipeiToday()): MatchResult {
   const reasons: string[] = [];
   const warnings: string[] = [];
   const blocked: string[] = [];
@@ -106,35 +78,28 @@ export function evaluate(item: Subsidy, answers: Answers, today = new Date().toI
   const summary = text(el.raw_summary);
   if (summary) pending.push(`適用對象原文：${quote(summary)}`);
 
-  // 年齡：與後端相同，只有 ageVerdict 能明確判斷時才相符或排除；其餘列為待確認並保留原文。
-  const ageRules = arr(el.age);
-  if (ageRules.length > 0) {
-    const verdict = answers.age === undefined ? null : ageVerdict(item, answers.age);
-    if (verdict === true) {
-      note('reasons', `已填年齡 ${answers.age} 歲落在明確的申請人年齡範圍內：${quote(ageRules[0].raw)}；僅此單項相符`, 'age', null);
-    } else if (verdict === false) {
-      note('blocked_by', `已填年齡 ${answers.age} 歲不在明確的申請人年齡範圍內：${quote(ageRules[0].raw)}`, 'age', `依填答，年齡可能不符原文限制：${quote(ageRules[0].raw)}`);
+  const review = reviewFor(item);
+  if (!review) warnings.push('資料已變更或沒有適用的來源綁定規則，原審閱規則已停用；請重新核對。');
+  for (const { rule, verdict } of reviewedChecks(item, answers, today, review)) {
+    const evidence = rule.evidence.map(e => quote(e.value)).join('、');
+    if (verdict === null) {
+      pending.push(`必要條件待確認（缺答、參考日期或出生年邊界）：${rule.label}；${evidence}`);
     } else {
-      if (answers.age !== undefined) {
-        note('warnings', '年齡條件含不同對象、單位、基準日、例外或其他未解析原文，無法以歲數確認或排除。', 'age', null);
-      }
-      for (const r of ageRules) {
-        const who = text(r.subject);
-        pending.push(
-          isApplicantAgeRule(r.subject)
-            ? `年齡：${quote(r.raw)}`
-            : `年齡條件針對「${who || '特定對象'}」，未套用到申請人：${quote(r.raw)}`,
-        );
-      }
+      const value = rule.field === 'age' ? `目前實歲 ${answers.age}` : rule.field === 'is_student'
+        ? (answers.is_student ? '自述目前在學' : '自述目前未在學') : rule.field === 'region'
+        ? `自述戶籍 ${answers.region}` : `自述身分 ${answers.household_type}`;
+      note(verdict ? 'reasons' : 'blocked_by', `${value}，${verdict ? '與必要條件單項相符' : '不符必要條件'}：${rule.label}；${evidence}（其他條件仍待機關核驗）`, rule.field, null);
     }
   }
+  if (review?.age_review === 'deferred') pending.push(`年齡主體／途徑待確認：${review.review_note}`);
+  for (const r of arr(el.age)) pending.push(`年齡原文（${text(r.subject) || '主體未註明'}）：${quote(r.raw)}`);
 
   // 戶籍：scope 不是完整戶籍規則，與後端相同不以戶籍排除；只提示並列出原文。
   const residence = arr(el.residence);
   const regions = arr(item.scope?.regions);
   const inTaipei = isTaipeiRegion(answers.region);
   for (const r of residence) pending.push(`居住／戶籍：${quote(r.raw)}`);
-  if (inTaipei === false && regions.includes('臺北市')) {
+  if (!review?.requirements.some(r => r.field === 'region') && inTaipei === false && regions.includes('臺北市')) {
     note(
       'warnings',
       '戶籍與資料範圍（臺北市）不同；可能另有就學、就業或居住等途徑，不據此排除，請向窗口確認。',
@@ -143,41 +108,13 @@ export function evaluate(item: Subsidy, answers: Answers, today = new Date().toI
     );
   }
 
-  // 家戶身分：不把一般戶直接排除（可能有其他身分或所得途徑），只提示。
-  const household = arr(el.household);
-  const lowRules = household.filter((h) => arr(h.types).some((t) => LOW_TYPES.includes(t)));
-  for (const h of household) {
-    if (!lowRules.includes(h)) pending.push(`家庭條件：${quote(h.raw)}`);
+  // A type tag or a student array is not a required positive applicant status.
+  for (const h of arr(el.household)) pending.push(`家庭條件（未編碼部分仍待確認）：${quote(h.raw)}`);
+  for (const s of arr(el.student)) pending.push(`就學／未就學條件（請核對主體及學制）：${quote(s.raw)}`);
+  if (arr(el.student).length && !review?.requirements.some(r => r.field === 'is_student')) {
+    warnings.push('在學欄位尚未建立本人必要條件；可能指子女、特定學制或未就學，不以回答在學自動加相符理由。');
   }
-  if (lowRules.length > 0) {
-    const raw = lowRules.map((h) => quote(h.raw)).join('、');
-    const types = new Set(lowRules.flatMap((h) => arr(h.types)));
-    if (answers.household_type === 'low_income' && types.has('低收入戶')) {
-      note('reasons', `已具低收入戶資格，原文列出此身分：${raw}（仍須機關核驗）`, 'household_type', null);
-    } else if (answers.household_type === 'mid_low_income' && types.has('中低收入戶')) {
-      note('reasons', `已具中低收入戶資格，原文列出此身分：${raw}（仍須機關核驗）`, 'household_type', null);
-    } else {
-      if (answers.household_type === 'general') {
-        note(
-          'warnings',
-          `原文提到低收／中低收身分：${raw}；尚未核定時，可詢問是否有其他適用途徑或先申請身分。`,
-          'household_type',
-          `原文提到低收／中低收身分：${raw}；可詢問是否有其他適用途徑。`,
-        );
-      }
-      pending.push(`家庭身分：${raw}`);
-    }
-  }
-
-  // 學生：學生條件可能指申請人或子女，只作說明。
-  const student = arr(el.student);
-  if (student.length > 0) {
-    if (answers.is_student === true) note('reasons', '目前在學，與原文的學生條件相關。', 'is_student', null);
-    else if (answers.is_student === false) {
-      note('warnings', '已填目前未在學；原文有學生相關條件（可能指申請人或子女），請確認是否有其他適用途徑。', 'is_student', '原文有學生相關條件（可能指申請人或子女），請確認是否適用。');
-    }
-    for (const s of student) pending.push(`就學條件：${quote(s.raw)}`);
-  }
+  warnings.push('僅初篩已審閱必要條件；其他原文資格、例外、證明及受理時效仍須機關確認。');
 
   // 不比較個人所得與家戶所得；以下原文條件一律待確認。
   const income = arr(el.income);

@@ -2,6 +2,7 @@
 // 後端 /api/questions 可用時採用其題目，前端依選定候選資源的 resource_ids 篩題。
 
 import { apiBase, type FetchLike } from './catalog';
+import { reviewFor, REVIEW_VERSION } from './reviewed-rules';
 import type { Answers, Question, QuestionBank, QuestionOption, Subsidy, Target } from './types';
 
 /** 年齡上限，與後端及 API 題庫一致。 */
@@ -20,41 +21,15 @@ export function isApplicantAgeRule(subject: string | null | undefined): boolean 
   return subject === '申請人';
 }
 
-/** 與後端 questions.rs 一致：有明確要求設籍的居住規則才出戶籍題。 */
-function hasRegistrationRule(item: Subsidy): boolean {
-  return (item.eligibility?.residence ?? []).some((r) => r?.registered_required === true);
-}
-
-/** 與後端一致：只看 eligibility.student，不因 facet 加題。 */
-function hasStudentRule(item: Subsidy): boolean {
-  return (item.eligibility?.student ?? []).length > 0;
-}
-
-function hasLowIncomeRule(item: Subsidy): boolean {
-  return (item.eligibility?.household ?? []).some((h) => (h?.types ?? []).some((t) => LOW_TYPES.includes(t)));
-}
-
-function hasApplicantAge(item: Subsidy): boolean {
-  return (item.eligibility?.age ?? []).some((a) => isApplicantAgeRule(a?.subject) && a?.unit === 'year');
-}
-
-/** 戶籍選項：資料中要求設籍的縣市＋其他縣市（與後端相同規則）。 */
-function regionOptions(items: Subsidy[]): QuestionOption[] {
-  const regions = new Set<string>();
-  for (const item of items) {
-    for (const r of item.eligibility?.residence ?? []) {
-      const region = typeof r?.region === 'string' ? r.region : '';
-      if (r?.registered_required === true && (region.endsWith('市') || region.endsWith('縣'))) {
-        regions.add(region.replace(/台/g, '臺'));
-      }
-    }
-  }
-  return [...[...regions].sort(), '其他縣市'].map((r) => ({ label: r, value: r }));
+function regionOptions(regions: string[]): QuestionOption[] {
+  return [...[...new Set(regions)].sort(), '其他縣市'].map(r => ({ label: r === '其他縣市' ? '臺北市以外' : r, value: r }));
 }
 
 /** 本機固定模板題庫，與契約穩定欄位一致：age、region、is_student、household_type。 */
 export function buildLocalQuestions(items: Subsidy[]): Question[] {
-  const ids = (pred: (item: Subsidy) => boolean) => items.filter(pred).map((item) => item.id);
+  // Hash each record once per bank build, not once per field.
+  const reviewed = new Map(items.map(item => [item.id, reviewFor(item)]));
+  const ids = (field: string) => items.filter(item => reviewed.get(item.id)?.requirements.some(r => r.field === field)).map(item => item.id).sort();
   const all: Question[] = [
     {
       id: 'q-region',
@@ -62,18 +37,18 @@ export function buildLocalQuestions(items: Subsidy[]): Question[] {
       kind: 'single',
       title: '戶籍設在哪裡？',
       description: '請選戶籍地，不是目前居住地。依就學、就業或居住地適用的條件，結果會另外標示待確認。',
-      options: regionOptions(items.filter(hasRegistrationRule)),
-      resource_ids: ids(hasRegistrationRule),
+      options: regionOptions([...reviewed.values()].flatMap(row => row?.requirements.filter(r => r.field === 'region').flatMap(r => r.values ?? []) ?? [])),
+      resource_ids: ids('region'),
     },
     {
       id: 'q-age',
       field: 'age',
       kind: 'number',
-      title: '今年幾歲？',
-      description: '只用來比對申請人本人的年齡條件；接近年齡門檻時仍會標示待確認。',
+      title: '目前幾歲（實歲）？',
+      description: '填目前已滿的實歲，不是今年將滿或虛歲。年度出生年與日期邊界不確定時保留待確認。',
       min: 0,
       max: MAX_AGE,
-      resource_ids: ids(hasApplicantAge),
+      resource_ids: ids('age'),
     },
     {
       id: 'q-student',
@@ -84,23 +59,24 @@ export function buildLocalQuestions(items: Subsidy[]): Question[] {
         { label: '是', value: true },
         { label: '否', value: false },
       ],
-      resource_ids: ids(hasStudentRule),
+      resource_ids: ids('is_student'),
     },
     {
       id: 'q-household',
       field: 'household_type',
       kind: 'single',
       title: '是否已取得低收入戶或中低收入戶資格？',
-      description: '指政府核定的身分。生活困難但尚未核定，請選「一般」。',
+      description: '依目前有效的政府核定證明回答。生活困難不等於已核定；不確定可略過。',
       options: [
         { label: '低收入戶', value: 'low_income' },
         { label: '中低收入戶', value: 'mid_low_income' },
         { label: '一般（未核定）', value: 'general' },
       ],
-      resource_ids: ids(hasLowIncomeRule),
+      resource_ids: ids('household_type'),
     },
   ];
-  return all.filter((q) => q.resource_ids.length > 0);
+  const order = ['age', 'region', 'is_student', 'household_type'];
+  return all.filter(q => q.resource_ids.length > 0).sort((a,b) => order.indexOf(a.field)-order.indexOf(b.field));
 }
 
 const KINDS = new Set(['single', 'boolean', 'number']);
@@ -160,7 +136,9 @@ export async function loadQuestions(
     if (response.ok) {
       const body = (await response.json()) as { version?: unknown };
       const questions = sanitizeQuestions(body);
-      if (questions.length > 0) {
+      const expected = buildLocalQuestions(items);
+      const supports = (qs: Question[]) => qs.map(q => `${q.field}:${[...q.resource_ids].sort().join(',')}`).sort().join('|');
+      if (questions.length > 0 && typeof body.version === 'string' && body.version.includes(REVIEW_VERSION) && supports(questions) === supports(expected)) {
         return { version: typeof body.version === 'string' ? body.version : 'api', questions, origin: 'api' };
       }
     }
@@ -169,7 +147,7 @@ export async function loadQuestions(
   } finally {
     if (timer) clearTimeout(timer);
   }
-  return { version: 'local-template-1', questions: buildLocalQuestions(items), origin: 'local' };
+  return { version: `local-template-2/${REVIEW_VERSION}`, questions: buildLocalQuestions(items), origin: 'local' };
 }
 
 /** 依候選資源篩題：只問會影響目前候選的問題。 */
@@ -180,14 +158,14 @@ export function questionsFor(bank: Question[], candidateIds: string[]): Question
 
 const SELF_TITLES: Record<string, string> = {
   region: '你的戶籍設在哪裡？',
-  age: '你今年幾歲？',
+  age: '你目前幾歲（實歲）？',
   is_student: '你目前是在學學生嗎？',
   household_type: '你是否已取得低收入戶或中低收入戶資格？',
 };
 
 const OTHER_TITLES: Record<string, string> = {
   region: '對方的戶籍設在哪裡？',
-  age: '對方今年幾歲？',
+  age: '對方目前幾歲（實歲）？',
   is_student: '對方目前是在學學生嗎？',
   household_type: '對方是否已取得低收入戶或中低收入戶資格？',
 };

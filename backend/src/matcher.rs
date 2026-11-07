@@ -1,7 +1,7 @@
 //! Conservative search and explicit opt-in matching; no runtime AI.
 //! Unparsed conditions never become evidence of complete eligibility.
 
-use crate::models::{Age, Entry};
+use crate::models::Entry;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -84,118 +84,16 @@ fn keyword_score(e: &Entry, q: &Option<String>) -> Option<u32> {
     Some(score)
 }
 
-/// Age answers always refer to the applicant in completed/current years.
-pub fn is_applicant_year(a: &Age) -> bool {
-    a.subject.as_deref() == Some("申請人") && a.unit.as_deref() == Some("year")
-}
-
-/// Only accept an exact age-only phrase whose boundaries agree with the typed data.
-/// Other wording, missing units, multiple subjects and reference dates remain unknown.
-fn age_bounds(a: &Age) -> Option<(bool, bool)> {
-    if !is_applicant_year(a) || a.min.is_none() && a.max.is_none() {
-        return None;
-    }
-    if [a.min, a.max]
-        .into_iter()
-        .flatten()
-        .any(|n| !n.is_finite() || n < 0.0)
-        || matches!((a.min, a.max), (Some(lo), Some(hi)) if lo > hi)
-    {
-        return None;
-    }
-    let raw = a.raw.as_deref()?.trim();
-    let mut phrases = Vec::new();
-    match (a.min, a.max) {
-        (Some(lo), None) => {
-            for text in [
-                format!("{lo}歲以上"),
-                format!("年滿{lo}歲"),
-                format!("年滿{lo}歲以上"),
-            ] {
-                phrases.push((text, false, false));
-            }
-            phrases.push((format!("超過{lo}歲"), true, false));
-        }
-        (None, Some(hi)) => {
-            phrases.push((format!("{hi}歲以下"), false, false));
-            phrases.push((format!("未滿{hi}歲"), false, true));
-        }
-        (Some(lo), Some(hi)) => {
-            for text in [
-                format!("{lo}至{hi}歲"),
-                format!("{lo}歲至{hi}歲"),
-                format!("{lo}–{hi}歲"),
-            ] {
-                phrases.push((text, false, false));
-            }
-            for text in [
-                format!("年滿{lo}歲且未滿{hi}歲"),
-                format!("{lo}歲以上未滿{hi}歲"),
-                format!("{lo}至未滿{hi}歲"),
-            ] {
-                phrases.push((text, false, true));
-            }
-        }
-        _ => return None,
-    }
-    phrases
-        .into_iter()
-        .find(|(text, _, _)| text == raw)
-        .map(|(_, lo, hi)| (lo, hi))
-}
-
-/// None means the age condition cannot safely be evaluated.
+/// Only source-bound, individually reviewed necessary age conditions can exclude.
 fn age_verdict(e: &Entry, age: f64) -> Option<bool> {
-    let ages = &e.subsidy.eligibility.age;
-    if ages.len() != 1 || !age.is_finite() || age < 0.0 {
-        return None;
-    }
-    let a = &ages[0];
-    let (exclusive_min, exclusive_max) = age_bounds(a)?;
-    // No expression tree exists in this dataset. Any additional, unparsed
-    // eligibility context could encode an alternative age route. Do not guess
-    // from a keyword blacklist: only an isolated, fully understood age rule can exclude.
-    let raw = a.raw.as_deref()?.trim();
-    for (key, value) in e.original["eligibility"].as_object()? {
-        let understood = match key.as_str() {
-            "age" => true,
-            "raw_summary" => {
-                value.is_null()
-                    || value
-                        .as_str()
-                        .is_some_and(|s| s.trim().is_empty() || s.trim() == raw)
-            }
-            "taipei_applicability" => {
-                value.is_null() || value.as_str().is_some_and(|s| s.trim().is_empty())
-            }
-            "income" | "residence" | "student" | "employment" | "disability" | "household"
-            | "property" | "nationality" | "exclusions" => {
-                value.as_array().is_some_and(Vec::is_empty)
-            }
-            _ => false,
-        };
-        if !understood {
-            return None;
-        }
-    }
-    if e.original["eligibility"]["age"][0]
-        .as_object()?
-        .keys()
-        .any(|key| !["subject", "min", "max", "unit", "raw"].contains(&key.as_str()))
-        || !e.subsidy.extensions.is_empty()
-        || ["notes", "verification_note"].iter().any(|key| {
-            e.original["source_meta"][key]
-                .as_str()
-                .is_some_and(|s| !s.trim().is_empty())
-        })
-    {
-        return None;
-    }
-    Some(
-        a.min
-            .is_none_or(|min| if exclusive_min { age > min } else { age >= min })
-            && a.max
-                .is_none_or(|max| if exclusive_max { age < max } else { age <= max }),
+    let rule = e.reviewed?.requirements.iter().find(|r| r.field == "age")?;
+    crate::reviewed_rules::verdict(
+        rule,
+        &Profile {
+            age: Some(age),
+            ..Default::default()
+        },
+        &crate::reviewed_rules::taipei_today(),
     )
 }
 
@@ -286,6 +184,7 @@ pub fn filter_list<'a>(entries: &'a [Entry], q: &ListQuery) -> Vec<&'a Entry> {
 #[serde(rename_all = "snake_case")]
 pub enum Fit {
     /// Reserved for fully evaluated conditions; this implementation does not emit it.
+    #[allow(dead_code)] // Kept in the external contract; never emitted by partial evaluation.
     Likely,
     /// No proven exclusion; original conditions remain unevaluated.
     Possible,
@@ -299,13 +198,26 @@ pub struct MatchResult {
     pub reasons: Vec<String>,
     pub warnings: Vec<String>,
     pub blocked_by: Vec<String>,
+    pub personal: Vec<PersonalNote>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PersonalNote {
+    pub list: String,
+    pub text: String,
+    pub field: String,
+    pub neutral: Option<String>,
 }
 
 pub fn evaluate(e: &Entry, p: &Profile) -> MatchResult {
+    evaluate_at(e, p, &crate::reviewed_rules::taipei_today())
+}
+
+pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
     let s = &e.subsidy;
-    let (mut reasons, mut warnings, mut blocked) = (vec![], vec![], vec![]);
+    let (mut reasons, mut warnings, mut blocked, mut personal) = (vec![], vec![], vec![], vec![]);
     warnings.push(
-        "此初篩未完整評估原文資格、排除條件、例外與受理時效；仍須向承辦單位確認，非核准或送件證明"
+        "僅初篩來源支持的必要條件；其他原文資格、例外、期間及證明仍待機關確認，非核准或送件證明"
             .into(),
     );
     if s.source_meta.verification_status != "verified" {
@@ -314,72 +226,77 @@ pub fn evaluate(e: &Entry, p: &Profile) -> MatchResult {
             s.source_meta.verification_status
         ));
     }
-    if let Some(region) = &p.region {
-        let region = norm_region(region);
-        let in_scope = s
-            .scope
-            .regions
-            .iter()
-            .any(|r| norm_region(r) == region || r == "全國");
-        warnings.push(if in_scope {
-            format!("戶籍地為 {region}；scope 僅是資料範圍，戶籍、實際居住、就學／就業地及期間條件仍待確認")
-        } else {
-            format!("戶籍地 {region} 與資料範圍不同；可能另有就學／就業地等途徑，不據此排除，請確認原文")
-        });
-    } else if !s.eligibility.residence.is_empty() {
-        warnings.push("尚未提供戶籍地；居住、就學與設籍要求不可互相推定".into());
-    }
-    if let Some(age) = p.age {
-        match age_verdict(e, age) {
-            Some(true) => reasons.push(format!(
-                "已填年齡 {age} 歲落在明確的申請人年齡範圍內；僅此單項相符"
-            )),
-            Some(false) => blocked.push(format!(
-                "已填年齡 {age} 歲不在明確的申請人年齡範圍（{}）內",
-                s.eligibility.age[0].raw.as_deref().unwrap_or("")
-            )),
-            None if !s.eligibility.age.is_empty() => warnings.push(
-                "年齡條件含不同主體、單位、基準日、例外或未解析原文，無法以申請人歲數確認或排除"
-                    .into(),
-            ),
-            None => {}
+    if let Some(review) = e.reviewed {
+        for rule in &review.requirements {
+            let verdict = crate::reviewed_rules::verdict(rule, p, today);
+            let (list, message) = match verdict {
+                Some(true) => (
+                    "reasons",
+                    format!(
+                        "自述條件與已審閱必要條件單項相符：{}；其他條件仍待確認",
+                        rule.label
+                    ),
+                ),
+                Some(false) => (
+                    "blocked_by",
+                    format!("依目前自述不符必要條件：{}", rule.label),
+                ),
+                None => {
+                    warnings.push(format!(
+                        "必要條件尚待確認（缺答、參考日期或出生年邊界不確定）：{}",
+                        rule.label
+                    ));
+                    continue;
+                }
+            };
+            personal.push(PersonalNote {
+                list: list.into(),
+                text: message.clone(),
+                field: rule.field.clone(),
+                neutral: None,
+            });
+            if list == "reasons" {
+                reasons.push(message);
+            } else {
+                blocked.push(message);
+            }
         }
-    } else if !s.eligibility.age.is_empty() {
-        warnings.push("年齡條件尚待確認；未回答不代表不符合".into());
+        if review.age_review == "deferred" {
+            warnings.push(format!("年齡未套本人排除：{}", review.review_note));
+        }
+    } else {
+        warnings.push("資料已變更或沒有適用的來源綁定規則，原審閱規則已停用；請重新核對".into());
+    }
+    if (p.region.is_some() || !s.eligibility.residence.is_empty())
+        && !e
+            .reviewed
+            .is_some_and(|row| row.requirements.iter().any(|r| r.field == "region"))
+    {
+        warnings.push(
+            "scope 僅為資料範圍；未編碼的戶籍、實居、就學／就業及設籍期間仍待確認，不據 scope 排除"
+                .into(),
+        );
     }
     for income in &s.eligibility.income {
         warnings.push(format!(
-            "所得條件未評估（主體：{}；須確認年度、期間、家戶及計算口徑）：{}",
+            "所得條件未評估（主體：{}；年度、期間及家戶口徑待核對）：{}",
             income.subject.as_deref().unwrap_or("未知"),
             income.raw.as_deref().unwrap_or("請見原文")
         ));
     }
     if p.annual_income.is_some() || p.monthly_income.is_some() {
-        warnings.push("已提供個人收入，但 API 未以此核算任何所得資格，不推定等於家戶所得".into());
-    }
-    if !s.eligibility.household.is_empty() {
-        let label = match p.household_type.as_deref() {
-            Some("low_income") => "自述低收入戶",
-            Some("mid_low_income") => "自述中低收入戶",
-            Some("general") => "自述一般戶",
-            _ => "尚未回答福利身分",
-        };
-        warnings.push(format!(
-            "{label}；家戶證明、扶養、子女及替代身分等原文條件仍待確認，不據此判定符合或排除"
-        ));
-    }
-    if !s.eligibility.student.is_empty() {
-        match p.is_student {
-            Some(true) => {
-                reasons.push("自述目前在學；學制、學校、成績及其他在學要求仍待確認".into())
-            }
-            Some(false) => {
-                warnings.push("自述目前未在學；須確認原文是否有非在學或其他適用途徑".into())
-            }
-            None => warnings.push("在學條件尚未回答，仍待確認".into()),
-        }
+        warnings.push("個人收入未用於核算資格，不推定等於家戶所得".into());
     }
     for (present, label) in [
+        (!s.eligibility.age.is_empty(), "年齡原文與基準日"),
+        (
+            !s.eligibility.student.is_empty(),
+            "未編碼的在學／未就學主體、學制、成績與例外",
+        ),
+        (
+            !s.eligibility.household.is_empty(),
+            "未編碼的家庭成員、身分證明與替代途徑",
+        ),
         (!s.eligibility.employment.is_empty(), "就業／保險"),
         (!s.eligibility.disability.is_empty(), "身心障礙"),
         (!s.eligibility.property.is_empty(), "財產"),
@@ -388,21 +305,19 @@ pub fn evaluate(e: &Entry, p: &Profile) -> MatchResult {
         (!s.extensions.is_empty(), "擴充原文"),
     ] {
         if present {
-            warnings.push(format!("{label}條件未評估，請查閱完整原文"));
+            warnings.push(format!("{label}仍須核對完整原文，不代表已完整評估"));
         }
     }
-    // The current dataset has no complete executable eligibility expression.
-    // Reserve `likely` for a future fully evaluated contract; partial facts cannot earn it.
-    let fit = if blocked.is_empty() {
-        Fit::Possible
-    } else {
-        Fit::Ineligible
-    };
     MatchResult {
-        fit,
+        fit: if blocked.is_empty() {
+            Fit::Possible
+        } else {
+            Fit::Ineligible
+        },
         reasons,
         warnings,
         blocked_by: blocked,
+        personal,
     }
 }
 

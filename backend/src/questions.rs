@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //! Fixed templates, emitted only when the loaded data supports the field.
-use crate::{matcher::is_applicant_year, models::Entry};
+use crate::models::Entry;
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -38,7 +38,7 @@ pub fn build_questions(entries: &[Entry]) -> Vec<Question> {
             "is_student",
             "boolean",
             "受助者目前是否在學？",
-            "僅確認目前在學與否；學制、學校、成績與其他原文要求仍待確認。",
+            "用於本人在學或未就學的必要條件；學制、成績及其他要求仍待確認。",
         ),
         (
             "household_type",
@@ -52,23 +52,8 @@ pub fn build_questions(entries: &[Entry]) -> Vec<Question> {
         let mut resource_ids: Vec<String> = entries
             .iter()
             .filter(|e| {
-                let el = &e.subsidy.eligibility;
-                match field {
-                    "age" => el.age.iter().any(is_applicant_year),
-                    "region" => el
-                        .residence
-                        .iter()
-                        .any(|r| r["registered_required"] == true),
-                    "is_student" => !el.student.is_empty(),
-                    "household_type" => el.household.iter().any(|h| {
-                        h["types"].as_array().is_some_and(|types| {
-                            types
-                                .iter()
-                                .any(|t| matches!(t.as_str(), Some("低收入戶" | "中低收入戶")))
-                        })
-                    }),
-                    _ => false,
-                }
+                e.reviewed
+                    .is_some_and(|row| row.requirements.iter().any(|r| r.field == field))
             })
             .map(|e| e.subsidy.id.clone())
             .collect();
@@ -81,12 +66,12 @@ pub fn build_questions(entries: &[Entry]) -> Vec<Question> {
             "region" => {
                 let mut regions: Vec<String> = entries
                     .iter()
-                    .filter(|e| resource_ids.contains(&e.subsidy.id))
-                    .flat_map(|e| &e.subsidy.eligibility.residence)
-                    .filter(|r| r["registered_required"] == true)
-                    .filter_map(|r| r["region"].as_str())
-                    .filter(|r| r.ends_with('市') || r.ends_with('縣'))
-                    .map(|r| r.replace('台', "臺"))
+                    .filter_map(|e| e.reviewed)
+                    .flat_map(|row| &row.requirements)
+                    .filter(|r| r.field == "region")
+                    .filter_map(|r| r.values.as_ref())
+                    .flatten()
+                    .cloned()
                     .collect();
                 regions.sort();
                 regions.dedup();
@@ -94,7 +79,7 @@ pub fn build_questions(entries: &[Entry]) -> Vec<Question> {
                 Some(
                     regions
                         .iter()
-                        .map(|r| json!({"label":r,"value":r}))
+                        .map(|r| json!({"label":if r == "其他縣市" { "臺北市以外" } else { r.as_str() },"value":r}))
                         .collect(),
                 )
             }

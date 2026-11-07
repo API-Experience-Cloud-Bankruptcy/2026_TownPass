@@ -150,6 +150,7 @@ pub struct SourceMeta {
 pub struct Entry {
     pub subsidy: Subsidy,
     pub original: Value,
+    pub reviewed: Option<&'static crate::reviewed_rules::ReviewedRecord>,
     pub blob: String,
     pub name_lc: String,
 }
@@ -182,8 +183,10 @@ impl Entry {
             push(n);
         }
         let name_lc = s.name.to_lowercase();
+        let reviewed = crate::reviewed_rules::review_for(&original);
         Ok(Entry {
             subsidy: s,
+            reviewed,
             original,
             blob,
             name_lc,

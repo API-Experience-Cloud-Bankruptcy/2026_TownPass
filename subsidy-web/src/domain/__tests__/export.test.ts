@@ -13,12 +13,12 @@ describe('行動單文字', () => {
   const results = evaluateAll([item], { age: 40 }, '2026-11-07');
   const base = { meta, target: 'other' as const, items: [item], results, docChecks: {}, stepDone: {} };
 
-  it('含聲明、來源、版本、時效與不符原因', () => {
+  it('含聲明、來源、版本與時效；未審閱的年齡不冒稱已知不符', () => {
     const t = buildPlanText({ ...base, conditions: [] });
     expect(t).toContain(DISCLAIMER);
     expect(t).toContain('catalog-v1-test');
     expect(t).toContain('2026-01-31');
-    expect(t).toContain('不符原因');
+    expect(t).not.toContain('不符原因');
     expect(t).toContain('65歲以上');
   });
 

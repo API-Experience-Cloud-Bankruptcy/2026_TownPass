@@ -20,6 +20,7 @@ export interface SessionState {
   docChecks: Record<string, boolean>;
   stepDone: Record<string, number[]>;
   catalogVersion: string | null;
+  rulesVersion?: string | null;
   savedAt: string | null;
 }
 
@@ -42,6 +43,7 @@ export function emptySession(target: Target | null = null): SessionState {
     docChecks: {},
     stepDone: {},
     catalogVersion: null,
+    rulesVersion: null,
     savedAt: null,
   };
 }
@@ -119,6 +121,7 @@ export function loadSession(storage: StorageLike | null = defaultStorage()): Ses
       docChecks,
       stepDone,
       catalogVersion: typeof s.catalogVersion === 'string' ? s.catalogVersion : null,
+      rulesVersion: typeof s.rulesVersion === 'string' ? s.rulesVersion : null,
       savedAt: typeof s.savedAt === 'string' ? s.savedAt : null,
     };
   } catch {

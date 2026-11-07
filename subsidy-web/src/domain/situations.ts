@@ -18,7 +18,7 @@ export const SITUATIONS: Situation[] = [
   { id: 'health', label: '醫療與健康', hint: '健保、篩檢、醫療補助', categories: ['醫療'], applicants: [] },
   { id: 'disability', label: '身心障礙', hint: '身障補助、輔具、照顧', categories: ['身心障礙', '身障'], applicants: ['身心障礙者'] },
   { id: 'housing', label: '住宅與租屋', hint: '租金補貼、購屋、修繕', categories: ['住宅', '租屋'], applicants: ['租屋族', '購屋族'] },
-  { id: 'work', label: '工作與失業', hint: '失業、職訓、職災、創業', categories: ['就業', '失業', '職訓', '職業災害', '勞工', '創業', '青年'], applicants: ['失業者', '勞工', '創業者'] },
+  { id: 'work', label: '工作與失業', hint: '失業、職訓、職災、創業', categories: ['就業', '失業', '職訓', '職業災害', '勞工', '創業'], applicants: ['失業者', '勞工', '創業者'] },
 ];
 
 export function matchesSituation(item: Subsidy, situation: Situation): boolean {
@@ -49,7 +49,7 @@ export function searchScore(item: Subsidy, query: string): number {
   for (const term of terms) {
     let s = 0;
     if (name.includes(term)) s = 8;
-    else if (keywords.some((k) => k.includes(term) || (term.length >= 2 && term.includes(k) && k.length >= 2))) s = 5;
+    else if (keywords.some((k) => k.includes(term))) s = 5;
     else if (meta.includes(term)) s = 3;
     else if (body.includes(term)) s = 1;
     if (s === 0) return 0; // 每個詞都需出現

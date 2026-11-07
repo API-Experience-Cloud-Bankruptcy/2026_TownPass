@@ -87,59 +87,71 @@ function onItemChange() {
 
 <template>
   <div class="view">
-    <button type="button" class="btn btn--ghost" @click="previous">返回</button>
-    <h1 id="view-title" class="view-title" tabindex="-1">找人幫忙</h1>
-    <p class="muted">協助整理詢問文字，不會建立案件或轉介。</p>
-
-    <section v-if="stage === 'reason'" class="card" aria-labelledby="help-reason-h">
-      <h2 id="help-reason-h" ref="stageHeading" tabindex="-1" class="section-title">遇到什麼問題？</h2>
-      <p v-if="item" class="muted">{{ item.name }}</p>
-      <div class="option-list" role="group" aria-labelledby="help-reason-h">
-        <button v-for="o in STUCK_OPTIONS" :key="o.id" type="button" class="btn btn--option" @click="chooseReason(o.id)">{{ o.label }}</button>
+    <div class="view-head">
+      <div class="topbar">
+        <button type="button" class="btn btn--text" @click="previous"><span aria-hidden="true">‹</span> 返回</button>
       </div>
+      <h1 id="view-title" class="view-title" tabindex="-1">找人幫忙</h1>
+      <p class="muted">幫你整理要問的話，不會替你建立案件或轉介</p>
+    </div>
+
+    <section v-if="stage === 'reason'" class="actions" aria-labelledby="help-reason-h">
+      <h2 id="help-reason-h" ref="stageHeading" tabindex="-1" class="stage-title">卡在哪裡？</h2>
+      <p v-if="item" class="muted">{{ item.name }}<template v-if="stepText">・{{ stepText }}</template></p>
+      <ul class="rows">
+        <li v-for="o in STUCK_OPTIONS" :key="o.id">
+          <button type="button" class="row" @click="chooseReason(o.id)">
+            <span class="row__main"><span class="row__title">{{ o.label }}</span></span>
+            <span class="row__chev" aria-hidden="true">›</span>
+          </button>
+        </li>
+      </ul>
     </section>
 
-    <section v-else-if="stage === 'resource'" class="card" aria-labelledby="help-item-h">
-      <h2 id="help-item-h" ref="stageHeading" tabindex="-1" class="section-title">想詢問哪一項資源？</h2>
+    <section v-else-if="stage === 'resource'" class="actions" aria-labelledby="help-item-h">
+      <h2 id="help-item-h" ref="stageHeading" tabindex="-1" class="stage-title">要問哪一項？</h2>
       <label class="field" for="help-item">
-        <span class="field__label">選擇資源</span>
+        <span class="field__label">項目</span>
         <select id="help-item" v-model="itemId" class="input" @change="onItemChange">
-          <option value="">還沒有特定資源，一般詢問</option>
+          <option value="">還沒有特定項目</option>
           <option v-for="i in choices" :key="i.id" :value="i.id">{{ i.name }}</option>
         </select>
       </label>
-      <button type="button" class="btn btn--primary btn--block" @click="confirmResource">看下一步</button>
+      <button type="button" class="btn btn--primary btn--block" @click="confirmResource">下一步</button>
     </section>
 
-    <template v-else-if="stage === 'advice'">
-      <section class="card" aria-labelledby="advice-h">
-        <h2 id="advice-h" ref="stageHeading" tabindex="-1" class="section-title">接下來可以這樣做</h2>
-        <p>{{ item?.name ?? '一般詢問' }}</p>
-        <p v-if="stepText" class="muted">卡住的步驟：{{ stepText }}</p>
-        <template v-if="advice">
-          <p>{{ advice.found[0] ?? advice.notFound[0] }}</p>
-          <p class="muted">可向資料列出的窗口詢問，實際辦法以機關答覆為準。</p>
-          <details>
-            <summary>查看資料列出的完整方法與缺口</summary>
+    <section v-else-if="stage === 'advice'" class="actions" aria-labelledby="advice-h">
+      <h2 id="advice-h" ref="stageHeading" tabindex="-1" class="stage-title">可以這樣做</h2>
+      <p class="muted">{{ item?.name ?? '一般詢問' }}<template v-if="stepText">・{{ stepText }}</template></p>
+      <template v-if="advice">
+        <p class="next__text">{{ advice.found[0] ?? advice.notFound[0] }}</p>
+        <p class="muted">實際辦法以承辦機關答覆為準</p>
+      </template>
+      <p v-else class="next__text">先打市政諮詢說明你的狀況，問清楚該找哪個窗口</p>
+      <button type="button" class="btn btn--primary btn--block" @click="setStage('export')">產生要問的話</button>
+      <div class="more-group">
+        <details v-if="advice" class="more">
+          <summary>資料裡的其他方法</summary>
+          <div class="more__body">
             <ul v-if="advice.found.length"><li v-for="f in advice.found" :key="f">{{ f }}</li></ul>
-            <p v-for="n in advice.notFound" :key="n" class="warn">{{ n }}</p>
-          </details>
-        </template>
-        <p v-else>可先向一般市政諮詢說明遇到的問題，確認應詢問的窗口。</p>
-        <button type="button" class="btn btn--primary btn--block" @click="setStage('export')">產生詢問文字</button>
-        <button type="button" class="btn btn--ghost btn--block" @click="changeResource">更換詢問資源</button>
-      </section>
-      <details class="card">
-        <summary>一般市政諮詢：1999</summary>
-        <p>臺北市民當家熱線 1999 可詢問市政問題；不是該補助的受理窗口，也不代表已轉介。</p>
-        <button v-if="inApp" type="button" class="btn btn--block" @click="call1999()">撥打 1999（需先同意條款）</button>
-        <a v-else class="btn btn--block" href="tel:1999">撥打 1999</a>
-      </details>
-    </template>
+            <p v-for="n in advice.notFound" :key="n">{{ n }}</p>
+          </div>
+        </details>
+        <details class="more">
+          <summary>市政諮詢 1999</summary>
+          <div class="more__body">
+            <p>臺北市民當家熱線，可以詢問市政問題。它不是這項補助的受理窗口，也不代表已轉介。</p>
+            <button v-if="inApp" type="button" class="btn btn--block" @click="call1999()">撥打 1999（會先請你同意條款）</button>
+            <a v-else class="btn btn--block" href="tel:1999">撥打 1999</a>
+          </div>
+        </details>
+      </div>
+      <button type="button" class="btn btn--text" @click="changeResource">換一個項目</button>
+    </section>
 
-    <section v-else aria-labelledby="help-export-h">
-      <h2 id="help-export-h" ref="stageHeading" tabindex="-1" class="sr-only">確認詢問文字</h2>
-      <ShareBox v-model:included="included" title="求助詢問文字" :body="helpText" filename="求助詢問文字.txt" :conditions="conditionLines" />
+    <section v-else class="actions" aria-labelledby="help-export-h">
+      <h2 id="help-export-h" ref="stageHeading" tabindex="-1" class="sr-only">要問的話</h2>
+      <ShareBox v-model:included="included" title="要問的話" :body="helpText" filename="求助詢問文字.txt" :conditions="conditionLines" />
     </section>
   </div>
 </template>

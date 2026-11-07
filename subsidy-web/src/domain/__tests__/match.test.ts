@@ -1,3 +1,4 @@
+import { realItem } from './real-data';
 import { describe, expect, it } from 'vitest';
 import { ageBounds, ageVerdict, evaluate, quote, text } from '../match';
 import { ageRule, makeSubsidy } from './fixtures';
@@ -27,14 +28,14 @@ describe('evaluate：保守匹配', () => {
     expect(r.pending?.some((p) => p.includes('65歲以上'))).toBe(true);
   });
 
-  it('單一明確申請人年齡且無其他條件時才排除', () => {
+  it('未逐筆審閱及來源綁定的合成資料不硬排除', () => {
     const item = makeSubsidy({ eligibility: { age: [ageRule('65歲以上', 65, null)] } as any });
-    expect(evaluate(item, { age: 40 }).fit).toBe('ineligible');
+    expect(evaluate(item, { age: 40 }).fit).toBe('possible');
     expect(evaluate(item, { age: 65 }).fit).toBe('possible');
   });
 
   it('現階段不發出 likely，即使已知條件皆相符', () => {
-    const item = makeSubsidy({ eligibility: { age: [ageRule('65歲以上', 65, null)] } as any });
+    const item = realItem('WEL-0055');
     const r = evaluate(item, { age: 70 });
     expect(r.fit).toBe('possible');
     expect(r.reasons.length).toBe(1);
@@ -96,7 +97,7 @@ describe('evaluate：保守匹配', () => {
     const item = makeSubsidy({ eligibility: { household: [{ types: ['低收入戶'], raw: '低收入戶' }] } as any });
     const r = evaluate(item, { household_type: 'general' });
     expect(r.fit).toBe('possible');
-    expect(r.personal?.some((p) => p.field === 'household_type')).toBe(true);
+    expect(r.personal?.some((p) => p.field === 'household_type')).toBe(false); // 未使用填答產生推論，不需個資標記
   });
 
   it('raw_summary 中無法結構化的限制列為待確認', () => {
