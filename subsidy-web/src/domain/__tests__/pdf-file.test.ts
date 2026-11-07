@@ -8,7 +8,7 @@ describe('PDF 檔案交付', () => {
   it('傳送實際檔案給系統，不以文字取代', async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     expect(await sharePdfFile(pdf, { canShare: () => true, share })).toBe('presented');
-    expect(share).toHaveBeenCalledWith({ files: [pdf], title: '福利行動檢核表' });
+    expect(share).toHaveBeenCalledWith({ files: [pdf], title: '福利資源申辦準備檢核表' });
   });
   it('無法分享檔案時不假裝成功', async () => {
     const share = vi.fn();

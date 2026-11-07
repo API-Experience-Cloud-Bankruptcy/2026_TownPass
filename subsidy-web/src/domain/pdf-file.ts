@@ -1,4 +1,5 @@
 import { isInTownPass, sharePdf } from '../townpass';
+import { FORM_TITLE } from './checklist';
 
 export type PdfShareOutcome = 'presented' | 'cancelled' | 'unsupported' | 'failed';
 
@@ -10,7 +11,7 @@ export async function sharePdfFile(file: File, nav: Partial<Navigator> = globalT
       return result.status === 'presented' ? 'presented' : result.status === 'cancelled_or_unavailable' ? 'cancelled' : 'failed';
     }
     if (typeof nav.share !== 'function' || typeof nav.canShare !== 'function' || !nav.canShare({ files: [file] })) return 'unsupported';
-    await nav.share({ files: [file], title: '福利行動檢核表' });
+    await nav.share({ files: [file], title: FORM_TITLE });
     return 'presented';
   } catch (error) {
     return (error as Error)?.name === 'AbortError' ? 'cancelled' : 'failed';
