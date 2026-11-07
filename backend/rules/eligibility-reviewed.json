@@ -51,7 +51,7 @@
     {
       "id": "WEL-0003",
       "name": "私立大專校院學雜費差額減免（拉近方案）",
-      "source_fingerprint": "485a4a23d70c5db9",
+      "source_fingerprint": "eec7a5387a052750",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -141,7 +141,7 @@
     {
       "id": "WEL-0006",
       "name": "教育部大專校院清寒優秀學生勵學獎學金",
-      "source_fingerprint": "140e2896c7623f78",
+      "source_fingerprint": "bd8285a9b5ba0963",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -513,7 +513,7 @@
     {
       "id": "WEL-0028",
       "name": "感恩基金會清寒優秀學生公益活動獎助學金（C01）",
-      "source_fingerprint": "82501c8453dabfe6",
+      "source_fingerprint": "45de0bb67a0b5b1b",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -547,7 +547,7 @@
     {
       "id": "WEL-0029",
       "name": "感恩基金會未來主人翁學生公益活動獎助學金（C02）",
-      "source_fingerprint": "1fb6e3007cc4cf3a",
+      "source_fingerprint": "58f6167f14ca7277",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -562,7 +562,7 @@
     {
       "id": "WEL-0030",
       "name": "感恩基金會護理人才獎學金（C03）",
-      "source_fingerprint": "eb28ccfa2507b2ad",
+      "source_fingerprint": "7d637983194bf182",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -636,7 +636,7 @@
     {
       "id": "WEL-0032",
       "name": "教育部留學獎學金甄試",
-      "source_fingerprint": "762983ec105d9ef1",
+      "source_fingerprint": "075c53575f637194",
       "age_review": "deferred",
       "review_note": "女性生育得延長年齡，延長上限未明；不能套45歲上限。",
       "source_urls": [
@@ -772,7 +772,7 @@
     {
       "id": "WEL-0039",
       "name": "115年度自購住宅貸款利息補貼",
-      "source_fingerprint": "c2802f751a68a721",
+      "source_fingerprint": "68918b9454b03580",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -787,7 +787,7 @@
     {
       "id": "WEL-0040",
       "name": "115年度修繕住宅貸款利息補貼",
-      "source_fingerprint": "f6387a5f7c6aa2bc",
+      "source_fingerprint": "d5d5fb970705aee7",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -918,7 +918,7 @@
     {
       "id": "WEL-0045",
       "name": "臺北市公寓大廈共用部分維護修繕費用補助",
-      "source_fingerprint": "ff4cac61ef742703",
+      "source_fingerprint": "247c2d45837ca261",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -946,7 +946,7 @@
     {
       "id": "WEL-0047",
       "name": "臺北市住宅社區節能補助－A社區創能儲能及節能設備",
-      "source_fingerprint": "a114f5c0dd943f76",
+      "source_fingerprint": "90d3b41f324c7959",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -960,7 +960,7 @@
     {
       "id": "WEL-0048",
       "name": "臺北市住宅社區節能補助－B住宅創能及儲能設備",
-      "source_fingerprint": "fe737b5fd0a574a0",
+      "source_fingerprint": "85cf9753953384af",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -974,7 +974,7 @@
     {
       "id": "WEL-0049",
       "name": "臺北市住宅社區節能補助－C玻璃隔熱膜",
-      "source_fingerprint": "76531ca2461a708b",
+      "source_fingerprint": "e96d643736b04690",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -988,7 +988,7 @@
     {
       "id": "WEL-0050",
       "name": "臺北市住宅社區節能補助－D低收入戶汰換冰箱與冷氣",
-      "source_fingerprint": "038dd5a576320f32",
+      "source_fingerprint": "dd22b37452c7d345",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1246,7 +1246,7 @@
     {
       "id": "WEL-0059",
       "name": "115年運動幣（500元抽籤）",
-      "source_fingerprint": "38c76cbe16398411",
+      "source_fingerprint": "939de924f39e2e12",
       "age_review": "deferred",
       "review_note": "原資料註明16歲及出生截止有衝突，待原簡章核對。",
       "source_urls": [
@@ -1304,7 +1304,7 @@
     {
       "id": "WEL-0061",
       "name": "臺北市政府文化局藝文補助",
-      "source_fingerprint": "7281ae7fdef2e4dd",
+      "source_fingerprint": "765f558070e48ada",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1450,7 +1450,7 @@
     {
       "id": "WEL-0069",
       "name": "國科會博士生研究獎學金（核配類）",
-      "source_fingerprint": "1d167b22802051f6",
+      "source_fingerprint": "223f7511aff08199",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1501,7 +1501,7 @@
     {
       "id": "WEL-0072",
       "name": "臺北市中正區民俗委員會民俗獎學金",
-      "source_fingerprint": "7c99aa7974abeb4f",
+      "source_fingerprint": "4150bf987558191e",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1514,7 +1514,7 @@
     {
       "id": "WEL-0073",
       "name": "臺北市大同區民俗委員會民俗獎學金",
-      "source_fingerprint": "70ea176330d80fee",
+      "source_fingerprint": "be86205da1da7605",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1528,7 +1528,7 @@
     {
       "id": "WEL-0074",
       "name": "臺北市中山區民俗委員會獎學金",
-      "source_fingerprint": "09e73f7d23c8d2e8",
+      "source_fingerprint": "724a36582e49fc21",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1543,7 +1543,7 @@
     {
       "id": "WEL-0075",
       "name": "臺北市松山區民俗委員會獎助學金",
-      "source_fingerprint": "6ae7218c5e0b3868",
+      "source_fingerprint": "4755bae7d318b6b1",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1557,7 +1557,7 @@
     {
       "id": "WEL-0076",
       "name": "臺北市南港區民俗委員會優秀獎助學金",
-      "source_fingerprint": "996fbf6a66526c1d",
+      "source_fingerprint": "d54f87740867cb14",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1571,7 +1571,7 @@
     {
       "id": "WEL-0077",
       "name": "臺北市低收入戶及中低收入戶購置電腦設備補助",
-      "source_fingerprint": "8aa682883c6f9d16",
+      "source_fingerprint": "13611801605c6d73",
       "age_review": "deferred",
       "review_note": "結構subject申請人與原文有在學子女之家戶衝突；不套戶長年齡。",
       "source_urls": [
@@ -1647,7 +1647,7 @@
     {
       "id": "WEL-0080",
       "name": "臺北市推廣寵物保險補助",
-      "source_fingerprint": "e9e6a7e80ae4160a",
+      "source_fingerprint": "30da9cd1e1801b8e",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -1734,7 +1734,7 @@
     {
       "id": "WEL-0083",
       "name": "臺北市文山區民俗委員會獎助學金",
-      "source_fingerprint": "613d2ffebd7bf660",
+      "source_fingerprint": "e3aaaf21160a75e9",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -2595,7 +2595,7 @@
     {
       "id": "WEL-0108",
       "name": "臨時工作津貼",
-      "source_fingerprint": "63e19489a5b13869",
+      "source_fingerprint": "1abf6ad2b08c0864",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -2796,7 +2796,7 @@
     {
       "id": "WEL-0115",
       "name": "失業被保險人及其眷屬全民健康保險費補助",
-      "source_fingerprint": "ed0c50556d50f0bf",
+      "source_fingerprint": "ccd4b700c7788db9",
       "age_review": "not_encoded",
       "review_note": "45歲以上影響保費補助月數，非所有失業者必要年齡。",
       "source_urls": [
@@ -2834,7 +2834,7 @@
     {
       "id": "WEL-0117",
       "name": "失業勞工在學子女生活扶助金（原子女就學補助）",
-      "source_fingerprint": "c00cce008b1a4540",
+      "source_fingerprint": "09391db223b565d8",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -3150,7 +3150,7 @@
     {
       "id": "WEL-0127",
       "name": "臺北市失業勞工子女就學費用補助",
-      "source_fingerprint": "d1f76e89b7f68e19",
+      "source_fingerprint": "34b44d5b41fea73f",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -3559,7 +3559,7 @@
     {
       "id": "CT-0020",
       "name": "平日住宿獎助（觀光署）",
-      "source_fingerprint": "c897fdd3e613fcfa",
+      "source_fingerprint": "c0aa2e20da99222f",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -3572,7 +3572,7 @@
     {
       "id": "CT-0023",
       "name": "115年關懷弱勢加發生活補助（全國）",
-      "source_fingerprint": "75fe57627b560d9e",
+      "source_fingerprint": "ddabf2cde1002d3e",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -3664,7 +3664,7 @@
     {
       "id": "CT-0028",
       "name": "115年度公費流感疫苗及新冠疫苗",
-      "source_fingerprint": "e6353999bcf827e6",
+      "source_fingerprint": "9d2868c8801452b7",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -3783,7 +3783,7 @@
     {
       "id": "CT-0032",
       "name": "生育給付加生育補助（每胎補足 10 萬元）",
-      "source_fingerprint": "038f9ead321648b6",
+      "source_fingerprint": "fb78a76e012237f4",
       "age_review": "not_encoded",
       "review_note": "出生或生育補助出現在來源標題，不能當申請人數字年齡規則。",
       "source_urls": [
@@ -3801,15 +3801,20 @@
     {
       "id": "CT-0033",
       "name": "成人預防保健（免費健檢）",
-      "source_fingerprint": "ab8e6c7ae1fd0d98",
+      "source_fingerprint": "9cbdb6d47b32a1c3",
       "age_review": "not_encoded",
-      "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
+      "review_note": "年齡依年齡帶決定受檢間隔，另有原住民及小兒麻痺途徑，未建立必要年齡規則。",
       "source_urls": [
         "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=189"
       ],
       "requirements": [],
-      "full_text_age_mentions": [],
-      "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
+      "full_text_age_mentions": [
+        {
+          "path": "/eligibility/raw_summary",
+          "value": "30歲以上未滿40歲每5年1次；40歲以上未滿65歲每3年1次；55歲以上原住民、罹患小兒麻痺且年在35歲以上者、65歲以上每年1次（國健署）。"
+        }
+      ],
+      "full_text_review": "已掃描全部JSON字串；命中僅為人工審閱線索，不自動推論AND/OR或必要條件。"
     },
     {
       "id": "CT-0034",
@@ -3881,7 +3886,7 @@
     {
       "id": "CT-0036",
       "name": "身心障礙者健保費補助",
-      "source_fingerprint": "3ef14dbe94cdf0bc",
+      "source_fingerprint": "b2b90b1d1dfcb3af",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -4070,7 +4075,7 @@
     {
       "id": "CT-0061",
       "name": "高級中等學校免學費",
-      "source_fingerprint": "bf686fb604d7e11a",
+      "source_fingerprint": "f44a67977708a325",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -4248,7 +4253,7 @@
     {
       "id": "CT-0074",
       "name": "婦女癌症篩檢（子宮頸抹片、乳房X光、HPV）",
-      "source_fingerprint": "6502865d99da3c7b",
+      "source_fingerprint": "8f81dd7c919a2202",
       "age_review": "deferred",
       "review_note": "各檢查不同年齡及性別、多項服務入口，不整項排除。",
       "source_urls": [
@@ -4287,7 +4292,7 @@
     {
       "id": "CT-0075",
       "name": "產前遺傳診斷補助與新生兒SMA篩檢",
-      "source_fingerprint": "04695d68953cf51e",
+      "source_fingerprint": "365e99c443d94262",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -4450,7 +4455,7 @@
     {
       "id": "CT-0103",
       "name": "臺北市中低收入戶健保費補助",
-      "source_fingerprint": "a00d4bd4f79ce5e1",
+      "source_fingerprint": "54cd791d0b4c36aa",
       "age_review": "not_encoded",
       "review_note": "18歲以下及70歲以上為保費補助比例，非中低收入戶整項年齡門檻。",
       "source_urls": [
@@ -4811,7 +4816,7 @@
     {
       "id": "CT-0112",
       "name": "臺北市國中小免費營養午餐",
-      "source_fingerprint": "ceecfc1c44abdc1b",
+      "source_fingerprint": "38a5e22c7944b0e1",
       "age_review": "not_encoded",
       "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
       "source_urls": [
@@ -5172,7 +5177,7 @@
     {
       "id": "CT-0130",
       "name": "臺北市低收入戶交通費補助",
-      "source_fingerprint": "5204171a36426a9f",
+      "source_fingerprint": "6ed191c5df0d1b5f",
       "age_review": "required",
       "review_note": "交通費補助兩途徑皆未滿25歲；12歲學年基準另待確認；只建立各適用途徑共同必備的年齡條件，其餘資格不推定符合。",
       "source_urls": [

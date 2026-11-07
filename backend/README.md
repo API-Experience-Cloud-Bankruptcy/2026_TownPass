@@ -28,7 +28,7 @@ SUBSIDY_DATA=./data/subsidies.json cargo run --locked --release
 
 ## 資料完整性與版本
 
-正式輸入共 **217 筆**，資料原有狀態為 `verified` 125、`partial` 90、`unverified` 2；本次沒有逐筆重新查核，不將這些狀態當作當期政策有效或已核准的證明。`application.deadline.type` 新增 `partial`：記錄的截止日只涵蓋部分申請期間、管道或對象（WEL-0006、0061、0069、0080），`end` 為最早截止日。
+正式輸入共 **217 筆**，查核狀態為 `verified` 129、`partial` 88；狀態不代表當期政策有效或已核准。資料修改後須重新審閱受影響紀錄並更新其規則指紋。schema 的 `application.deadline.type` 新增 `partial`：部分申請期間、管道或對象已截止，其他仍可申請（WEL-0006、0061、0069、0080）。
 
 每筆保留完整的原始 JSON 值，Rust 型別只供內部搜尋／索引使用。catalog、單筆詳情、列表 `view=full` 與 match `view=full` 都從保留的 JSON 輸出，不將型別重新序列化成資料原文。因此 `income.period`、`year`、`multiplier_base`、`multiplier_value`，以及各層未識別欄位、空值、來源與原文仍保留。JSON 空白排版及物件鍵順序不屬於保留承諾；summary 是有意精簡的視圖。
 
@@ -94,7 +94,7 @@ Question 欄位為 `id`、`field`、`kind`、`title`、`description`、選用 `o
 - 每條必要條件記錄來源 JSON Pointer、逐字引文、來源 URL 及整筆原始資料的 canonical FNV-1a 64-bit 指紋。物件鍵排序、陣列順序保留、整數值統一；這是變更偵測，不是對抗惡意碰撞的密碼學證明。任何原文、來源、未知條件或其他欄位改動，該筆舊規則即停用並回到待確認，不沿用硬排除；沒有自動補寫／重綁規則。
 - 兩端都要求有規則的記錄具非空 `source_urls`，且各 URL 仍屬該筆 `source_meta.sources` 的 official 來源。新增規則必須先逐筆審閱主體、必要性、例外及替代途徑，再更新引文、來源與指紋，不能只為了讓測試通過而重算指紋。
 
-本輪保留資料既有 verified／partial／unverified，沒有宣稱重新向官方查核全部資料。未結構化的資格、文件、時效、同質補助、收入、財產、國籍與審核仍須查原文。
+查核狀態不代表已重新向官方查核全部資料。未結構化的資格、文件、時效、同質補助、收入、財產、國籍與審核仍須查原文。
 
 ## 匹配界線
 
@@ -109,7 +109,7 @@ Question 欄位為 `id`、`field`、`kind`、`title`、`description`、選用 `o
 - WEL-0110／0111 明列「未就學」，回答在學為必要條件不符，回答否與未回答區分。WEL-0031 的 enrollment_required=false 原文為畢業／同等學力，不當成禁止在學；CT-0076 只排除日間部，不以通用在學題硬排除。子女在學不套到父母本人。
 - 家戶類型 tag 不能代表完整資格；只有逐筆確認無其他替代途徑的必要核定身分才比較。一般戶遇仍有其他身分或評估途徑的資源保留 possible；不把個人收入當家戶所得。
 - 名稱、摘要或結構化就業／身障條件提到農保、榮民／退除役、原住民、身心障礙、低收／中低收，而 `applicant_types`（或 `household_type`）未提供該身分時，`warnings` 列出「可能限定身分，自述未提供：…」；fit 維持 possible。
-- `application.deadline.end` 早於查詢日（Asia/Taipei）且 `type` 為 `fixed` 時，`match.closed_on` 為該日期並加「已截止」warning；預設不列出，`include_ineligible=true` 時保留並排在最後。其他類型（`partial`、`yearly`、`unknown` 等）保留，warning 為「部分申請期間已截止，請確認仍開放的管道」。fit 不因截止改變。
+- `application.deadline.end` 早於查詢日（Asia/Taipei）且 `type` 為 `fixed` 時，`match.closed_on` 為該日期並加「已截止」warning；預設不列出，`include_ineligible=true` 時保留並排在最後。`type` 為 `partial`，或其他類型的 `end` 已過時保留，warning 為「部分申請期間已截止，請確認仍開放的管道」。fit 不因截止改變。
 - 個人答案仍在前端本機評估，UI 不自動 POST。新理由標記 personal，預設匯出移除未同意欄位的自述年齡、在學及身分訊息。
 
 文字搜尋要求名稱、關鍵字或內文實際包含完整查詢詞，移除「查詢詞反向包含較短關鍵字」的過寬命中。「青年藝術」不因「青年」而混入留學貸款。工作情境也不再以「青年」泛詞代替就業分類；全庫與關鍵字搜尋仍保留217筆入口。

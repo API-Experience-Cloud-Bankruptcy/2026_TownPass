@@ -71,10 +71,7 @@ fn original_records_and_verification_status_are_preserved() {
             .entry(entry.subsidy.source_meta.verification_status.as_str())
             .or_insert(0) += 1;
     }
-    assert_eq!(
-        status,
-        BTreeMap::from([("verified", 125), ("partial", 90), ("unverified", 2)])
-    );
+    assert_eq!(status, BTreeMap::from([("verified", 129), ("partial", 88)]));
     let raw = &entry("WEL-0001").original;
     for key in ["period", "year", "multiplier_base", "multiplier_value"] {
         assert!(raw["eligibility"]["income"][0].get(key).is_some(), "{key}");
@@ -417,7 +414,7 @@ async fn http_health_catalog_questions_and_facets_are_complete() {
     let (_, facet) = request(router.clone(), "GET", "/api/facets", None).await;
     assert_eq!(
         facet["verification_status"],
-        json!({"verified":125,"partial":90,"unverified":2})
+        json!({"verified":129,"partial":88})
     );
     let (status, error) = request(router, "GET", "/api/subsidies/does-not-exist", None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
@@ -954,6 +951,33 @@ async fn elder_mid_low_income_repro_has_no_likely_identity_gaps_or_closed_items(
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn undeclared_identity_items_rank_after_general_items() {
+    let st = state();
+    let p = Profile {
+        age: Some(78.0),
+        region: Some("臺北市".into()),
+        household_type: Some("mid_low_income".into()),
+        applicant_types: vec!["長者".into()],
+        ..Default::default()
+    };
+    let matched = matcher::run_match_at(&st.entries, &p, "2026-11-07");
+    let limited: Vec<bool> = matched
+        .iter()
+        .map(|(_, r)| warns(r, "可能限定身分"))
+        .collect();
+    let first_limited = limited.iter().position(|&x| x).unwrap();
+    assert!(limited[first_limited..].iter().all(|&x| x));
+    let pos = |id: &str| {
+        matched
+            .iter()
+            .position(|(e, _)| e.subsidy.id == id)
+            .unwrap()
+    };
+    assert!(pos("CT-0034") >= first_limited);
+    assert!(pos("CT-0099") >= first_limited);
 }
 
 #[test]
