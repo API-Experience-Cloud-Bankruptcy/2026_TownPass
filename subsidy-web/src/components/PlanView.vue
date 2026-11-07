@@ -3,7 +3,7 @@ import { computed, nextTick, ref } from 'vue';
 import { mergeDocuments, OTHER_REGION_TITLE, regionText } from '../domain/documents';
 import { buildPlanText } from '../domain/export';
 import { buildRoute } from '../domain/route';
-import { answeredRegion, conditionLines, pickConditions, openDetail, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
+import { conditionLines, pickConditions, openDetail, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
 import { progressText } from '../presentation';
 import ShareBox from './ShareBox.vue';
 import StepDots from './StepDots.vue';

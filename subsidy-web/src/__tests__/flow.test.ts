@@ -18,9 +18,9 @@ beforeEach(() => {
     ],
   };
   state.bank = { version: 'test', origin: 'local', questions: [
-    { id: 'region', field: 'region', title: '戶籍？', kind: 'single', options: [{ label: '臺北市', value: '臺北市' }], resource_ids: ['housing', 'study'] },
+    { id: 'region', field: 'region', title: '戶籍？', kind: 'single', options: [{ label: '臺北市', value: '臺北市' }, { label: '臺北市以外', value: '其他縣市' }], resource_ids: ['housing', 'study'] },
     { id: 'age', field: 'age', title: '年齡？', kind: 'number', resource_ids: ['housing'] },
-    { id: 'student', field: 'is_student', title: '在學？', kind: 'boolean', options: [{ label: '是', value: true }], resource_ids: ['study'] },
+    { id: 'student', field: 'is_student', title: '在學？', kind: 'boolean', options: [{ label: '是', value: true }, { label: '否', value: false }], resource_ids: ['study'] },
   ] };
 });
 
