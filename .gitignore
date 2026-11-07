@@ -90,3 +90,8 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 .alma-snapshots
+
+# 本機工具與暫存產物
+/.playwright-cli/
+/output/
+/tmp/
