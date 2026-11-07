@@ -3,8 +3,8 @@ import { computed, ref } from 'vue';
 import { buildPlanText } from '../domain/export';
 import { PLAN_STATUS_LABEL, planProgress, sortPlans } from '../domain/plan-progress';
 import { applicationStatusAlert, sourceExcerpt } from '../presentation';
-import { openPlanItem, planConditionLines, planConditions, planItems, planResults, state, tab } from '../store';
-import ShareBox from './ShareBox.vue';
+import { openPlanItem, planConditions, planItems, planResults, state, tab } from '../store';
+import PlanExport from './PlanExport.vue';
 
 const cards = computed(() => sortPlans(planItems.value.map((item) => ({
   item,
@@ -76,19 +76,11 @@ const planText = computed(() => buildPlanText({
       </ul>
 
       <details class="more card card--list no-print" :open="exportOpen" @toggle="exportOpen = ($event.target as HTMLDetailsElement).open">
-        <summary>匯出或列印全部（{{ planItems.length }} 張）</summary>
+        <summary>下載行動單 PDF（{{ planItems.length }} 張）</summary>
         <div v-if="exportOpen" class="more__body">
-          <ShareBox
-            v-model:included="included"
-            title="福利行動單"
-            :body="planText"
-            filename="福利行動單.txt"
-            :conditions="planConditionLines"
-            printable
-          />
+          <PlanExport :items="cards.map((c) => c.item)" />
         </div>
       </details>
-      <p class="muted no-print">行動單是準備用的清單，不是核准或送件證明。</p>
       <pre class="print-sheet" aria-hidden="true">{{ planText }}</pre>
     </template>
   </div>

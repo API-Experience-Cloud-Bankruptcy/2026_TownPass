@@ -7,12 +7,12 @@ import { PLAN_STATUS_LABEL, planProgress } from '../domain/plan-progress';
 import { buildRoute } from '../domain/route';
 import { applicationStatusAlert, benefitLabel, progressText, sourceExcerpt } from '../presentation';
 import {
-  itemsById, openDetail, openHelp, planConditionLines, planConditions, planItems, planResults,
+  itemsById, openDetail, openHelp, planConditions, planItems, planResults,
   removeFromPlan, resetSteps, state, toggleDoc, toggleStep,
 } from '../store';
 import ConfirmDialog from './ConfirmDialog.vue';
 import ExternalLink from './ExternalLink.vue';
-import ShareBox from './ShareBox.vue';
+import PlanExport from './PlanExport.vue';
 
 const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
 
@@ -216,16 +216,9 @@ const planText = computed(() => item.value ? buildPlanText({
         </div>
       </details>
       <details class="more" :open="exportOpen" @toggle="exportOpen = ($event.target as HTMLDetailsElement).open">
-        <summary>匯出這張行動單</summary>
+        <summary>下載這張行動單 PDF</summary>
         <div v-if="exportOpen" class="more__body">
-          <ShareBox
-            v-model:included="included"
-            :title="`行動單：${item.name}`"
-            :body="planText"
-            :filename="`行動單_${item.name}.txt`"
-            :conditions="planConditionLines"
-            printable
-          />
+          <PlanExport :items="[item]" :preview="false" />
         </div>
       </details>
     </div>
