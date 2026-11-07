@@ -28,6 +28,8 @@ export interface Position {
 }
 
 const REPLY_TIMEOUT_MS = 3000;
+/** The first `location` request waits for the permission dialog and a fix (bridge.md). */
+export const LOCATION_TIMEOUT_MS = 15000;
 
 function bridge(): FlutterObject | null {
   const fo = (globalThis as { flutterObject?: FlutterObject }).flutterObject;
@@ -81,6 +83,7 @@ export function call(number: string): void {
   else if (globalThis.location) globalThis.location.href = `tel:${number}`;
 }
 
+/** Town Pass opens `url` in its in-app WebView and sends no reply on success, so nothing waits for one. */
 export function openLink(url: string): void {
   const fo = bridge();
   if (fo) send(fo, 'open_link', url);
@@ -97,7 +100,7 @@ export async function launchMap(url: string): Promise<void> {
 export async function getLocation(): Promise<Position | null> {
   const fo = bridge();
   if (fo) {
-    const data = await request(fo, 'location');
+    const data = await request(fo, 'location', undefined, LOCATION_TIMEOUT_MS);
     return isObject(data) && typeof data.latitude === 'number' && typeof data.longitude === 'number'
       ? { latitude: data.latitude, longitude: data.longitude }
       : null;
