@@ -186,6 +186,7 @@
   --radius-bubble: 18px;
   --radius-bubble-tail: 6px;
   --radius-reply: 14px;
+  --radius-panel: 16px;  /* 詳情、行動單的白色卡片，和泡泡同一個質感 */
 
   /* 動態 */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);

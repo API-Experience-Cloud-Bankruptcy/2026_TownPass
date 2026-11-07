@@ -285,12 +285,12 @@ li + li {
   min-height: var(--touch);
   min-width: var(--touch);
   padding: 8px 20px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  border: 1.5px solid var(--reply-line);
+  border-radius: var(--radius-reply);
   background: var(--bg);
-  color: var(--text);
+  color: var(--accent);
   font: inherit;
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-bold);
   text-align: center;
   text-decoration: none;
   cursor: pointer;
@@ -298,6 +298,7 @@ li + li {
 }
 .btn:active {
   transform: scale(0.98);
+  background: var(--accent-soft);
 }
 .btn--primary {
   background: var(--accent);
@@ -1291,4 +1292,125 @@ li.wheel__item + li.wheel__item {
 }
 @media (forced-colors: active) {
   .bubble, .reply { border: 1px solid CanvasText; }
+}
+
+/* ════════════ 詳情、行動單：一般頁面，但和對話同一套質感 ════════════ */
+.app-main--page {
+  background: var(--chat-bg);
+}
+.app-main--page .view {
+  gap: var(--space-3);
+}
+.card-stack {
+  display: grid;
+  gap: var(--space-3);
+}
+.app-main--page .card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+}
+/* 頁首卡：留白多一點，讓標題成為這頁的重點 */
+.app-main--page .card--hero {
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-4);
+}
+.app-main--page > .muted,
+.app-main--page > .status-line {
+  margin-bottom: var(--space-3);
+}
+/* 只有展開列的卡片：左右留白，上下貼齊，第一列不畫線 */
+.app-main--page .card--list {
+  gap: 0;
+  padding: 0 var(--space-4);
+}
+.app-main--page .card--list > .more:first-child,
+.app-main--page .card--list.more {
+  border-top: 0;
+}
+.app-main--page .card--list > .more:last-child,
+.app-main--page .card--list.more {
+  border-bottom: 0;
+}
+.app-main--page .more > summary {
+  color: var(--accent);
+}
+/* 展開符號和對話泡泡一致：向下箭頭，展開後朝上 */
+.app-main--page .more > summary::after {
+  width: 0.5em;
+  height: 0.5em;
+  background: none;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--dur) var(--ease);
+}
+.app-main--page .more[open] > summary::after {
+  background: none;
+  transform: rotate(-135deg);
+}
+/* 下一步卡片：去掉原本的上下細線 */
+.app-main--page .next.card {
+  border-top: 0;
+  border-bottom: 0;
+}
+.app-main--page .next__head .dot {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-avatar);
+}
+/* 卡片裡的清單列 */
+.app-main--page .card .rows {
+  border-top: 0;
+}
+.app-main--page .card .rows > li:last-child {
+  border-bottom: 0;
+}
+.app-main--page .row-static {
+  padding: var(--space-3) 0;
+}
+.app-main--page .row__mark {
+  justify-self: start;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-brand);
+  color: var(--accent);
+  font-weight: var(--fw-medium);
+}
+.app-main--page .alert {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+}
+.app-main--page .facts > div {
+  display: grid;
+  gap: 2px;
+}
+/* 行動單的步驟圓點放在卡片外、置中 */
+.step-dots--page {
+  justify-content: center;
+}
+.app-main--page .dot {
+  background: var(--bg);
+}
+.app-main--page .dot--on {
+  background: var(--accent);
+}
+
+/* 回到對話 */
+.back-chat {
+  gap: var(--space-2);
+  color: var(--accent);
+}
+.avatar--sm {
+  width: 28px;
+  height: 28px;
+  font-size: var(--fs-caption);
+}
+.app-main--page .topbar {
+  margin-bottom: 0;
 }

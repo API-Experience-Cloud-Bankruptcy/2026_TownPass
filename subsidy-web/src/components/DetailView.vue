@@ -30,17 +30,17 @@ function kindOf(type: string) {
 
 <template>
   <div v-if="item && route" class="view">
-    <div class="view-head">
+    <div class="view-head card card--hero">
       <h1 id="view-title" class="view-title" tabindex="-1">{{ item.name }}</h1>
       <p v-if="sub" class="lead">{{ sub }}</p>
     </div>
 
-    <section class="block" aria-labelledby="d-benefit-h">
+    <section class="block card" aria-labelledby="d-benefit-h">
       <h2 id="d-benefit-h" class="section-title">能提供什麼</h2>
       <p class="selectable">{{ benefit || '原文沒有提供內容說明，請看官方說明頁或問承辦窗口' }}</p>
     </section>
 
-    <section class="block" aria-labelledby="d-limit-h">
+    <section class="block card" aria-labelledby="d-limit-h">
       <h2 id="d-limit-h" class="section-title">要先注意</h2>
       <p v-for="f in flags" :key="f" class="alert">{{ f }}</p>
       <dl class="facts">
@@ -55,7 +55,7 @@ function kindOf(type: string) {
       <p class="muted">相關不等於符合資格。本服務不計算所得，能不能領由承辦機關審核。</p>
     </section>
 
-    <section class="block" aria-labelledby="d-start-h">
+    <section class="block card" aria-labelledby="d-start-h">
       <h2 id="d-start-h" class="section-title">想申請的話</h2>
       <div class="actions">
         <button v-if="!added" type="button" class="btn btn--primary btn--block" @click="togglePlan(item.id)">{{ state.session.target === 'other' ? '加入家人檢核表' : '加入行動單，開始準備' }}</button>
@@ -69,9 +69,9 @@ function kindOf(type: string) {
       </div>
     </section>
 
-    <div>
+    <div class="card-stack">
       <RouteSteps :item="item" hide-deadline />
-      <div class="more-group">
+      <div class="more-group card card--list">
         <details class="more">
           <summary>完整條件與初篩說明</summary>
           <div class="more__body">
@@ -110,7 +110,9 @@ function kindOf(type: string) {
     </div>
   </div>
   <div v-else class="view">
+    <div class="card">
     <h1 id="view-title" class="view-title" tabindex="-1">找不到這筆資料</h1>
     <p>資料可能更新了，請回到結果重新選。</p>
+    </div>
   </div>
 </template>

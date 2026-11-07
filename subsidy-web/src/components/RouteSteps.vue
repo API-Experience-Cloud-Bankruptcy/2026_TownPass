@@ -16,7 +16,7 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
 </script>
 
 <template>
-  <section class="next" :aria-labelledby="`next-h-${item.id}`">
+  <section class="next card" :aria-labelledby="`next-h-${item.id}`">
     <h2 :id="`next-h-${item.id}`" class="sr-only">辦理步驟</h2>
     <template v-if="total && current >= 0">
       <p class="next__head">
@@ -41,7 +41,7 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
     <p v-if="route.deadline && !hideDeadline" class="note">期限：{{ route.deadline }}</p>
   </section>
 
-  <div class="more-group">
+  <div class="more-group card card--list">
     <details v-if="total" class="more">
       <summary>全部步驟（{{ total }}）</summary>
       <div class="more__body">

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { makeSubsidy } from '../domain/__tests__/fixtures';
 import {
-  answerAndAdvance, back, confirmPending, go, pendingSwitch, questions,
+  answerAndAdvance, applyConfirmedFacts, back, confirmPending, go, pendingSwitch, questions,
   requestNewPerson, requestTarget, resetPerson, searchResources, selectNeed,
   startQuestions, state, tab,
 } from '../store';
@@ -205,3 +205,37 @@ it('探索要求對象，略過生活分類後仍可從具體支出進住宅分�
   expect(new Set([...recommendedCandidates.value,...otherCandidates.value].map(i=>i.id)).size).toBe(nonIneligible);
   expect(focusedCandidates.value.length).toBeLessThan(217);
 },15000);
+
+
+describe('使用者確認的語意候選條件', () => {
+  const fact = (value: number, subject: 'self' | 'other' | 'applicant' = 'self') => ({ field: 'age' as const, value, subject, subjectLabel: subject === 'other' ? '媽媽' : '我', evidence: `年齡${value}` });
+  it('整批驗證後套用，保留其他穩定答案與行動單，不再追問確認過的年齡', () => {
+    requestTarget('self'); selectNeed('housing');
+    state.session.answers = { region: '臺北市', age: 40 };
+    state.session.planIds = ['housing'];
+    expect(applyConfirmedFacts([fact(65)])).toBe(true);
+    expect(state.session.answers).toMatchObject({ age: 65, region: '臺北市' });
+    expect(state.session.planIds).toEqual(['housing']);
+    expect(questions.value.map(q => q.field)).not.toContain('age');
+  });
+  it('不明主體、跨人、多個同欄位、未支援值或超界，全部不變更', () => {
+    requestTarget('self'); selectNeed('housing');
+    state.session.answers = { age: 40 };
+    for (const facts of [[fact(72, 'other')], [fact(72), fact(40)], [fact(999)], [{ ...fact(65), field: 'region' as const, value: '任意地址' }]]) {
+      expect(applyConfirmedFacts(facts)).toBe(false);
+      expect(state.session.answers).toEqual({ age: 40 });
+    }
+    resetPerson(null);
+    expect(applyConfirmedFacts([fact(72, 'applicant')])).toBe(false);
+  });
+  it('改基本條件後清掉隱藏的舊分支，但保留同人的無關基本條件', () => {
+    requestTarget('self'); selectNeed('housing');
+    state.bank!.questions.push({ id: 'branch', field: 'education_level', kind: 'single', title: '學制', options: [{ label: '大學', value: 'college' }], resource_ids: ['housing'], situations: ['study'] });
+    state.session.answers = { age: 40, region: '臺北市', extra: { education_level: 'college' } };
+    state.session.seenQuestions = ['age', 'branch'];
+    expect(applyConfirmedFacts([fact(65)])).toBe(true);
+    expect(state.session.answers.region).toBe('臺北市');
+    expect(state.session.answers.extra?.education_level).toBeUndefined();
+    expect(state.session.seenQuestions).not.toContain('branch');
+  });
+});

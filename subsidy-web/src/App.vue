@@ -133,7 +133,7 @@ const dialogTitle = computed(() =>
     </nav>
   </header>
 
-  <main id="main" class="app-main" :class="{ 'app-main--chat': isChat }">
+  <main id="main" class="app-main" :class="{ 'app-main--chat': isChat, 'app-main--page': state.view === 'detail' || state.view === 'plan' }">
     <p v-if="state.loadError" class="status-line status-line--error" role="alert">
       {{ state.loadError }}
       <button type="button" class="btn btn--text" @click="init">重試</button>
@@ -145,7 +145,11 @@ const dialogTitle = computed(() =>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已保存的資料，官方網站仍需連線</p>
 
     <div v-if="state.view === 'detail'" class="topbar no-print">
-      <button type="button" class="btn btn--text" @click="back"><span aria-hidden="true">‹</span> 回到對話</button>
+      <button type="button" class="btn btn--text back-chat" @click="back">
+        <span aria-hidden="true">‹</span>
+        <span class="avatar avatar--sm" aria-hidden="true">福</span>
+        回到對話
+      </button>
     </div>
     <ChatView v-if="isChat" />
     <DetailView v-else-if="state.view === 'detail'" :key="state.detailId ?? ''" />

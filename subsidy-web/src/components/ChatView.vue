@@ -5,16 +5,22 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { followBottom, isTyped, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, MAX_AGE, titleFor } from '../domain/questions';
-import { SITUATIONS } from '../domain/situations';
+import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
+import { exactAnswer, explicitSelfAge, factApplies, InterpretationTurn, type CandidateFact, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
+import { filterCatalog, SITUATIONS } from '../domain/situations';
+import { adaptiveReviewFor } from '../domain/adaptive';
 import type { Question, Subsidy } from '../domain/types';
 import { distinctGroups, insightLine, narrowingNote, numberUnit, optionalText, rangeLine } from '../presentation';
 import {
   answerAndAdvance,
+  applyConfirmedFacts,
   canRefine,
   closedCandidates,
   continueQuestions,
+  discoverWithKnownAnswers,
   go,
   otherCandidates,
+  pendingSwitch,
   planItems,
   questionInsight,
   questions,
@@ -34,6 +40,7 @@ import BotMessage from './chat/BotMessage.vue';
 import UserMessage from './chat/UserMessage.vue';
 import WheelPicker from './chat/WheelPicker.vue';
 import ResultCard from './ResultCard.vue';
+import ConfirmDialog from './ConfirmDialog.vue';
 
 const target = computed(() => state.session.target ?? 'self');
 const ask = computed(() => (target.value === 'other' ? '對方' : '你'));
@@ -74,6 +81,8 @@ const answered = computed(() => {
 });
 function answerText(q: Question): string {
   const v = answerOf(state.session.answers, q.field);
+  const typed = typedAnswers.value[q.id];
+  if (typed && typed.value === v) return typed.text;
   return v === undefined ? '不知道，先跳過' : describeAnswer(q, v);
 }
 function qLines(q: Question, withMeta: boolean): Line[] {
@@ -99,15 +108,18 @@ function editQuestion(q: Question) {
 
 // 回答後的回饋（範圍變化）只跟著下一則訊息出現。
 const feedback = ref<{ text: string; before: string } | null>(null);
-async function submit(value: string | number | boolean | undefined) {
+async function submit(value: string | number | boolean | undefined, typedText?: string) {
   const q = current.value;
-  if (!q) return;
+  if (!q) return false;
   const before = questionInsight.value?.remainingCount;
-  if (!answerAndAdvance(q.id, value)) return;
+  if (!answerAndAdvance(q.id, value)) return false;
+  if (typedText) typedAnswers.value[q.id] = { value, text: typedText };
+  else delete typedAnswers.value[q.id];
   await nextTick();
   const note = narrowingNote(before, questionInsight.value?.remainingCount, value === undefined);
   const next = view.value === 'questions' ? `q:${current.value?.id}` : resultsKey.value;
   feedback.value = note ? { text: note, before: next } : null;
+  return true;
 }
 
 // 年齡滾輪：有答案用答案，沒有時依對象給一個常見的起點。
@@ -187,18 +199,332 @@ onBeforeUnmount(() => {
   observer?.disconnect();
 });
 
-// ── 底部輸入列：隨時可以直接搜尋名稱 ──
+// ── 自然語言：目前答案優先，其次提出情境與事實供確認 ──
 const query = ref('');
-function onSearch() {
-  if (!query.value.trim()) return;
-  searchResources(query.value);
-  query.value = '';
+const inputMode = ref<'conversation' | 'search'>('conversation');
+const typedAnswers = ref<Record<string, { value: string | number | boolean | undefined; text: string }>>({});
+const typedTarget = ref<{ target: string; text: string } | null>(null);
+const typedNeed = ref<{ situation: string | null; query: string; text: string } | null>(null);
+const turns = ref<{ id: number; text: string; reply: string; hidden?: boolean }[]>([]);
+let turnId = 0;
+const interpreting = ref(false);
+const turn = new InterpretationTurn();
+const modelStatus = ref<ModelStatus | null>(null);
+const preparing = ref(false);
+const downloadPrompt = ref(false);
+const lifecycleController = new AbortController();
+const downloadDismissedKey = 'townpass-model-download-dismissed';
+let prepareController: AbortController | null = null;
+let statusTimer: ReturnType<typeof setTimeout> | undefined;
+const proposal = ref<{ result: Extract<Interpretation, { kind: 'situation' }>; fingerprint: string; turnId: number; input: string } | null>(null);
+const selectedFacts = ref<number[]>([]);
+const selectedSituation = ref('');
+const selectedPerson = ref('');
+const clarification = ref<{ input: string; prompt: string; fingerprint: string } | null>(null);
+const recovery = ref<{ turnId: number; mode: 'current' | 'need' } | null>(null);
+// 只在資料載入或題庫變動時建立簡短分類索引，不把補助全文放進每輪模型輸入。
+const situationIndex = computed(() => {
+  const groups = new Map(SITUATIONS.map(s => [s.id, { resourceCount: 0, categories: new Set<string>(), applicants: new Set<string>(), keywords: new Set<string>() }]));
+  for (const item of state.catalog?.items ?? []) {
+    const review = adaptiveReviewFor(item); if (!review) continue;
+    for (const id of review.situations) {
+      const group = groups.get(id); if (!group) continue;
+      group.resourceCount++;
+      if (item.classification?.category) group.categories.add(item.classification.category);
+      for (const applicant of item.search?.facets?.applicant_types ?? []) group.applicants.add(applicant);
+      for (const facet of review.facets) for (const value of facet.values) {
+        const q = state.bank?.questions.find(q => q.field === facet.field);
+        if (!q?.situations?.includes(id) || ['need_area', 'explore_context', 'expense_priority', 'benefit_style'].includes(facet.field)) continue;
+        const label = q.options?.find(o => String(o.value) === value)?.label;
+        if (label && group.keywords.size < 5) group.keywords.add(label);
+      }
+    }
+  }
+  return SITUATIONS.map(s => { const group = groups.get(s.id)!; return { id: s.id, label: s.label, resourceCount: group.resourceCount, categories: [...group.categories].slice(0, 3), applicants: [...group.applicants].slice(0, 3), keywords: [...group.keywords].slice(0, 5) }; });
+});
+const allowedFields: FactField[] = ['age', 'region', 'is_student', 'household_type'];
+const context = computed<InterpretationContext>(() => {
+  const q = current.value;
+  const choices = view.value === 'home'
+    ? [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }]
+    : view.value === 'needs' || view.value === 'search'
+      ? [{ id: 'explore', label: '還不確定，帶我找' }, ...SITUATIONS.map(s => ({ id: `need:${s.id}`, label: s.label, description: s.hint }))]
+      : q ? [...(q.options ?? []).map((o, i) => ({ id: `option:${i}`, label: o.label, description: optionalText(o, 'description') })), { id: 'skip', label: '不知道，先跳過' }, { id: 'results', label: '先看目前結果' }]
+        : [{ id: 'needs', label: '換需求' }, { id: 'help', label: '找人幫忙' }, ...(canRefine.value ? [{ id: 'continue', label: '再回答幾題，繼續縮小' }] : []), ...(planItems.value.length ? [{ id: 'plan', label: target.value === 'other' ? '製作 A4 檢核表' : '看行動單' }] : [])];
+  return {
+    stage: view.value as InterpretationContext['stage'], target: state.session.target, choices,
+    ...(q ? { question: { id: q.id, field: q.field, title: titleFor(q, target.value), kind: q.kind, min: q.min, max: q.max, options: choices.filter(c => c.id.startsWith('option:')) } } : {}),
+    situations: SITUATIONS.map(({ id, label, hint }) => ({ id, label, hint })),
+    situationIndex: situationIndex.value,
+    knownAnswers: Object.fromEntries(allowedFields.map(field => [field, answerOf(state.session.answers, field)]).filter(([, value]) => value !== undefined)),
+    currentNeed: { situationId: state.session.situation, label: SITUATIONS.find(s => s.id === state.session.situation)?.label ?? null, query: state.session.query },
+    allowedFacts: (state.bank?.questions ?? []).filter(q => allowedFields.includes(q.field as FactField)).map(q => ({ field: q.field as FactField, options: q.options, min: q.min, max: q.max })),
+  };
+});
+// 包含答案、題目、對象與資料版本；按鈕、返回、換人或資料重載都會使舊結果失效。
+const fingerprint = computed(() => JSON.stringify([context.value, state.session.answers, state.session.situation, state.session.query, state.session.catalogVersion, state.session.rulesVersion, state.session.engineVersion, pendingSwitch.value]));
+watch(fingerprint, () => { turn.cancel(); if (interpreting.value) { const latest = turns.value[turns.value.length - 1]; if (latest && !latest.reply) latest.reply = '流程已更新，已略過先前的理解。'; } interpreting.value = false; proposal.value = null; selectedFacts.value = []; recovery.value = null; clarification.value = null; }, { flush: 'sync' });
+watch(() => state.session, (_session, previous) => {
+  if (previous.target === null && state.session.target !== null) return;
+  turn.cancel(); turns.value = []; typedAnswers.value = {}; typedTarget.value = null; typedNeed.value = null; query.value = ''; proposal.value = null; recovery.value = null; clarification.value = null;
+}, { flush: 'sync' });
+const statusText = computed(() => {
+  const s = modelStatus.value;
+  if (!s) return '正在確認裝置端模型…';
+  if (s.state === 'unavailable') return s.reason;
+  if (s.state === 'ready') return 'Gemma 4 E2B 已就緒，情況只在此裝置理解。';
+  if (s.state === 'downloading') return `正在下載模型${s.progress === undefined ? '…' : ` ${Math.round(s.progress * 100)}%`}`;
+  if (s.state === 'downloaded') return '模型已下載，正在自動準備文字理解…';
+  if (s.state === 'loading') return '正在載入模型，第一次可能需要較久。';
+  if (s.state === 'error') return '模型未能啟動，可重試或直接使用選項。';
+  return '可載入 Gemma 4 E2B，理解你輸入的情況。首次需下載模型。';
+});
+async function refreshModel() {
+  const signal = lifecycleController.signal;
+  try {
+    const status = await modelAdapter.status(signal);
+    if (signal.aborted) return;
+    modelStatus.value = status;
+    if (['downloaded', 'loading', 'downloading'].includes(status.state)) {
+      downloadPrompt.value = false;
+      void prepareModel();
+    } else if (status.state === 'not_downloaded') {
+      let dismissed = false;
+      try { dismissed = sessionStorage.getItem(downloadDismissedKey) === 'yes'; } catch { /* 儲存不可用仍可詢問 */ }
+      if (!dismissed) downloadPrompt.value = true;
+    }
+  } catch { /* 離開微服務後不再更新 */ }
 }
+function dismissDownload() {
+  downloadPrompt.value = false;
+  try { sessionStorage.setItem(downloadDismissedKey, 'yes'); } catch { /* 不影響按鈕操作 */ }
+}
+function acceptDownload() {
+  downloadPrompt.value = false;
+  void prepareModel();
+}
+async function prepareModel() {
+  if (preparing.value) return;
+  preparing.value = true;
+  const controller = prepareController = new AbortController();
+  const poll = async () => {
+    const status = await modelAdapter.status(controller.signal).catch(() => null);
+    if (controller.signal.aborted) return;
+    if (status) modelStatus.value = status;
+    statusTimer = setTimeout(poll, 1500);
+  };
+  void poll();
+  try { const status = await modelAdapter.prepare(controller.signal); if (!controller.signal.aborted) modelStatus.value = status; }
+  catch { /* 離開頁面或取消不更新畫面 */ }
+  finally { controller.abort(); clearTimeout(statusTimer); if (prepareController === controller) { prepareController = null; preparing.value = false; } }
+}
+onMounted(() => { void refreshModel(); });
+onBeforeUnmount(() => { lifecycleController.abort(); turn.cancel(); prepareController?.abort(); clearTimeout(statusTimer); });
+function cancelInput() {
+  const pendingId = proposal.value?.turnId;
+  turn.cancel(); interpreting.value = false; proposal.value = null; recovery.value = null; clarification.value = null;
+  const latest = pendingId ? turns.value.find(t => t.id === pendingId) : turns.value[turns.value.length - 1];
+  if (latest && (pendingId || !latest.reply)) latest.reply = '已取消理解，原本的答案與需求沒有改動。';
+}
+function factLabel(fact: CandidateFact): string {
+  const q = state.bank?.questions.find(q => q.field === fact.field);
+  const who = { self: '你', other: '對方', applicant: '目前查詢的人', unclear: '主體待確認' }[fact.subject];
+  const label: Record<FactField, string> = { age: '年齡', region: '戶籍', is_student: '在學身分', household_type: '已核定家戶身分' };
+  return `${fact.subjectLabel || who}・${label[fact.field]}：${q ? describeAnswer(q, fact.value) : String(fact.value)}`;
+}
+function chooseProposalTarget(value: 'self' | 'other') {
+  const p = proposal.value; if (!p || state.session.target) return;
+  requestTarget(value);
+  proposal.value = { ...p, fingerprint: fingerprint.value };
+}
+const eligibleProposalFacts = computed(() => proposal.value?.result.facts.map((fact, index) => ({ fact, index, eligible: factApplies(fact, state.session.target) })) ?? []);
+const proposalPeople = computed(() => [...new Set(eligibleProposalFacts.value.filter(row => row.eligible).map(row => row.fact.subjectLabel))]);
+watch(selectedPerson, () => { selectedFacts.value = []; });
+const canConfirmProposal = computed(() => !!state.session.target && !!proposal.value && (!!selectedSituation.value || selectedFacts.value.length > 0));
+function confirmProposal() {
+  const p = proposal.value;
+  if (!p || p.fingerprint !== fingerprint.value || !canConfirmProposal.value || busy.value) return;
+  const facts = selectedFacts.value.map(i => p.result.facts[i]).filter((f): f is CandidateFact => !!f && factApplies(f, state.session.target) && f.subjectLabel === selectedPerson.value);
+  if (facts.length !== selectedFacts.value.length) return;
+  if (new Set(facts.map(f => f.field)).size !== facts.length) { const t = turns.value.find(t => t.id === p.turnId); if (t) t.reply = '同一欄位有不同說法，請只選一項；不確定可以先不採用。'; return; }
+  const situation = selectedSituation.value;
+  proposal.value = null;
+  // 先由既有切需求動作清理舊探索，再套用使用者確認的穩定事實。
+  if (situation) selectNeed(situation);
+  const applied = facts.length ? applyConfirmedFacts(facts) : true;
+  const t = turns.value.find(t => t.id === p.turnId);
+  if (t) t.reply = applied ? facts.length ? `好的，已記下${facts.map(f => factLabel(f)).join('、')}。${!state.session.situation && !state.session.query ? '接著先了解你需要哪方面的幫忙。' : '接著繼續確認這個需求。'}` : `好，我們先從「${SITUATIONS.find(s => s.id === situation)?.label ?? '目前方向'}」找。` : '這些資料還不能直接採用，我們用目前題目繼續確認。';
+  if (applied) clarification.value = { input: p.input, prompt: nextPrompt('current'), fingerprint: fingerprint.value };
+  selectedFacts.value = [];
+}
+async function applyAnswer(result: Extract<Interpretation, { kind: 'answer' }>, text: string): Promise<boolean> {
+  if ('numberValue' in result) return submit(result.numberValue, text);
+  const id = result.choiceId;
+  if (id.startsWith('option:')) {
+    const option = current.value?.options?.[Number(id.slice(7))];
+    return option ? submit(option.value, text) : false;
+  }
+  if (id === 'skip') return submit(undefined, text);
+  if (id === 'target:self' || id === 'target:other') { const value = id === 'target:self' ? 'self' : 'other'; requestTarget(value); typedTarget.value = { target: value, text }; return true; }
+  if (id.startsWith('need:')) { selectNeed(id.slice(5)); typedNeed.value = { situation: state.session.situation, query: state.session.query, text }; return true; }
+  if (id === 'explore') { discoverWithKnownAnswers(); typedNeed.value = { situation: null, query: '', text }; return true; }
+  if (id === 'results') go('results');
+  else if (id === 'needs') go('needs');
+  else if (id === 'help') tab('help');
+  else if (id === 'continue') continueQuestions();
+  else if (id === 'plan') tab('plan');
+  else return false;
+  return true;
+}
+const simpleFact = computed(() => {
+  const p = proposal.value;
+  if (!p || p.result.facts.length !== 1 || p.result.situationIds.length || p.result.uncertainties.length) return null;
+  const fact = p.result.facts[0]!;
+  if (fact.subject === 'unclear' || (state.session.target && !factApplies(fact, state.session.target)) || (!state.session.target && fact.subject === 'applicant')) return null;
+  return fact;
+});
+const simpleCategory = computed(() => {
+  const result = proposal.value?.result;
+  return result && result.situationIds.length === 1 && !result.facts.length && !result.uncertainties.length ? result.situationIds[0]! : null;
+});
+function confirmSimpleFact() {
+  const fact = simpleFact.value; if (!fact) return;
+  if (!state.session.target) chooseProposalTarget(fact.subject === 'self' ? 'self' : 'other');
+  selectedPerson.value = fact.subjectLabel; selectedFacts.value = [0]; confirmProposal();
+}
+function confirmSimpleCategory() {
+  if (!simpleCategory.value) return;
+  selectedSituation.value = simpleCategory.value; confirmProposal();
+}
+function editProposal() {
+  const p = proposal.value; if (!p) return;
+  const original = p.input; cancelInput(); query.value = original;
+  void nextTick(() => document.getElementById('chat-search')?.focus());
+}
+function nextPrompt(mode: 'current' | 'need'): string {
+  if (!state.session.target) return '這次要幫自己找，還是幫家人或別人找？';
+  if (mode === 'need') return '你現在最想減輕哪方面的負擔？也可以選「還不確定，帶我找」。';
+  if (current.value) return titleFor(current.value, target.value);
+  return view.value === 'results' ? '接下來想繼續縮小範圍，還是換個需求？' : '目前最需要減輕哪一筆支出，或解決什麼困難？';
+}
+function showRecovery(id: number, input: string, lead: string, mode: 'current' | 'need' = 'current') {
+  const prompt = nextPrompt(mode);
+  const t = turns.value.find(t => t.id === id); if (t) t.reply = `${lead} ${prompt}`;
+  recovery.value = { turnId: id, mode };
+  clarification.value = { input: input.slice(-1600), prompt, fingerprint: fingerprint.value };
+}
+const recoveryChoices = computed(() => {
+  if (!recovery.value) return [];
+  if (!state.session.target) return [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }];
+  if (recovery.value.mode === 'need') return [...SITUATIONS.map(s => ({ id: `need:${s.id}`, label: s.label })), { id: 'discover', label: '還不確定，帶我找' }];
+  if (current.value) return [...(current.value.options ?? []).slice(0, 4).map((o, i) => ({ id: `option:${i}`, label: o.label })), { id: 'skip', label: '不知道，先跳過' }, { id: 'show-question', label: '回到目前題目' }, { id: 'show-needs', label: '改說其他需求' }];
+  return [{ id: 'discover', label: '還不確定，帶我找' }, { id: 'show-needs', label: '選一個需求方向' }, { id: 'rephrase', label: '我再說清楚一點' }];
+});
+async function recoverWith(id: string) {
+  if (id === 'rephrase') { document.getElementById('chat-search')?.focus(); return; }
+  if (id === 'show-question') { recovery.value = null; return; }
+  if (id === 'show-needs') { if (recovery.value) recovery.value.mode = 'need'; return; }
+  if (id === 'discover') { cancelInput(); discoverWithKnownAnswers(); return; }
+  if (id.startsWith('need:')) {
+    const recoveryTurn = recovery.value?.turnId;
+    const t = turns.value.find(t => t.id === recoveryTurn);
+    const input = t?.text ?? SITUATIONS.find(s => s.id === id.slice(5))?.label ?? '';
+    recovery.value = null;
+    proposal.value = { result: { kind: 'situation', situationIds: [id.slice(5)], facts: [], details: [], uncertainties: [] }, fingerprint: fingerprint.value, turnId: recoveryTurn ?? ++turnId, input };
+    selectedSituation.value = ''; return;
+  }
+  const previous = clarification.value;
+  const recoveryTurnId = recovery.value?.turnId;
+  const initialTarget = state.session.target === null;
+  recovery.value = null;
+  await applyAnswer({ kind: 'answer', choiceId: id, evidence: '' }, context.value.choices.find(c => c.id === id)?.label ?? id);
+  if (initialTarget && previous && state.session.target) {
+    const latest = turns.value.find(t => t.id === recoveryTurnId);
+    clarification.value = { ...previous, prompt: nextPrompt('need'), fingerprint: fingerprint.value };
+    if (latest) latest.reply = `好，${nextPrompt('need')}`;
+  }
+}
+async function onInput() {
+  const text = query.value.trim();
+  if (!text || busy.value || interpreting.value || pendingSwitch.value) return;
+  query.value = '';
+  // 確認中的「對」回答的是上一則提問，不能誤填成背景資格題的「是」。
+  if (proposal.value && /^(?:對|是|是的|沒錯|正確|對的)(?:[，,\s]*(?:繼續|請繼續|沒錯))?[。！!]?$/u.test(text)) {
+    const id = ++turnId; const fact = simpleFact.value; const category = simpleCategory.value;
+    turns.value.push({ id, text, reply: '' });
+    if (fact) { confirmSimpleFact(); const t = turns.value.find(t => t.id === id); if (t) t.reply = '好，我們接著往下聊。'; }
+    else if (category && state.session.target) { confirmSimpleCategory(); const t = turns.value.find(t => t.id === id); if (t) t.reply = '好，先從這個方向了解。'; }
+    else { const t = turns.value.find(t => t.id === id); if (t) t.reply = !state.session.target ? '好，請先選這次要幫誰找，我才不會把條件套到不同人。' : '這次有幾項資料，請先選同一位的條件與想處理的方向，再按確認。'; }
+    return;
+  }
+  if (proposal.value && /^(?:不是|不對|我要修改|改一下)[。！!]?$/u.test(text)) {
+    editProposal(); turns.value.push({ id: ++turnId, text, reply: '好，請在輸入列直接修改，或補充哪裡不同。' }); return;
+  }
+  if (proposal.value && /^(?:取消|先不要|不要了|算了)[。！!]?$/u.test(text)) {
+    cancelInput(); turns.value.push({ id: ++turnId, text, reply: '好，先維持原本的資料與進度。' }); return;
+  }
+  const selfAge = explicitSelfAge(text);
+  if (inputMode.value === 'search' && !selfAge) {
+    if (!state.session.target) { query.value = text; return; }
+    const matches = state.catalog ? filterCatalog(state.catalog.items, null, text) : [];
+    cancelInput();
+    if (!matches.length) {
+      const id = ++turnId; turns.value.push({ id, text, reply: '' }); inputMode.value = 'conversation';
+      showRecovery(id, text, '沒有找到這個資源名稱，我們可以改從你的情況找；你原本的資料與進度都保留。', 'need');
+      return;
+    }
+    searchResources(text); typedNeed.value = { situation: null, query: state.session.query, text }; return;
+  }
+  inputMode.value = 'conversation';
+  const previous = proposal.value?.input ?? (clarification.value?.fingerprint === fingerprint.value ? clarification.value.input : '');
+  const previousPrompt = clarification.value?.prompt;
+  const inferenceInput = previous && previous.length + text.length + 24 <= 2000
+    ? `先前說法：${previous}\n這次補充或修正：${text}` : text;
+  cancelInput();
+  const id = ++turnId; turns.value.push({ id, text, reply: '' });
+  const snapshot = fingerprint.value;
+  const inputContext = { ...context.value, ...(previousPrompt ? { followupQuestion: previousPrompt } : {}) };
+  interpreting.value = true;
+  try {
+    const exact = selfAge ?? exactAnswer(text, inputContext);
+    if (!exact && modelStatus.value?.state !== 'ready') {
+      showRecovery(id, inferenceInput, '裝置端文字理解目前尚未就緒，我們仍可以用選項繼續。');
+      return;
+    }
+    let result = exact ?? await turn.run(snapshot, () => fingerprint.value, signal => modelAdapter.interpret(inferenceInput, inputContext, signal));
+    if (result?.kind === 'answer' && 'choiceId' in result && result.choiceId.startsWith('need:')) result = { kind: 'situation', situationIds: [result.choiceId.slice(5)], facts: [], details: [text], uncertainties: [] };
+    if (!result || snapshot !== fingerprint.value) return;
+    const t = turns.value.find(t => t.id === id); if (!t) return;
+    if (result.kind === 'answer') {
+      const ok = await applyAnswer(result, text);
+      if (ok && ('numberValue' in result || ('choiceId' in result && /^(option:|skip$|target:|need:|explore$)/.test(result.choiceId)))) t.hidden = true;
+      else if (ok) t.reply = '好，我們接著往下看。';
+      else showRecovery(id, inferenceInput, '目前題目已改變，我們以現在這題為準。');
+    } else if (result.kind === 'situation') {
+      if (!result.situationIds.length && !result.facts.length) {
+        showRecovery(id, inferenceInput, result.details.length ? `我聽到你提到「${result.details.join('、')}」。` : '我還需要多了解一點。', 'need');
+        return;
+      }
+      proposal.value = { result, fingerprint: snapshot, turnId: id, input: selfAge ? text : inferenceInput };
+      selectedFacts.value = []; selectedSituation.value = ''; selectedPerson.value = '';
+      t.reply = result.facts.length === 1 && !result.situationIds.length ? `你提到${factLabel(result.facts[0]!)}，這樣理解對嗎？` : result.situationIds.length === 1 && !result.facts.length ? `你是想找「${SITUATIONS.find(s => s.id === result.situationIds[0])?.label}」這方面的幫忙嗎？` : '我聽到了幾項情況。我們先確認同一位的資料，再挑一個最想處理的方向。';
+    } else showRecovery(id, inferenceInput, result.kind === 'off_topic' ? '我主要幫你找補助和生活資源，我們先回到你需要的幫忙。' : '我還沒抓到你的意思，我們先確認一件事。');
+  } catch (error) {
+    if (snapshot === fingerprint.value) showRecovery(id, inferenceInput, error instanceof ModelInputTooLongError ? error.message : '這次沒有理解完整，原本資料都保留。我們可以直接用下面選項繼續。');
+  } finally { if (snapshot === fingerprint.value) interpreting.value = false; }
+}
+
 </script>
 
 <template>
   <div class="chat">
     <h1 class="sr-only">福利通對話</h1>
+    <ConfirmDialog :open="downloadPrompt" title="下載裝置端文字理解模型？" confirm-label="同意下載並啟用" @confirm="acceptDownload" @cancel="dismissDownload">
+      <p>下載約 2.6 GB 的 Gemma 4 E2B 後，就能用自己的話描述情況。文字會在手機上理解。</p>
+      <p>建議使用 Wi-Fi 並保留足夠空間。下載完成會自動啟用，以後每次開啟補助專區也會自動載入。</p>
+      <p>取消仍可使用選項與名稱搜尋，稍後也能從模型狀態開始下載。</p>
+    </ConfirmDialog>
+    <p v-if="preparing || modelStatus?.state === 'loading' || modelStatus?.state === 'downloading' || modelStatus?.state === 'ready'" class="chat__system" role="status">{{ statusText }}<template v-if="modelStatus?.state !== 'ready'"> 準備期間可以先使用選項。</template></p>
     <section ref="log" class="chat__log" aria-label="對話紀錄">
       <p class="chat__day" aria-hidden="true">答案只留在這個分頁，不會送出</p>
 
@@ -228,7 +554,7 @@ function onSearch() {
       </BotMessage>
 
       <template v-if="past('home') && isTyped(greetKey)">
-        <UserMessage :text="targetLabel" edit-label="改對象" @edit="tab('home')" />
+        <UserMessage :text="typedTarget?.target === state.session.target ? typedTarget.text : targetLabel" edit-label="改對象" @edit="tab('home')" />
 
         <!-- 2. 選需求 -->
         <BotMessage :key="needKey" :msg-key="needKey" :lines="needLines" :active="view === 'needs' || view === 'search'">
@@ -254,13 +580,13 @@ function onSearch() {
                   <span :id="`need-${s.id}-hint`" class="reply__sub">{{ s.hint }}</span>
                 </button>
               </div>
-              <p class="chat__tip">知道名稱？直接在下方輸入搜尋。</p>
+              <p class="chat__tip">也可以在下方說說你的情況，或切換名稱搜尋。</p>
             </div>
           </template>
         </BotMessage>
 
         <template v-if="past('needs') && isTyped(needKey)">
-          <UserMessage :text="needAnswer" edit-label="換需求" @edit="go('needs')" />
+          <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="換需求" @edit="go('needs')" />
 
           <!-- 3. 問答紀錄 -->
           <template v-for="q in answered" :key="q.id">
@@ -268,11 +594,17 @@ function onSearch() {
             <UserMessage :text="answerText(q)" edit-label="改答案" @edit="editQuestion(q)" />
           </template>
 
-          <!-- 目前的題目 -->
+          <template v-if="view === 'questions'">
+            <template v-for="t in turns.filter(t => !t.hidden)" :key="t.id">
+              <UserMessage :text="t.text" />
+              <div v-if="t.reply" class="msg msg--bot"><p class="bubble" role="status">{{ t.reply }}</p></div>
+            </template>
+          </template>
+          <!-- 目前的題目：確認完成後接在使用者原句與回覆之後 -->
           <template v-if="view === 'questions'">
             <p v-if="feedback && current && feedback.before === `q:${current.id}`" class="chat__system" role="status">{{ feedback.text }}</p>
 
-            <BotMessage v-if="current" :key="`q:${current.id}`" :msg-key="`q:${current.id}`" :lines="qLines(current, true)" active>
+            <BotMessage v-if="current && !proposal && !recovery && !interpreting" :key="`q:${current.id}`" :msg-key="`q:${current.id}`" :lines="qLines(current, true)" active>
               <details v-if="why" class="bubble-more">
                 <summary>為什麼問這題</summary>
                 <p>{{ why }}</p>
@@ -328,7 +660,7 @@ function onSearch() {
               active
             />
             <BotMessage
-              v-else
+              v-else-if="!current"
               key="q-empty"
               msg-key="q-empty"
               :lines="[
@@ -403,25 +735,114 @@ function onSearch() {
           </template>
         </template>
       </template>
+      <template v-if="view !== 'questions'">
+        <template v-for="t in turns.filter(t => !t.hidden)" :key="t.id">
+          <UserMessage :text="t.text" />
+          <div v-if="t.reply" class="msg msg--bot"><p class="bubble" role="status">{{ t.reply }}</p></div>
+        </template>
+      </template>
+      <section v-if="proposal" class="conversation-proposal" aria-labelledby="proposal-title">
+        <h2 id="proposal-title">{{ simpleFact ? '確認這項資料' : simpleCategory ? '確認想找的方向' : '先確認我整理的內容' }}</h2>
+        <template v-if="simpleFact">
+          <p>{{ factLabel(simpleFact) }}</p>
+          <div class="replies__row">
+            <button type="button" class="btn btn--primary" :disabled="busy" @click="confirmSimpleFact">{{ !state.session.target ? simpleFact.subject === 'self' ? '對，幫我繼續找' : `對，幫${simpleFact.subjectLabel}找` : '對，記下來繼續' }}</button>
+            <button type="button" class="btn" @click="editProposal">不是，我改一下</button>
+            <button type="button" class="btn" @click="cancelInput">先不改</button>
+          </div>
+        </template>
+        <template v-else-if="simpleCategory">
+          <template v-if="!state.session.target">
+            <p>好的，先告訴我這次是幫誰找？</p>
+            <div class="replies__row"><button type="button" class="btn" @click="chooseProposalTarget('self')">幫自己找</button><button type="button" class="btn" @click="chooseProposalTarget('other')">幫家人或別人找</button></div>
+          </template>
+          <div class="replies__row"><button type="button" class="btn btn--primary" :disabled="!state.session.target || busy" @click="confirmSimpleCategory">對，先找這方面</button><button type="button" class="btn" @click="editProposal">不是，我再說清楚</button><button type="button" class="btn" @click="cancelInput">先不改</button></div>
+        </template>
+        <template v-else>
+        <p>一輪只查一位；請只勾選同一位的資料。沒有勾選的內容不會填入答案。</p>
+        <template v-if="!state.session.target">
+          <p>這次要幫誰找？選完再確認下面的內容。</p>
+          <div class="replies__row"><button type="button" class="btn" @click="chooseProposalTarget('self')">幫自己找</button><button type="button" class="btn" @click="chooseProposalTarget('other')">幫家人或別人找</button></div>
+        </template>
+        <ul v-if="proposal.result.details.length"><li v-for="detail in proposal.result.details" :key="detail">你提到：「{{ detail }}」</li></ul>
+        <fieldset v-if="proposal.result.situationIds.length">
+          <legend>想先找哪方面？選擇後仍要按下確認。</legend>
+          <label v-for="id in proposal.result.situationIds" :key="id" class="conversation-choice"><input v-model="selectedSituation" type="radio" name="proposed-situation" :value="id" />{{ SITUATIONS.find(s => s.id === id)?.label }}</label>
+          <label class="conversation-choice"><input v-model="selectedSituation" type="radio" name="proposed-situation" value="" />先維持目前方向</label>
+        </fieldset>
+        <fieldset v-if="proposalPeople.length">
+          <legend>這次要採用哪一位的條件？</legend>
+          <label v-for="person in proposalPeople" :key="person" class="conversation-choice"><input v-model="selectedPerson" type="radio" name="proposed-person" :value="person" />{{ person }}</label>
+          <p v-if="proposalPeople.length > 1">每次只選一位。若不同稱呼是同一人，可以在輸入列補充，我會重新整理。</p>
+        </fieldset>
+        <fieldset v-if="eligibleProposalFacts.length">
+          <legend>可採用的條件（逐項確認，預設不採用）</legend>
+          <label v-for="row in eligibleProposalFacts" :key="row.index" class="conversation-choice">
+            <input v-model="selectedFacts" type="checkbox" :value="row.index" :disabled="!row.eligible || row.fact.subjectLabel !== selectedPerson" />
+            <span>{{ factLabel(row.fact) }}<small>原文：「{{ row.fact.evidence }}」</small><small v-if="!row.eligible">對象不符或不明，請先釐清，不會套用。</small></span>
+          </label>
+        </fieldset>
+        <div v-if="proposal.result.uncertainties.length"><p>還要確認：</p><ul><li v-for="item in proposal.result.uncertainties" :key="item">{{ item }}</li></ul></div>
+        <template v-if="proposal.result.facts.length && !eligibleProposalFacts.some(row => row.eligible) && state.session.target">
+          <p>這些資料不是目前查詢對象的條件。你要換一位查，還是繼續幫目前這位找？</p>
+          <button v-if="proposal.result.facts.some(f => f.subject === 'self') && state.session.target === 'other'" type="button" class="btn" @click="requestTarget('self')">這是我，改幫自己找</button>
+          <button v-if="proposal.result.facts.some(f => f.subject === 'other') && state.session.target === 'self'" type="button" class="btn" @click="requestTarget('other')">這是家人，改幫別人找</button>
+          <button type="button" class="btn" @click="editProposal">補充目前這位的情況</button>
+        </template>
+        <p>生活困難不等於已核定低收入戶，居住地也不等於戶籍。資格仍依原文及承辦機關審核。</p>
+        <div class="replies__row"><button type="button" class="btn btn--primary" :disabled="!canConfirmProposal || busy" @click="confirmProposal">確認採用所選內容</button><button type="button" class="btn" @click="cancelInput">先不要，繼續原本流程</button></div>
+        </template>
+      </section>
+      <div v-if="recovery" class="replies conversation-recovery" role="group" aria-label="接著可以這樣做">
+        <button v-for="choice in recoveryChoices" :key="choice.id" type="button" class="reply reply--chip" :disabled="busy" @click="recoverWith(choice.id)"><span class="reply__label">{{ choice.label }}</span></button>
+      </div>
+      <p v-if="interpreting" class="chat__system" role="status">正在裝置上理解你的說法… <button type="button" class="btn" @click="cancelInput">取消</button></p>
+      <details class="conversation-model no-print">
+        <summary>文字理解與模型狀態</summary>
+        <p role="status">{{ statusText }}</p>
+        <p>完整選項文字與目前年齡題的單一數字可直接填答；完整本人年齡陳述會先請你確認。其他說法由裝置端模型理解，補助仍由既有資料與規則查找。</p>
+        <p v-if="modelStatus?.state === 'not_downloaded'">首次需下載約 2.6 GB 的模型，請先連網並保留儲存空間。</p>
+        <button v-if="modelStatus?.state !== 'unavailable' && modelStatus?.state !== 'ready'" type="button" class="btn" :disabled="preparing" @click="prepareModel">{{ preparing ? '準備模型中…' : modelStatus?.state === 'downloaded' ? '載入原版 Gemma' : '下載並載入原版 Gemma' }}</button>
+        <button type="button" class="btn" :disabled="preparing" @click="refreshModel">重新確認狀態</button>
+      </details>
     </section>
 
-    <form v-if="state.session.target && view !== 'home'" class="composer no-print" role="search" @submit.prevent="onSearch">
-      <label class="sr-only" for="chat-search">用名稱或關鍵字搜尋</label>
+    <form class="composer no-print conversation-composer" @submit.prevent="onInput">
+      <div class="conversation-modes" role="group" aria-label="輸入方式">
+        <button type="button" :aria-pressed="inputMode === 'conversation'" @click="inputMode = 'conversation'">說說情況</button>
+        <button type="button" :aria-pressed="inputMode === 'search'" :disabled="!state.session.target" @click="inputMode = 'search'">名稱搜尋</button>
+      </div>
+      <label class="sr-only" for="chat-search">{{ inputMode === 'search' ? '用名稱或關鍵字搜尋' : '回答目前問題或說說你的情況' }}</label>
       <input
         id="chat-search"
         v-model="query"
         class="composer__input"
-        type="search"
-        inputmode="search"
-        enterkeyhint="search"
-        maxlength="100"
-        placeholder="輸入名稱搜尋，例如：租金補貼"
-        :disabled="busy"
+        :type="inputMode === 'search' ? 'search' : 'text'"
+        enterkeyhint="send"
+        :maxlength="inputMode === 'search' ? 100 : 2000"
+        :placeholder="inputMode === 'search' ? '輸入資源名稱，例如：租金補貼' : '回答問題，或說說目前遇到的困難'"
+        :disabled="busy || !!pendingSwitch"
       />
-      <button type="submit" class="composer__send" :disabled="busy || !query.trim()">
-        <span class="sr-only">搜尋</span>
+      <button type="submit" class="composer__send" :disabled="busy || interpreting || !!pendingSwitch || !query.trim()">
+        <span class="sr-only">{{ inputMode === 'search' ? '搜尋' : '送出' }}</span>
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </form>
   </div>
 </template>
+
+<style scoped>
+.conversation-composer { flex-wrap: wrap; }
+.conversation-modes { display: flex; flex-basis: 100%; gap: .5rem; }
+.conversation-modes button { min-height: 48px; padding: .5rem .75rem; border: 0; border-radius: .5rem; background: transparent; color: var(--muted); font: inherit; }
+.conversation-modes button[aria-pressed='true'] { background: var(--raised); color: var(--accent); font-weight: 600; }
+.conversation-proposal { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); overflow-wrap: anywhere; }
+.conversation-proposal h2 { margin: 0 0 .75rem; font-size: 1.125rem; }
+.conversation-proposal p, .conversation-model p { margin: .75rem 0; }
+.conversation-proposal fieldset { min-width: 0; margin: 1rem 0; border: 0; padding: 0; }
+.conversation-choice { display: flex; align-items: center; gap: .75rem; min-height: 48px; padding: .5rem 0; }
+.conversation-choice input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; accent-color: var(--accent); }
+.conversation-choice small { display: block; margin-top: .3rem; color: var(--muted); font-size: .875rem; }
+.conversation-model { margin: 1rem 0; font-size: .875rem; }
+.conversation-model summary { display: flex; align-items: center; min-height: 48px; cursor: pointer; }
+</style>
