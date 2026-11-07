@@ -76,7 +76,6 @@ export default function Home() {
         <T size="display" heading={1}>
           臺北市福利補助自己查
         </T>
-        <T muted>回答幾個簡單問題，看看你可以申請哪些補助。</T>
       </View>
 
       {demo ? <Btn label="示範情境：獨居的陳阿嬤" icon="▶" align="left" onPress={loadDemo} /> : null}
