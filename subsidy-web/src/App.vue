@@ -117,7 +117,7 @@ const dialogTitle = computed(() =>
         :aria-current="n.match.includes(state.view) ? 'page' : undefined"
         @click="tab(n.view)"
       >
-        {{ n.label }}<span v-if="n.view === 'plan' && planItems.length" class="tabs__count">{{ planItems.length }}<span class="sr-only"> 項</span></span>
+        {{ n.view === 'plan' && state.session.target === 'other' ? '家人檢核表' : n.label }}<span v-if="n.view === 'plan' && planItems.length" class="tabs__count">{{ planItems.length }}<span class="sr-only"> 項</span></span>
       </button>
     </nav>
   </header>
@@ -159,6 +159,6 @@ const dialogTitle = computed(() =>
     @confirm="confirmPending"
     @cancel="pendingSwitch = null"
   >
-    <p>會清除目前填的答案、行動單和勾選進度。字放大與高對比設定會保留。</p>
+    <p>會清除目前填的答案、行動單／檢核表和勾選進度。字放大與高對比設定會保留。</p>
   </ConfirmDialog>
 </template>

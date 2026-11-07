@@ -90,3 +90,43 @@ describe('在一般瀏覽器', () => {
     await expect(request('unknown_handler')).rejects.toBeInstanceOf(TownPassError);
   });
 });
+
+describe('PDF 原生交付', () => {
+  const bytes = new TextEncoder().encode('%PDF-1.7\n%%EOF\n');
+
+  it('傳送原始 PDF base64 與檔名，回傳分享介面狀態', async () => {
+    const { sharePdf } = await import('./index');
+    const { posted } = installFlutterObject(() => ({ status: 'presented' }));
+    await expect(sharePdf(bytes, '行動單.pdf')).resolves.toEqual({ status: 'presented' });
+    const message = JSON.parse(posted[0]!);
+    expect(message.name).toBe('share_pdf');
+    expect(message.data).toEqual({
+      base64: btoa(new TextDecoder().decode(bytes)), filename: '行動單.pdf', userInitiated: true,
+    });
+  });
+
+  it('取消或無法分享不回報成功', async () => {
+    const { sharePdf } = await import('./index');
+    installFlutterObject(() => ({ status: 'cancelled_or_unavailable' }));
+    await expect(sharePdf(bytes, '行動單.pdf')).resolves.toEqual({ status: 'cancelled_or_unavailable' });
+  });
+
+  it('拒絕超過限制的文件且不送到 App', async () => {
+    const { sharePdf } = await import('./index');
+    const { posted } = installFlutterObject();
+    await expect(sharePdf(new Uint8Array(10 * 1024 * 1024 + 1), '大檔.pdf')).resolves.toEqual({ status: 'failed', reason: 'invalid_pdf' });
+    expect(posted).toHaveLength(0);
+  });
+
+  it('舊 App 沒有 handler 時逾時，清理監聽並拒絕連點', async () => {
+    vi.useFakeTimers();
+    const { sharePdf } = await import('./index');
+    const { listeners } = installFlutterObject();
+    const pending = sharePdf(bytes, '行動單.pdf');
+    const rejected = expect(pending).rejects.toMatchObject({ code: 'TIMEOUT' });
+    await expect(sharePdf(bytes, '行動單.pdf')).resolves.toEqual({ status: 'failed', reason: 'busy' });
+    await vi.advanceTimersByTimeAsync(120_000);
+    await rejected;
+    expect(listeners.size).toBe(0);
+  });
+});

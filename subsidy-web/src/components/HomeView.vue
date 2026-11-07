@@ -13,7 +13,7 @@ import { requestTarget, state } from '../store';
         <button type="button" class="row" :aria-pressed="state.session.target === 'self'" @click="requestTarget('self')">
           <span class="row__main">
             <span class="row__title">幫自己找</span>
-            <span class="row__sub">依你的情況回答</span>
+            <span class="row__sub">依你的情況回答，存成線上行動單</span>
           </span>
           <span class="row__chev" aria-hidden="true">›</span>
         </button>
@@ -22,7 +22,7 @@ import { requestTarget, state } from '../store';
         <button type="button" class="row" :aria-pressed="state.session.target === 'other'" @click="requestTarget('other')">
           <span class="row__main">
             <span class="row__title">幫家人或別人找</span>
-            <span class="row__sub">依對方的情況回答，不和你的資料混用</span>
+            <span class="row__sub">依對方的情況回答，製作可列印的 A4 檢核表</span>
           </span>
           <span class="row__chev" aria-hidden="true">›</span>
         </button>
@@ -34,7 +34,7 @@ import { requestTarget, state } from '../store';
       <ol class="intro__list">
         <li>不知道從哪裡找，也可以一步步帶你縮小範圍</li>
         <li>每項列出能提供什麼、限制與受理情形</li>
-        <li>整理辦理步驟與要帶的文件，存成行動單</li>
+        <li>整理辦理步驟與文件，自己線上準備，或印成檢核表交給家人</li>
         <li>卡住時整理要問窗口的話</li>
       </ol>
       <p class="muted">結果是可能相關的資源，不是核准；能不能領由承辦機關審核。答案只留在這個分頁。</p>
