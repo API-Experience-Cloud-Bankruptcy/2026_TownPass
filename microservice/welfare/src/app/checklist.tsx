@@ -1,10 +1,10 @@
-import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { Btn, Card, Screen, Section, T } from '@/components/ui-kit';
+import { Btn, Card, Screen, Section, styles as kit, T } from '@/components/ui-kit';
 import { useApp } from '@/lib/app-state';
 import { chosenItems, mergedDocuments } from '@/lib/chosen';
+import { go } from '@/lib/nav';
 
 export default function Checklist() {
   const { colors, chosen, answers, categories } = useApp();
@@ -22,7 +22,7 @@ export default function Checklist() {
         <T size="title" heading={1}>
           還沒有要辦的項目
         </T>
-        <Btn label="先查查看可以申請什麼" variant="primary" onPress={() => router.push('/')} />
+        <Btn label="先查查看可以申請什麼" variant="primary" onPress={() => go('/')} />
       </Screen>
     );
   }
@@ -35,8 +35,8 @@ export default function Checklist() {
         </T>
         <T muted>{picked ? `你選了 ${items.length} 項` : `依你的回答，先列出很可能符合的 ${items.length} 項`}</T>
         <View nativeID="no-print" style={s.row}>
-          {canPrint ? <Btn label="列印清單" icon="⎙" onPress={() => window.print()} style={s.flex1} /> : null}
-          <Btn label="請人陪我去" onPress={() => router.push('/help')} style={s.flex1} />
+          {canPrint ? <Btn label="列印清單" icon="⎙" onPress={() => window.print()} style={kit.rowBtn} /> : null}
+          <Btn label="請人陪我去" onPress={() => go('/help')} style={kit.rowBtn} />
         </View>
       </View>
 

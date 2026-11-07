@@ -1,14 +1,14 @@
-import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ItemCard } from '@/components/item-card';
 import { NearbyPlaces } from '@/components/nearby-places';
-import { Btn, Card, Screen, Section, T } from '@/components/ui-kit';
+import { Btn, Card, Screen, Section, styles as kit, T } from '@/components/ui-kit';
 import { CATEGORY_LABEL, itemsInCategories, WELFARE_ITEMS } from '@/data';
 import { useApp } from '@/lib/app-state';
 import { describeProfile, resultsSpeech } from '@/lib/describe';
 import { matchAll } from '@/lib/match';
+import { go } from '@/lib/nav';
 import { canSpeak, speak, stopSpeaking } from '@/lib/speech';
 
 export default function Results() {
@@ -49,7 +49,7 @@ export default function Results() {
           <Btn
             label={chosen.length > 0 ? `帶去臨櫃清單（${chosen.length} 項）` : '帶去臨櫃清單'}
             variant="primary"
-            onPress={() => router.push('/checklist')}
+            onPress={() => go('/checklist')}
           />
         ) : undefined
       }>
@@ -67,10 +67,10 @@ export default function Results() {
               icon={speaking ? '■' : '♪'}
               selected={speaking}
               onPress={toggleSpeak}
-              style={s.flex1}
+              style={kit.rowBtn}
             />
           ) : null}
-          <Btn label="修改答案" onPress={() => router.push('/quiz')} style={s.flex1} />
+          <Btn label="修改答案" onPress={() => go('/quiz')} style={kit.rowBtn} />
         </View>
       </View>
 
@@ -97,14 +97,14 @@ export default function Results() {
         </Section>
       ) : null}
 
-      <NearbyPlaces />
-
       {total === 0 ? (
         <Card>
           <T>可以看看全部的福利項目，或請人一起幫你查。</T>
-          <Btn label="福利項目一覽表" onPress={() => router.push('/list')} />
+          <Btn label="福利項目一覽表" onPress={() => go('/list')} />
         </Card>
       ) : null}
+
+      <NearbyPlaces />
     </Screen>
   );
 }
@@ -112,5 +112,4 @@ export default function Results() {
 const s = StyleSheet.create({
   top: { gap: 10, paddingTop: 8 },
   row: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  flex1: { flex: 1, minWidth: 140 },
 });

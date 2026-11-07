@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -6,17 +5,35 @@ import { Btn, Dots, Screen, T } from '@/components/ui-kit';
 import { QUESTIONS } from '@/data';
 import type { Identity, Profile } from '@/data/welfare-schema';
 import { useApp, type Answers } from '@/lib/app-state';
+import { go } from '@/lib/nav';
 import { markAnswered, prefill } from '@/lib/prefill';
 import { questionsFor, type Question } from '@/lib/questions-types';
 import { getUserInfo, profileFromAccount, type KnownProfile } from '@/lib/townpass';
 
 const ROC_OFFSET = 1911;
 
+/** Ignore taps this long after the question changes, so a double tap does not answer the next one. */
+const SETTLE_MS = 400;
+
 export default function Quiz() {
+  const { loaded } = useApp();
+  // Start only after the saved session is restored, so a refresh resumes with the earlier answers.
+  return loaded ? <QuizSteps /> : <Screen title="回答問題">{null}</Screen>;
+}
+
+/** Resume at the first question not yet answered; start over when all are answered. */
+function firstOpen(questions: Question[], answered: string[] = []): number {
+  const i = questions.findIndex((q) => !answered.includes(q.id));
+  return i < 0 ? 0 : i;
+}
+
+function QuizSteps() {
   const { categories, answers, setAnswers, colors } = useApp();
   const questions = useMemo(() => questionsFor(QUESTIONS, categories), [categories]);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => firstOpen(questions, answers.answered));
   const [draft, setDraft] = useState<Answers>(answers);
+  const [settling, setSettling] = useState(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [known, setKnown] = useState<KnownProfile | null>(null);
   // Bumped to remount the shown question so its local state picks up late Town Pass data.
   const [refresh, setRefresh] = useState(0);
@@ -39,14 +56,22 @@ export default function Quiz() {
     };
   }, []);
 
+  function settle() {
+    setSettling(true);
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => setSettling(false), SETTLE_MS);
+  }
+
+  useEffect(settle, [index]);
+  useEffect(() => () => clearTimeout(settleTimer.current), []);
+
   function next(updated: Answers) {
     updated = markAnswered(updated, q.id);
     setDraft(updated);
+    // Saved every step so going back or refreshing mid-way keeps what was answered.
+    setAnswers(updated);
     if (index + 1 < questions.length) setIndex(index + 1);
-    else {
-      setAnswers(updated);
-      router.push('/results');
-    }
+    else go('/results');
   }
 
   function skip() {
@@ -69,18 +94,23 @@ export default function Quiz() {
           已帶入台北通資料
         </T>
       ) : null}
-      <QuestionBody
-        key={`${q.id}:${refresh}`}
-        q={q}
-        draft={draft}
-        onDone={next}
-        onTouch={() => (shown.current.touched = true)}
-      />
-      <View style={s.navRow}>
-        {index > 0 ? (
-          <Btn label="上一題" onPress={() => setIndex(index - 1)} style={s.flex1} />
-        ) : null}
-        <Btn label="不知道／跳過" variant="ghost" onPress={skip} style={s.flex1} />
+      <View style={[s.body, { pointerEvents: settling ? 'none' : 'auto' }]}>
+        <QuestionBody
+          key={`${q.id}:${refresh}`}
+          q={q}
+          draft={draft}
+          onDone={next}
+          onTouch={() => {
+            shown.current.touched = true;
+            settle();
+          }}
+        />
+        <View style={s.navRow}>
+          {index > 0 ? (
+            <Btn label="上一題" onPress={() => setIndex(index - 1)} style={s.flex1} />
+          ) : null}
+          <Btn label="不知道／跳過" variant="ghost" onPress={skip} style={s.flex1} />
+        </View>
       </View>
     </Screen>
   );
@@ -314,6 +344,7 @@ function BirthYear({ value, onPick, onTouch }: { value?: number; onPick: (y: num
 
 const s = StyleSheet.create({
   top: { gap: 6, paddingTop: 8 },
+  body: { gap: 16 },
   options: { gap: 10 },
   navRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   flex1: { flex: 1 },
