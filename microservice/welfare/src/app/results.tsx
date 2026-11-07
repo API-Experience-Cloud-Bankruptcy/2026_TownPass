@@ -44,9 +44,10 @@ export default function Results() {
     <Screen
       title="查詢結果"
       footerAction={
-        chosen.length > 0 ? (
+        // The checklist falls back to the likely matches when nothing is picked.
+        chosen.length > 0 || groups.match.length > 0 ? (
           <Btn
-            label={`帶去臨櫃清單（${chosen.length} 項）`}
+            label={chosen.length > 0 ? `帶去臨櫃清單（${chosen.length} 項）` : '帶去臨櫃清單'}
             variant="primary"
             onPress={() => router.push('/checklist')}
           />
@@ -89,7 +90,7 @@ export default function Results() {
       ) : null}
 
       {groups.maybe.length > 0 ? (
-        <Section title={`再確認一件事就知道（${groups.maybe.length}）`}>
+        <Section title={`還需要確認（${groups.maybe.length}）`}>
           {groups.maybe.map((r) => (
             <ItemCard key={r.item.id} result={r} />
           ))}

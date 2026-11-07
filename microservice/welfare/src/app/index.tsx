@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
@@ -6,11 +6,13 @@ import { Btn, Card, Screen, T } from '@/components/ui-kit';
 import { CATEGORIES, CATEGORY_LABEL } from '@/data';
 import type { Category } from '@/data/welfare-schema';
 import { useApp } from '@/lib/app-state';
+import { demoAnswers, isDemo } from '@/lib/demo';
 import { interpretSituation, type Interpretation } from '@/lib/intake';
 import { canListen, listen } from '@/lib/speech';
 
 export default function Home() {
-  const { colors, scale, setCategories, answers, setAnswers, chosen } = useApp();
+  const { colors, scale, setCategories, answers, setAnswers, chosen, setChosen } = useApp();
+  const { demo: demoParam } = useLocalSearchParams<{ demo?: string }>();
   const { width } = useWindowDimensions();
   const columns = width >= 600 ? 3 : 2;
 
@@ -18,9 +20,19 @@ export default function Home() {
   const [listening, setListening] = useState(false);
   const [micReady, setMicReady] = useState(false);
   const [result, setResult] = useState<Interpretation | null>(null);
+  const [demo, setDemo] = useState(false);
   const stopRef = useRef<() => void>(() => {});
 
   useEffect(() => setMicReady(canListen()), []);
+  // Set after mount so the static HTML (rendered without a query) matches the first client render.
+  useEffect(() => setDemo(isDemo(demoParam)), [demoParam]);
+
+  function loadDemo() {
+    setCategories([]);
+    setAnswers(demoAnswers());
+    setChosen([]);
+    router.push('/results');
+  }
 
   function start(categories: Category[]) {
     setCategories(categories);
@@ -66,6 +78,8 @@ export default function Home() {
         </T>
         <T muted>回答幾個簡單問題，看看你可以申請哪些補助。</T>
       </View>
+
+      {demo ? <Btn label="示範情境：獨居的陳阿嬤" icon="▶" align="left" onPress={loadDemo} /> : null}
 
       <Card>
         <T size="heading" heading={2}>
