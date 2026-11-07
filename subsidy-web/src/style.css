@@ -1,0 +1,37 @@
+/* 色票取自城市通 lib/util/tp_colors.dart，與 App 風格一致。 */
+:root {
+  --tp-primary-50: #edf8fa;
+  --tp-primary-500: #5ab4c5;
+  --tp-primary-700: #356c77;
+  --tp-primary-800: #22474e;
+  --tp-secondary-50: #fdf8ed;
+  --tp-secondary-500: #f5ba4b;
+  --tp-secondary-800: #74521b;
+  --tp-grayscale-50: #f1f3f4;
+  --tp-grayscale-500: #738995;
+  --tp-grayscale-700: #475259;
+  --tp-grayscale-800: #30383d;
+  --tp-red-500: #d45251;
+  --tp-white: #ffffff;
+
+  /* 中文 PingFang TC，英數 Roboto（城市通字體規範） */
+  font-family: Roboto, 'PingFang TC', 'Noto Sans TC', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--tp-grayscale-800);
+  background: var(--tp-grayscale-50);
+  -webkit-text-size-adjust: 100%;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--tp-grayscale-50);
+}
