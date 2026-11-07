@@ -817,10 +817,13 @@ legend {
   margin: var(--space-3) var(--gutter) 0;
 }
 .chat {
+  /* 底部輸入列的高度：輸入框＋上下留白＋安全區域；對話區據此留出底部空間。 */
+  --composer-h: calc(var(--touch) + var(--space-2) * 2 + env(safe-area-inset-bottom));
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 .chat__log {
   flex: 1;
@@ -831,7 +834,9 @@ legend {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4) var(--gutter) var(--space-6);
+  /* 底部多留輸入列的高度：捲到底時最後一則停在輸入框上方，往上捲時訊息從輸入列後面經過。 */
+  padding: var(--space-4) var(--gutter) calc(var(--composer-h) + var(--space-4));
+  scroll-padding-bottom: calc(var(--composer-h) + var(--space-4));
 }
 /* 訊息貼著底部（輸入列上方）排列：新訊息把舊的往上推，頂到上方留白後才開始捲動。
    用第一個子元素的 margin-top: auto 而非 justify-content: flex-end，內容超出時仍能捲到最上面。 */
@@ -1350,8 +1355,11 @@ li.wheel__item + li.wheel__item {
 
 /* 底部輸入列 */
 .composer {
-  flex: none;
-  position: relative;
+  /* 浮在對話區底部，不佔版面；背景透明，訊息可從後方經過。 */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 5;
   display: flex;
   gap: var(--space-2);
