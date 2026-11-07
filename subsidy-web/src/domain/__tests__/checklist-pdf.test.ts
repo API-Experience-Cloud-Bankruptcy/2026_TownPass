@@ -216,3 +216,19 @@ describe('A4 表單式 PDF', () => {
     await write('c-no-resources', { meta, target: 'other', items: [], results: new Map(), conditions: [], docChecks: {}, stepDone: {} });
   }, 120000);
 });
+
+describe('PDF 文件表依戶籍篩選', () => {
+  const ltc = (region?: string): PlanInput => ({ ...base(), items: [realItem('CT-0047')], region });
+  it('臺北市不印其他縣市文件；未回答時另表列出', async () => {
+    await useLocalFont();
+    const taipei = (await render(ltc('臺北市'))).pages.flat();
+    expect(containsInOrder(taipei, '新北市政府長期照顧服務申請書')).toBe(false);
+    expect(containsInOrder(taipei, '宜蘭縣長期照顧服務申請書')).toBe(false);
+    expect(taipei).not.toContain('其他縣市的規定');
+    const unanswered = await render(ltc());
+    const lines = unanswered.pages.flat();
+    expect(lines).toContain('其他縣市的規定');
+    const titleAt = lines.indexOf('其他縣市的規定');
+    for (const doc of unanswered.form.otherRegionDocuments) expect(containsInOrder(lines.slice(titleAt), doc.name)).toBe(true);
+  }, 60000);
+});

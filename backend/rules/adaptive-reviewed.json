@@ -1,7 +1,7 @@
 {
   "version": "adaptive-review-v1",
   "binding": "fnv1a64-canonical-record-v1",
-  "source_dataset_sha256": "7744b5bd8262226a2bee9b6c5a2ef2501a32c1a3121e8ed130c13ac0f1780d07",
+  "source_dataset_sha256": "d6ffb735a5f0119bc432205715555bce838bd5442b8a77f426aa73330a9032da",
   "review_scope": "217筆完整本地原文逐筆審閱；來源、附件與缺漏沿用原資料盤點，未重新官方即時查核；探索相關性不構成資格排除。",
   "records": [
     {
@@ -31988,7 +31988,7 @@
     {
       "id": "CT-0047",
       "name": "長照2.0長照服務給付（照顧、交通接送、輔具、喘息）",
-      "source_fingerprint": "85c19e287c47c393",
+      "source_fingerprint": "038675203eceecc4",
       "review_note": "長照四大給付須經等級評估，115年新增對象與服務組合須依支線。 已逐筆檢視本地原文與既有必要條件；非官方現況重新查核。",
       "situations": [
         "elder",

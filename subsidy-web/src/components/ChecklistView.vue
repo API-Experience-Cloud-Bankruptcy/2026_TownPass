@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { buildChecklist } from '../domain/checklist';
-import { mergeDocuments } from '../domain/documents';
+import { mergeDocuments, OTHER_REGION_TITLE, regionText } from '../domain/documents';
 import { copyText, type PlanInput } from '../domain/export';
 import { sharePdfFile } from '../domain/pdf-file';
-import { conditionLines, openDetail, pickConditions, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
+import { answeredRegion, conditionLines, openDetail, pickConditions, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
 import { isInTownPass } from '../townpass';
 
 const included = ref<string[]>([]);
@@ -12,10 +12,10 @@ const generatedAt = new Date();
 const input = computed<PlanInput>(() => ({
   meta: { catalogVersion: state.catalog?.version ?? '未載入', sourceLabel: state.catalog?.sourceLabel ?? '未載入', generatedAt },
   target: 'other', items: planItems.value, results: results.value,
-  conditions: pickConditions(included.value), docChecks: state.session.docChecks, stepDone: state.session.stepDone,
+  conditions: pickConditions(included.value), docChecks: state.session.docChecks, stepDone: state.session.stepDone, region: answeredRegion.value,
 }));
 const checklist = computed(() => buildChecklist(input.value));
-const merged = computed(() => mergeDocuments(planItems.value));
+const merged = computed(() => mergeDocuments(planItems.value, answeredRegion.value));
 const previewOpen = ref(false);
 const busy = ref(false);
 const sharing = ref(false);
@@ -120,6 +120,21 @@ async function copy() { status.value = await copyText(fullText.value) ? '已複�
             <span class="check__body">
               <span>{{ doc.name }}{{ doc.required === false ? '（非必要）' : '' }}</span>
               <span v-if="doc.hasVariant" class="muted">同名但要求不同，請分開準備</span>
+              <span v-if="doc.condition" class="muted">條件：{{ doc.condition }}</span>
+              <span v-if="doc.notes" class="muted">{{ doc.notes }}</span>
+              <span class="muted">用於：{{ doc.usedBy.map(u => u.name).join('、') }}</span>
+            </span>
+          </label>
+        </div>
+      </details>
+      <details v-if="merged.otherRegion.length" class="more more--single">
+        <summary>{{ OTHER_REGION_TITLE }}（{{ merged.otherRegion.length }}）</summary>
+        <div class="more__body">
+          <label v-for="doc in merged.otherRegion" :key="doc.key" class="check">
+            <input type="checkbox" :checked="!!state.session.docChecks[doc.key]" @change="toggleDoc(doc.key)" />
+            <span class="check__body">
+              <span>{{ doc.name }}{{ doc.required === false ? '（非必要）' : '' }}</span>
+              <span class="muted">{{ regionText(doc.regions) }}</span>
               <span v-if="doc.condition" class="muted">條件：{{ doc.condition }}</span>
               <span v-if="doc.notes" class="muted">{{ doc.notes }}</span>
               <span class="muted">用於：{{ doc.usedBy.map(u => u.name).join('、') }}</span>

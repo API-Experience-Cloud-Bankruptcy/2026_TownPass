@@ -35848,48 +35848,72 @@
           "name": "新北市政府長期照顧服務申請書",
           "required": true,
           "condition": "向新北市申請時",
+          "regions": [
+            "新北市"
+          ],
           "notes": ""
         },
         {
           "name": "長期照顧服務個人資料應用說明及知情同意書",
           "required": true,
           "condition": "向新北市申請時",
+          "regions": [
+            "新北市"
+          ],
           "notes": ""
         },
         {
           "name": "被照顧者(個案)身障證明",
           "required": false,
           "condition": "新北市申請人選擇提供時",
+          "regions": [
+            "新北市"
+          ],
           "notes": "可於到府評估時再提供；新北頁列為選擇提供。"
         },
         {
           "name": "被照顧者(個案)外勞聘僱證明",
           "required": false,
           "condition": "新北市申請人選擇提供時",
+          "regions": [
+            "新北市"
+          ],
           "notes": "可於到府評估時再提供；非全國必備。"
         },
         {
           "name": "被照顧者(個案)相關疾病診斷證明",
           "required": false,
           "condition": "新北市申請人選擇提供時",
+          "regions": [
+            "新北市"
+          ],
           "notes": "可於到府評估時再提供。"
         },
         {
           "name": "宜蘭縣長期照顧服務申請書",
           "required": true,
           "condition": "向宜蘭縣採下載填表後傳真申請時",
+          "regions": [
+            "宜蘭縣"
+          ],
           "notes": "官方表單標示115.8.4。"
         },
         {
           "name": "失智症診斷證明書",
           "required": true,
           "condition": "於宜蘭縣以失智症者資格申請時",
+          "regions": [
+            "宜蘭縣"
+          ],
           "notes": "由神經科或精神科專科醫師開立。"
         },
         {
           "name": "CDR 1分以上之檢查報告",
           "required": true,
           "condition": "於宜蘭縣以失智症者資格申請時",
+          "regions": [
+            "宜蘭縣"
+          ],
           "notes": "宜蘭頁要求失智症診斷證明書載有評估效期1年內CDR 1分以上之檢查報告。"
         }
       ],

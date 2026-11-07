@@ -1,7 +1,7 @@
 {
   "version": "eligibility-review-v3",
   "binding": "fnv1a64-canonical-record-v1",
-  "source_dataset_sha256": "7744b5bd8262226a2bee9b6c5a2ef2501a32c1a3121e8ed130c13ac0f1780d07",
+  "source_dataset_sha256": "d6ffb735a5f0119bc432205715555bce838bd5442b8a77f426aa73330a9032da",
   "review_scope": "本地217筆原文盤點；必要條件逐筆編碼，非重新官方查核或完整資格引擎。未編條件不推定符合。",
   "records": [
     {
@@ -4386,7 +4386,7 @@
     {
       "id": "CT-0047",
       "name": "長照2.0長照服務給付（照顧、交通接送、輔具、喘息）",
-      "source_fingerprint": "85c19e287c47c393",
+      "source_fingerprint": "038675203eceecc4",
       "age_review": "deferred",
       "review_note": "失智、失能身障等替代途徑不受老人年齡條件限制。",
       "source_urls": [

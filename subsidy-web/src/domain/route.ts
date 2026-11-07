@@ -1,4 +1,4 @@
-import { effectiveDocuments } from './documents';
+import { documentsForRegion } from './documents';
 // JourneyBuilder：只用資料原文組合辦理路線，不自行發明窗口、電話或地址。
 
 import { text } from './match';
@@ -43,6 +43,8 @@ export interface Route {
   channel: string;
   methods: string[];
   documents: RequiredDocument[];
+  /** 未回答戶籍或無法判斷縣市時，只適用其他縣市的文件 */
+  otherRegionDocuments: RequiredDocument[];
   links: RouteLink[];
   sources: RouteSource[];
   rejectedUrls: number;
@@ -82,7 +84,8 @@ export function splitProcess(process: unknown): { steps: string[]; split: boolea
   return { steps, split: steps.length > 1 };
 }
 
-export function buildRoute(item: Subsidy): Route {
+/** region：查詢對象回答的戶籍；已知縣市時不列其他縣市文件，未回答時另列。 */
+export function buildRoute(item: Subsidy, region?: string): Route {
   const app = item.application ?? ({} as Subsidy['application']);
   const { steps, split } = splitProcess(app.process_text);
   let rejected = 0;
@@ -121,7 +124,7 @@ export function buildRoute(item: Subsidy): Route {
   }
   const agency = text(app.agency) || text(item.provider?.name);
   const channel = text(app.channel_text);
-  const documents = (effectiveDocuments(item) ?? []).filter((d) => text(d?.name));
+  const { documents, otherRegion: otherRegionDocuments } = documentsForRegion(item, region);
   const missing: string[] = [];
   if (steps.length === 0) missing.push('辦理步驟原文未提供，請向窗口確認。');
   if (!channel) missing.push('受理窗口原文未提供，請以官方網站為準。');
@@ -136,6 +139,7 @@ export function buildRoute(item: Subsidy): Route {
     channel,
     methods: (app.methods ?? []).map((m) => METHOD_LABEL[m] ?? m),
     documents,
+    otherRegionDocuments,
     links,
     sources,
     rejectedUrls: rejected,

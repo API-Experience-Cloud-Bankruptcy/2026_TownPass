@@ -1346,3 +1346,27 @@ fn current_disability_proof_does_not_disprove_pre_enrollment_historical_proof() 
         Fit::Possible
     );
 }
+
+#[test]
+fn county_specific_documents_keep_structured_regions() {
+    let st = state();
+    let entry = st
+        .entries
+        .iter()
+        .find(|e| e.subsidy.id == "CT-0047")
+        .expect("CT-0047");
+    let regions: Vec<_> = entry
+        .subsidy
+        .application
+        .required_documents
+        .iter()
+        .map(|d| d["regions"].clone())
+        .collect();
+    assert_eq!(
+        regions,
+        std::iter::repeat_n(json!(["新北市"]), 5)
+            .chain(std::iter::repeat_n(json!(["宜蘭縣"]), 3))
+            .collect::<Vec<_>>()
+    );
+    assert!(entry.reviewed.is_some());
+}

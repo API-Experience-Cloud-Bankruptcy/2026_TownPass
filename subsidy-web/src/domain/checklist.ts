@@ -1,5 +1,5 @@
 // 紙本檢核表的共用結構；不直接讀取答案，個人訊息沿用行動單的揭露控制。
-import { mergeDocuments } from './documents';
+import { mergeDocuments, OTHER_REGION_TITLE, regionText, type MergedDocument } from './documents';
 import { DISCLAIMER, disclosedLines, type PlanInput } from './export';
 import { FIT_LABEL, text } from './match';
 import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE, STATUS_LABEL, stuckAdvice } from './route';
@@ -67,6 +67,9 @@ export interface ChecklistForm {
   privacyNotice: string;
   overview: FormOverviewRow[];
   documents: FormDocumentRow[];
+  /** 未回答戶籍或無法判斷縣市時，只適用其他縣市的文件；另表列出 */
+  otherRegionTitle: string;
+  otherRegionDocuments: FormDocumentRow[];
   incomplete: FormIncompleteRow[];
   emptyNote: string;
   resources: FormResource[];
@@ -126,7 +129,7 @@ export function buildChecklist(input: PlanInput): Checklist {
   const { meta } = input;
   const date = [meta.generatedAt.getFullYear(), String(meta.generatedAt.getMonth() + 1).padStart(2, '0'), String(meta.generatedAt.getDate()).padStart(2, '0')].join('-');
   const fields = new Set(input.conditions.map(c => c.field));
-  const merged = mergeDocuments(input.items);
+  const merged = mergeDocuments(input.items, input.region);
   const docBlocks: ChecklistBlock[] = [
     { kind: 'text', text: '方框僅記錄文件或步驟已準備，不代表已送件、符合資格或已核准。待確認方框可於詢問後註記，請記錄窗口回覆。空白處可用筆勾選。' },
   ];
@@ -137,11 +140,18 @@ export function buildChecklist(input: PlanInput): Checklist {
     docBlocks.push({ kind: 'text', text: `用於：${doc.usedBy.map(u => u.name).join('、')}` });
   }
   for (const item of merged.incomplete) docBlocks.push({ kind: 'text', text: `注意：「${item.name}」文件清單尚未補齊，不代表免附文件。` });
+  if (merged.otherRegion.length) docBlocks.push({ kind: 'heading', text: OTHER_REGION_TITLE });
+  for (const doc of merged.otherRegion) {
+    docBlocks.push({ kind: 'check', key: doc.key, checked: !!input.docChecks[doc.key], text: `${doc.name}（${regionText(doc.regions)}；${doc.required === true ? '必備' : doc.required === false ? '依個案需要' : '必要性未註明，請確認'}）` });
+    if (doc.condition) docBlocks.push({ kind: 'text', text: `條件：${doc.condition}` });
+    if (doc.notes) docBlocks.push({ kind: 'text', text: `備註：${doc.notes}` });
+    docBlocks.push({ kind: 'text', text: `用於：${doc.usedBy.map(u => u.name).join('、')}` });
+  }
   if (!input.items.length) docBlocks.push({ kind: 'text', text: '尚未選擇資源；請先確認要準備的項目。' });
   docBlocks.push({ kind: 'notes', text: '交接筆記：協助者＿＿＿＿　預計詢問日期＿＿＿＿　文件分工／還缺什麼：' });
   const sections: ChecklistSection[] = [{ id: 'documents', title: '共用文件準備清單', blocks: docBlocks }];
   input.items.forEach((item, index) => {
-    const route = buildRoute(item);
+    const route = buildRoute(item, input.region);
     const result = input.results.get(item.id);
     const blocks: ChecklistBlock[] = [];
     const line = (label: string, value: unknown) => { const v = text(value); if (v) blocks.push({ kind: 'text', text: `${label}：${paperText(v)}` }); };
@@ -215,19 +225,21 @@ function requirementLabel(required: boolean | null): string {
 function buildForm(input: PlanInput, date: string, privacyNotice: string): ChecklistForm {
   const { meta } = input;
   const fields = new Set(input.conditions.map(c => c.field));
-  const merged = mergeDocuments(input.items);
+  const merged = mergeDocuments(input.items, input.region);
   const numberOf = new Map(input.items.map((item, index) => [item.id, index + 1]));
-  const documents: FormDocumentRow[] = merged.documents.map((doc, index) => ({
+  const row = (doc: MergedDocument, index: number): FormDocumentRow => ({
     no: index + 1, key: doc.key, name: doc.name, requirement: requirementLabel(doc.required),
     usedBy: doc.usedBy.map(u => numberOf.get(u.id)).filter(n => n !== undefined).join('、'),
     checked: !!input.docChecks[doc.key],
-    remarks: [doc.condition && `條件：${doc.condition}`, doc.notes && `備註：${doc.notes}`, doc.hasVariant && '同名文件有不同要求，請分別核對'].filter(Boolean).join('\n'),
-  }));
+    remarks: [regionText(doc.regions), doc.condition && `條件：${doc.condition}`, doc.notes && `備註：${doc.notes}`, doc.hasVariant && '同名文件有不同要求，請分別核對'].filter(Boolean).join('\n'),
+  });
+  const documents = merged.documents.map(row);
+  const otherRegionDocuments = merged.otherRegion.map(row);
   const incomplete: FormIncompleteRow[] = merged.incomplete.map(item => ({ no: numberOf.get(item.id) ?? 0, name: item.name, remarks: `「${item.name}」文件清單未補齊，不代表免附文件，請向窗口確認。` }));
   const overview: FormOverviewRow[] = [];
   const resources: FormResource[] = input.items.map((item, index) => {
     const no = index + 1;
-    const route = buildRoute(item);
+    const route = buildRoute(item, input.region);
     const result = input.results.get(item.id);
     const field = (list: FormField[], label: string, value: unknown) => { const v = text(value); if (v) list.push({ label, text: paperText(v) }); };
     const screening = result ? FIT_LABEL[result.fit] : '尚無結果，請向窗口確認資格。';
@@ -304,7 +316,7 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
     basicFields: ['申請人姓名', '聯絡電話', '協助者／代辦人', '與申請人關係', '預計洽詢日期'],
     conditionsTitle: '已同意列入之條件（自述，未經查證）',
     conditions: input.conditions.map(c => c.line), privacyNotice,
-    overview, documents, incomplete, emptyNote: '尚未選擇資源；請先確認要準備的項目。', resources,
+    overview, documents, otherRegionTitle: otherRegionDocuments.length ? OTHER_REGION_TITLE : '', otherRegionDocuments, incomplete, emptyNote: '尚未選擇資源；請先確認要準備的項目。', resources,
     notes: [
       DISCLAIMER,
       '本表不是申請書，也不是送件、受理、核准或取得福利的證明；正式申請請使用機關公告之表單及管道。',

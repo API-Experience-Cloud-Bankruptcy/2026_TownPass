@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { documentRegions, OTHER_REGION_TITLE, regionText } from '../domain/documents';
 import { buildRoute, SOURCE_KIND_LABEL } from '../domain/route';
 import type { Subsidy } from '../domain/types';
 import { currentStepIndex, progressText } from '../presentation';
-import { openHelp, state, toggleStep } from '../store';
+import { answeredRegion, openHelp, state, toggleStep } from '../store';
 import ExternalLink from './ExternalLink.vue';
 
 /** hideDeadline：詳情頁已在「要先注意」列出期限時不重複。 */
 const props = defineProps<{ item: Subsidy; hideDeadline?: boolean }>();
-const route = computed(() => buildRoute(props.item));
+const route = computed(() => buildRoute(props.item, answeredRegion.value));
 const done = computed(() => new Set(state.session.stepDone[props.item.id] ?? []));
 const total = computed(() => route.value.steps.length);
 const current = computed(() => currentStepIndex(total.value, done.value));
@@ -75,6 +76,17 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
             <span v-if="d.notes && d.notes !== d.name" class="muted">備註：{{ d.notes }}</span>
           </li>
         </ul>
+        <details v-if="route.otherRegionDocuments.length" class="more">
+          <summary>{{ OTHER_REGION_TITLE }}（{{ route.otherRegionDocuments.length }}）</summary>
+          <ul class="steps">
+            <li v-for="(d, i) in route.otherRegionDocuments" :key="i" class="row-static">
+              <span>{{ d.name }}<span v-if="d.required === false" class="muted">（非必要）</span></span>
+              <span class="muted">{{ regionText(documentRegions(d)) }}</span>
+              <span v-if="d.condition && d.condition !== d.name" class="muted">條件：{{ d.condition }}</span>
+              <span v-if="d.notes && d.notes !== d.name" class="muted">備註：{{ d.notes }}</span>
+            </li>
+          </ul>
+        </details>
       </div>
     </details>
 
