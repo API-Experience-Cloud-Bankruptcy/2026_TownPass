@@ -1,223 +1,158 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch, watchEffect } from 'vue';
+import ConfirmDialog from './components/ConfirmDialog.vue';
+import DetailView from './components/DetailView.vue';
+import HelpView from './components/HelpView.vue';
+import HomeView from './components/HomeView.vue';
+import PlanView from './components/PlanView.vue';
+import QuestionsView from './components/QuestionsView.vue';
+import ResultsView from './components/ResultsView.vue';
+import { modelAdapter, type ModelStatus } from './domain/model';
 import {
-  call1999,
-  getDeviceInfo,
-  getLocation,
-  getUserInfo,
-  isInTownPass,
-  notify,
-  openLink,
-  scanQRCode,
-  type Account,
-} from './townpass';
+  confirmPending,
+  init,
+  pendingSwitch,
+  planItems,
+  requestNewPerson,
+  state,
+  tab,
+  type View,
+} from './store';
 
-const inApp = isInTownPass();
-const account = ref<Account | null>(null);
-const accountError = ref('');
-
-const busy = ref('');
-const resultTitle = ref('');
-const resultText = ref('');
+const settingsOpen = ref(false);
+const modelStatus = ref<ModelStatus | null>(null);
 
 onMounted(async () => {
-  try {
-    account.value = await getUserInfo();
-  } catch (error) {
-    accountError.value = (error as Error).message;
-  }
+  void init();
+  modelStatus.value = await modelAdapter.status();
 });
 
-function ageOf(birthday: string): number | null {
-  const [y, m, d] = birthday.split('/').map(Number);
-  if (!y || !m || !d) return null;
-  const today = new Date();
-  let age = today.getFullYear() - y;
-  if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age -= 1;
-  return age;
-}
+watchEffect(() => {
+  const root = document.documentElement;
+  root.classList.toggle('is-large', state.prefs.largeText);
+  root.classList.toggle('is-contrast', state.prefs.highContrast);
+});
 
-async function run(label: string, task: () => Promise<unknown> | unknown) {
-  busy.value = label;
-  resultTitle.value = label;
-  resultText.value = '等待 App 回覆…';
-  try {
-    const value = await task();
-    resultText.value = value === undefined ? '已送出' : JSON.stringify(value, null, 2);
-  } catch (error) {
-    resultText.value = `失敗：${(error as Error).message}`;
-  } finally {
-    busy.value = '';
-  }
-}
+// 換頁時把焦點移到新頁標題，讓讀屏與鍵盤使用者知道位置。
+watch(
+  () => [state.view, state.detailId],
+  async () => {
+    await nextTick();
+    window.scrollTo?.(0, 0);
+    document.getElementById('view-title')?.focus();
+  },
+);
 
-const actions: { label: string; task: () => Promise<unknown> | unknown }[] = [
-  { label: '取得使用者資料', task: getUserInfo },
-  { label: '取得目前位置', task: getLocation },
-  { label: '取得裝置資訊', task: getDeviceInfo },
-  { label: '掃描 QR Code', task: scanQRCode },
-  { label: '發送測試通知', task: () => notify('補助專區', '這是一則測試通知') },
-  { label: '開啟臺北市政府網站', task: () => openLink('https://www.gov.taipei/') },
-  { label: '撥打 1999', task: call1999 },
+const navItems: { view: View; label: string; match: View[] }[] = [
+  { view: 'home', label: '找資源', match: ['home', 'questions', 'results', 'detail'] },
+  { view: 'plan', label: '我的行動單', match: ['plan'] },
+  { view: 'help', label: '找人幫忙', match: ['help'] },
 ];
+
+const targetLabel = computed(() =>
+  state.session.target === 'self' ? '自己' : state.session.target === 'other' ? '家人或其他人' : '尚未選擇',
+);
+
+const dialogTitle = computed(() =>
+  pendingSwitch.value === 'clear' ? '清除這次的資料？' : '換人並清除前一位的資料？',
+);
 </script>
 
 <template>
-  <main class="page">
-    <header class="header">
-      <h1>補助專區</h1>
-      <p class="status" :class="inApp ? 'status--app' : 'status--browser'">
-        {{ inApp ? '已連上城市通' : '瀏覽器模式：使用模擬資料' }}
+  <a class="skip-link" href="#main">跳到主要內容</a>
+  <header class="app-header no-print">
+    <div class="app-header__row">
+      <p class="brand">福利通<span class="brand__sub">把資源變成下一步</span></p>
+      <button
+        type="button"
+        class="btn btn--small"
+        :aria-expanded="settingsOpen"
+        aria-controls="settings-panel"
+        @click="settingsOpen = !settingsOpen"
+      >
+        顯示與資料
+      </button>
+    </div>
+    <div class="app-header__row app-header__target">
+      <p>查詢對象：<strong>{{ targetLabel }}</strong></p>
+      <button type="button" class="btn btn--small btn--ghost" @click="requestNewPerson">換人</button>
+    </div>
+
+    <section v-show="settingsOpen" id="settings-panel" class="settings" aria-label="顯示與資料設定">
+      <label class="check">
+        <input v-model="state.prefs.largeText" type="checkbox" />
+        <span>大字</span>
+      </label>
+      <label class="check">
+        <input v-model="state.prefs.highContrast" type="checkbox" />
+        <span>高對比</span>
+      </label>
+      <p class="muted">
+        答案、行動單與進度只保存在本分頁的這次工作階段，不會送到伺服器；關閉分頁後通常會清除，共用裝置用完請按清除。
       </p>
-    </header>
-
-    <section class="card" aria-labelledby="account-title">
-      <h2 id="account-title">使用者</h2>
-      <p v-if="accountError" class="error">{{ accountError }}</p>
-      <p v-else-if="!account">讀取中…</p>
-      <dl v-else class="facts">
-        <div><dt>姓名</dt><dd>{{ account.realName }}</dd></div>
-        <div><dt>年齡</dt><dd>{{ ageOf(account.birthday) ?? '未知' }} 歲</dd></div>
-        <div><dt>臺北市民</dt><dd>{{ account.citizen ? '是' : '否' }}</dd></div>
-        <div><dt>行政區</dt><dd>{{ account.addresses[0]?.town ?? '未提供' }}</dd></div>
+      <button type="button" class="btn btn--danger btn--block" @click="pendingSwitch = 'clear'">清除這次的資料</button>
+      <dl class="facts">
+        <div><dt>資料來源</dt><dd>{{ state.catalog?.sourceLabel ?? '載入中' }}</dd></div>
+        <div v-if="state.catalog?.fallbackReason">
+          <dt>改用快照原因</dt><dd>{{ state.catalog.fallbackReason }}</dd>
+        </div>
+        <div><dt>題庫</dt><dd>{{ state.bank ? (state.bank.origin === 'api' ? `後端 /api/questions（${state.bank.version}）` : '本機固定模板') : '載入中' }}</dd></div>
+        <div>
+          <dt>裝置端模型</dt>
+          <dd>{{ modelStatus?.state === 'unavailable' ? modelStatus.reason : modelStatus?.state ?? '確認中' }}</dd>
+        </div>
       </dl>
+      <p class="muted">本服務非政府官方服務；資料查核標記沿用資料原有狀態。</p>
     </section>
 
-    <section class="card" aria-labelledby="bridge-title">
-      <h2 id="bridge-title">雙向溝通測試</h2>
-      <div class="actions">
-        <button
-          v-for="action in actions"
-          :key="action.label"
-          type="button"
-          class="button"
-          :disabled="busy !== ''"
-          @click="run(action.label, action.task)"
-        >
-          {{ action.label }}
-        </button>
-      </div>
-      <div v-if="resultTitle" class="result" aria-live="polite">
-        <h3>{{ resultTitle }}</h3>
-        <pre>{{ resultText }}</pre>
-      </div>
-    </section>
+    <nav class="tabs" aria-label="主要功能">
+      <button
+        v-for="n in navItems"
+        :key="n.view"
+        type="button"
+        class="tabs__item"
+        :aria-current="n.match.includes(state.view) ? 'page' : undefined"
+        @click="tab(n.view)"
+      >
+        {{ n.label }}<span v-if="n.view === 'plan' && planItems.length" class="tabs__badge">{{ planItems.length }}</span>
+      </button>
+    </nav>
+  </header>
+
+  <main id="main" class="app-main">
+    <p v-if="state.catalog?.origin === 'snapshot'" class="banner no-print" role="status">
+      後端暫時無法連線（{{ state.catalog.fallbackReason }}），目前使用建置時打包的原始資料快照（{{ state.catalog.version }}）。
+      這不是完整離線模式，外部網站仍需網路。
+    </p>
+    <p v-if="state.notice" class="banner banner--ok no-print" role="status">
+      {{ state.notice }}
+      <button type="button" class="btn btn--link" @click="state.notice = ''">知道了</button>
+    </p>
+    <p v-if="state.loadError" class="banner banner--error" role="alert">
+      {{ state.loadError }}
+      <button type="button" class="btn btn--small" @click="init">重試</button>
+    </p>
+
+    <HomeView v-if="state.view === 'home'" />
+    <QuestionsView v-else-if="state.view === 'questions'" />
+    <ResultsView v-else-if="state.view === 'results'" />
+    <DetailView v-else-if="state.view === 'detail'" :key="state.detailId ?? ''" />
+    <PlanView v-else-if="state.view === 'plan'" />
+    <HelpView v-else-if="state.view === 'help'" />
   </main>
+
+  <footer class="app-footer no-print">
+    <p>申辦準備摘要，非核准或送件證明。資料：{{ state.catalog?.version ?? '載入中' }}</p>
+  </footer>
+
+  <ConfirmDialog
+    :open="pendingSwitch !== null"
+    :title="dialogTitle"
+    :confirm-label="pendingSwitch === 'clear' ? '清除' : '換人並清除'"
+    danger
+    @confirm="confirmPending"
+    @cancel="pendingSwitch = null"
+  >
+    <p>會清除目前的答案、行動單與準備進度，避免和下一位的資料混在一起。大字與高對比設定會保留。</p>
+  </ConfirmDialog>
 </template>
-
-<style scoped>
-.page {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.header h1 {
-  margin: 0 0 8px;
-  font-size: 24px;
-}
-
-.status {
-  display: inline-block;
-  margin: 0;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 14px;
-}
-
-.status--app {
-  background: var(--tp-primary-50);
-  color: var(--tp-primary-700);
-}
-
-.status--browser {
-  background: var(--tp-secondary-50);
-  color: var(--tp-secondary-800);
-}
-
-.card {
-  background: var(--tp-white);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.card h2 {
-  margin: 0 0 12px;
-  font-size: 18px;
-}
-
-.facts {
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.facts div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.facts dt {
-  color: var(--tp-grayscale-700);
-}
-
-.facts dd {
-  margin: 0;
-  font-weight: 600;
-}
-
-.actions {
-  display: grid;
-  gap: 8px;
-}
-
-.button {
-  min-height: 48px;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 8px;
-  background: var(--tp-primary-700);
-  color: var(--tp-white);
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-
-.button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.button:focus-visible {
-  outline: 3px solid var(--tp-secondary-500);
-  outline-offset: 2px;
-}
-
-.result {
-  margin-top: 16px;
-}
-
-.result h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-
-.result pre {
-  margin: 0;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--tp-grayscale-50);
-  font-size: 12px;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.error {
-  color: var(--tp-red-500);
-}
-</style>
