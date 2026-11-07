@@ -3,6 +3,7 @@
 // 流程與判斷全部沿用 store；這裡只把同一份狀態排成一則則訊息。
 // 對話紀錄由狀態推導：點自己過去的回答即可回到那一步修改。
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import LogoMark from './LogoMark.vue';
 import { followBottom, isTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, MAX_AGE, titleFor } from '../domain/questions';
 import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
@@ -63,7 +64,7 @@ const targetLabel = computed(() => (state.session.target === 'other' ? '幫家�
 // ── 2. 選需求 ──
 const needKey = computed(() => `need:${target.value}`);
 const needLines = computed<Line[]>(() => [
-  { text: `好的。${ask.value}需要哪方面的幫忙？`, tone: 'title' },
+  { text: `${ask.value}需要哪方面的幫忙？`, tone: 'title' },
   { text: target.value === 'other' ? '提醒：幫別人查，不代表可以替對方申請。' : '不確定也沒關係，我可以一步步帶你找。', tone: 'muted' },
 ]);
 const needAnswer = computed(() => {
@@ -689,11 +690,11 @@ async function onInput() {
           <div class="replies" role="group" aria-label="查詢對象">
             <button type="button" class="reply" aria-label="幫自己找" @click="requestTarget('self')">
               <span class="reply__label">幫自己找</span>
-              <span class="reply__sub">依你的情況回答，存成線上行動單</span>
+              <span class="reply__sub">依你的情況查詢，保存在行動單</span>
             </button>
             <button type="button" class="reply" aria-label="幫家人或別人找" @click="requestTarget('other')">
               <span class="reply__label">幫家人或別人找</span>
-              <span class="reply__sub">依對方的情況回答，做成可列印的 A4 檢核表</span>
+              <span class="reply__sub">依對方情況查詢，列印 A4 檢核表</span>
             </button>
           </div>
         </template>
@@ -723,10 +724,12 @@ async function onInput() {
                   @click="selectNeed(s.id)"
                 >
                   <span class="reply__label">{{ s.label }}</span>
-                  <span :id="`need-${s.id}-hint`" class="reply__sub">{{ s.hint }}</span>
+                  <span :id="`need-${s.id}-hint`" class="reply__sub">
+                    <span v-for="(phrase, i) in s.hint.split('、')" :key="i" class="reply__phrase">{{ phrase }}{{ i < s.hint.split('、').length - 1 ? '、' : '' }}</span>
+                  </span>
                 </button>
               </div>
-              <p class="chat__tip">也可以在下方輸入選項、資源名稱，或說說你的情況。</p>
+              <p class="chat__tip">也可以直接輸入需求或資源名稱。</p>
             </div>
           </template>
         </BotMessage>
@@ -954,7 +957,13 @@ async function onInput() {
       <div v-if="recovery" class="replies conversation-recovery" role="group" aria-label="接著可以這樣做">
         <button v-for="choice in recoveryChoices" :key="choice.id" type="button" class="reply reply--chip" :disabled="busy" @click="recoverWith(choice.id)"><span class="reply__label">{{ choice.label }}</span></button>
       </div>
-      <p v-if="interpreting" class="chat__system" role="status">正在裝置上理解你的說法… <button type="button" class="btn" @click="cancelInput">取消</button></p>
+      <div v-if="interpreting" class="msg msg--bot">
+        <span class="avatar" aria-hidden="true"><LogoMark thinking /></span>
+        <div class="msg__col">
+          <p class="bubble bubble--bot thinking__text" role="status">正在裝置上理解你的說法…</p>
+          <div class="msg__after"><button type="button" class="btn" @click="cancelInput">取消</button></div>
+        </div>
+      </div>
     </section>
 
     <form class="composer no-print conversation-composer" @submit.prevent="onInput">

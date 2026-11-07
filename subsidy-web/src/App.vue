@@ -5,6 +5,8 @@ import ChatView from './components/ChatView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import DetailView from './components/DetailView.vue';
 import HelpView from './components/HelpView.vue';
+import LogoMark from './components/LogoMark.vue';
+import { dismissSplash, SPLASH_MAX_WAIT_MS } from './brand/splash';
 import BrowseView from './components/BrowseView.vue';
 import PlanView from './components/PlanView.vue';
 import { modelAdapter, type ModelStatus } from './domain/model';
@@ -25,7 +27,9 @@ const settingsOpen = ref(false);
 const modelStatus = ref<ModelStatus | null>(null);
 
 onMounted(async () => {
-  void init();
+  // 開場畫面等資料載入完（最多等 SPLASH_MAX_WAIT_MS）才收起。
+  const loaded = init();
+  void Promise.race([loaded, new Promise((r) => setTimeout(r, SPLASH_MAX_WAIT_MS))]).then(dismissSplash);
   modelStatus.value = await modelAdapter.status();
 });
 
@@ -77,7 +81,7 @@ const dialogTitle = computed(() =>
   <header class="app-header no-print">
     <div class="app-header__row">
       <div class="brand">
-        <span class="avatar avatar--lg" aria-hidden="true">福</span>
+        <span class="brand__logo" aria-hidden="true"><LogoMark :stroke="52" /></span>
         <span class="brand__text">
           <span class="brand__name">福利連</span>
           <span class="brand__sub">{{ state.session.target ? `${targetLabel}・非官方服務` : '非官方服務，資格以承辦機關為準' }}</span>
@@ -148,7 +152,7 @@ const dialogTitle = computed(() =>
     <div v-if="state.view === 'detail'" class="topbar no-print">
       <button type="button" class="btn btn--text back-chat" @click="back">
         <span aria-hidden="true">‹</span>
-        <span class="avatar avatar--sm" aria-hidden="true">福</span>
+        <span class="avatar avatar--sm" aria-hidden="true"><LogoMark /></span>
         {{ state.history[state.history.length - 1] === 'browse' ? '回到補助總覽' : '返回上一頁' }}
       </button>
     </div>

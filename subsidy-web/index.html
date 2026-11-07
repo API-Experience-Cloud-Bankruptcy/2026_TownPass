@@ -4,9 +4,93 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#5ab4c5" />
+    <meta name="color-scheme" content="light" />
     <title>福利連</title>
+    <!-- 開場畫面的樣式內嵌在這裡：JS 與主樣式還在下載時就要能畫出來。收起邏輯見 src/brand/splash.ts。 -->
+    <style>
+      html,
+      body {
+        background: #ffffff;
+      }
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 24px;
+        background: #ffffff;
+        font-family: 'PingFang TC', 'Noto Sans TC', system-ui, sans-serif;
+      }
+      .splash__logo {
+        width: min(64vw, 260px);
+        height: auto;
+        overflow: visible;
+        fill: none;
+        stroke: #5d72b6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transform-origin: center;
+      }
+      /* 一圈 2.6 秒：寫出（0–42%）→ 停（42–56%）→ 依書寫順序消失（56–100%）→ 再寫。
+         pathLength=1，dash 比路徑長一點，開頭與結尾不殘留圓頭的點。
+         改時間要同步 src/brand/splash.ts 的 LOOP_MS、FULL_FROM、FULL_TO。 */
+      .splash__ink {
+        stroke-dasharray: 1 1.2;
+        stroke-dashoffset: 1.05;
+        animation: splash-loop 2.6s linear 0.12s infinite;
+      }
+      .splash__logo.is-done .splash__ink {
+        animation: none;
+        stroke-dashoffset: 0;
+      }
+      .splash__text {
+        display: grid;
+        justify-items: center;
+        gap: 4px;
+        opacity: 0;
+        animation: splash-rise 0.5s ease-out 0.75s forwards;
+      }
+      .splash__name {
+        margin: 0;
+        color: #22474e;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-indent: 0.2em;
+      }
+      .splash__sub {
+        margin: 0;
+        color: #5a6b75;
+        font-size: 14px;
+      }
+      @keyframes splash-loop {
+        0% { stroke-dashoffset: 1.05; animation-timing-function: cubic-bezier(0.55, 0.05, 0.3, 1); }
+        42% { stroke-dashoffset: 0; }
+        56% { stroke-dashoffset: 0; animation-timing-function: cubic-bezier(0.55, 0.05, 0.3, 1); }
+        100% { stroke-dashoffset: -1.05; }
+      }
+      @keyframes splash-rise {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash__ink { animation: none; stroke-dashoffset: 0; }
+        .splash__text { animation: none; opacity: 1; }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" role="status" aria-label="福利連載入中">
+      <svg class="splash__logo" viewBox="137 392 978 471" aria-hidden="true" focusable="false">
+        <path class="splash__ink" pathLength="1" stroke-width="38" d="M160,840 C260,815 340,760 420,700 C500,635 600,545 615,470 C625,425 590,415 565,420 C505,428 445,500 418,580 C398,655 425,748 525,756 C645,765 835,665 1088,462 C1090.7,454 1079.7,450 1055,450" />
+      </svg>
+      <div class="splash__text" aria-hidden="true">
+        <p class="splash__name">福利連</p>
+        <p class="splash__sub">正在整理補助資料</p>
+      </div>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

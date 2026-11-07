@@ -180,8 +180,12 @@
   --bubble-bot: var(--tp-white);
   --bubble-user: var(--tp-primary-700);
   --on-bubble-user: var(--tp-white);
-  --avatar-bg: var(--tp-primary-500);
+  --avatar-bg: var(--logo-soft);
   --on-avatar: var(--tp-white);
+  /* 福利連 Logo 的筆色（取自原圖）與淡底；index.html 開場畫面寫死同一組色值 */
+  --logo-ink: #5d72b6;
+  --logo-soft: #eef1fa;
+  --logo-track: #dfe4f4;
   --reply-line: var(--tp-primary-300);
   --radius-bubble: 18px;
   --radius-bubble-tail: 6px;
@@ -216,5 +220,10 @@
   --chat-bg: #ffffff;
   --bubble-user: #003c47;
   --avatar-bg: #003c47;
+  --logo-ink: #000000;
+  --logo-track: #d9d9d9;
   --reply-line: #000000;
+}
+:root.is-contrast .avatar {
+  --logo-ink: #ffffff;
 }

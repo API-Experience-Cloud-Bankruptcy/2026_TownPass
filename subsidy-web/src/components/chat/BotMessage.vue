@@ -4,6 +4,8 @@
 // 流暢的關鍵：全文一開始就排好版，還沒打到的字只是隱形，所以打字時泡泡不會一直變寬長高、
 // 頁面也不會一行一行跳；泡泡從「輸入中」長成最終大小只發生一次，用遮罩動畫展開。
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import LogoMark from '../LogoMark.vue';
+import { splashGone } from '../../brand/splash';
 import { charsAt, isTyped, markTyped, prefersReducedMotion, type Line } from '../../chat/typing';
 
 const props = defineProps<{ msgKey: string; lines: Line[]; active?: boolean; wide?: boolean }>();
@@ -16,8 +18,11 @@ const waiting = ref(!isTyped(props.msgKey));
 const done = computed(() => shown.value >= total.value && !waiting.value);
 
 const bubble = ref<HTMLElement | null>(null);
+/** 「思考中」停留時間：頭像的線條收成圓圈（LogoMark 0.42 秒）並轉一下，再開始回覆。 */
+const TYPING_INTRO_MS = 700;
 let frame = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
+let unmounted = false;
 
 /** 泡泡從「輸入中」的小尺寸展開到全文大小（只動遮罩，不影響排版）。 */
 function grow(from: DOMRect) {
@@ -45,13 +50,16 @@ function finish() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (isTyped(props.msgKey)) return;
   if (prefersReducedMotion() || total.value === 0) {
     finish();
     return;
   }
-  // 先顯示「輸入中」一下，再開始打字。
+  // 開場畫面還在時先不打字，免得第一則的書寫動畫被蓋住。
+  await splashGone;
+  if (unmounted) return;
+  // 先讓頭像「想一下」：線條收成圓圈轉動；開始打字時圓圈變回 Logo，泡泡同時浮現。
   timer = setTimeout(async () => {
     const from = bubble.value?.getBoundingClientRect();
     waiting.value = false;
@@ -64,10 +72,11 @@ onMounted(() => {
       else frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-  }, 380);
+  }, TYPING_INTRO_MS);
 });
 
 onBeforeUnmount(() => {
+  unmounted = true;
   cancelAnimationFrame(frame);
   clearTimeout(timer);
 });
@@ -85,17 +94,17 @@ const visible = computed(() => {
 
 <template>
   <div class="msg msg--bot" :class="{ 'msg--wide': wide }">
-    <span class="avatar" aria-hidden="true">福</span>
+    <span class="avatar" aria-hidden="true"><LogoMark :thinking="waiting" /></span>
     <div class="msg__col">
       <div
         :id="active ? 'view-title' : undefined"
         ref="bubble"
         class="bubble bubble--bot"
+        :class="{ 'bubble--pending': waiting }"
         :tabindex="active ? -1 : undefined"
         @click="!done && finish()"
       >
-        <span v-if="waiting" class="typing" aria-hidden="true"><i></i><i></i><i></i></span>
-        <template v-else>
+        <template v-if="!waiting">
           <p
             v-for="(l, i) in visible"
             :key="i"

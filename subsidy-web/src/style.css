@@ -831,6 +831,7 @@ legend {
 }
 .chat__status,
 .chat__tip {
+  text-wrap: pretty;
   font-size: var(--fs-small);
   color: var(--muted);
   padding: 0 var(--space-1);
@@ -855,6 +856,45 @@ legend {
   height: 40px;
   font-size: var(--fs-body);
 }
+.avatar .logo {
+  width: 86%;
+  color: var(--logo-ink);
+}
+/* 頁首的福利連：不用圓底，Logo 直接放大。 */
+.brand__logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 40px;
+  color: var(--logo-ink);
+}
+.brand__logo .logo {
+  width: 100%;
+}
+
+/* 福利連 Logo（LogoMark.vue）。pathLength=1。 */
+.logo {
+  display: block;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.logo__ink {
+  stroke-dasharray: 1 0;
+  transition: stroke-dasharray 0.35s var(--ease);
+}
+/* 思考中：線條收成圓圈後留一道缺口轉動，像在想事情；變回 Logo 時缺口補滿。 */
+.logo--ring .logo__ink {
+  stroke-dasharray: 0.72 0.28;
+  animation: logo-spin 1.1s linear infinite;
+}
+@keyframes logo-spin {
+  to { stroke-dashoffset: -1; }
+}
 
 /* 訊息列 */
 .msg {
@@ -867,10 +907,11 @@ legend {
   align-self: flex-start;
 }
 .msg__col {
+  flex: 1;
   display: grid;
   gap: var(--space-2);
   min-width: 0;
-  max-width: calc(100% - 44px);
+  max-width: calc(100% - 36px - var(--space-2));
 }
 .msg--wide .msg__col {
   flex: 1;
@@ -892,7 +933,8 @@ legend {
   font: inherit;
   line-height: var(--lh-body);
   text-align: left;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
 }
 .bubble--bot {
   justify-self: start;
@@ -903,6 +945,7 @@ legend {
   border-top-left-radius: var(--radius-bubble-tail);
   box-shadow: var(--shadow-card);
   min-width: 64px;
+  max-width: 100%;
 }
 .msg--wide .bubble--bot {
   justify-self: stretch;
@@ -913,7 +956,12 @@ legend {
 .bubble--bot:focus-visible {
   outline: none;
 }
+.bubble__line {
+  min-width: 0;
+  text-wrap: pretty;
+}
 .bubble__line--title {
+  text-wrap: balance;
   font-size: var(--fs-section);
   font-weight: var(--fw-bold);
   line-height: var(--lh-tight);
@@ -978,24 +1026,18 @@ legend {
   font-weight: var(--fw-bold);
 }
 
-/* 輸入中、游標 */
-.typing {
-  display: inline-flex;
-  gap: 4px;
-  padding: 6px 2px;
+/* 游標；泡泡在福利連「想」的時候先藏著，開始回覆才浮現。 */
+.bubble--bot {
+  transition: opacity 0.22s var(--ease), transform 0.3s var(--ease);
 }
-.typing i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--tp-grayscale-400);
-  animation: typing-dot 1s infinite ease-in-out;
+.bubble--pending {
+  opacity: 0;
+  transform: translateY(4px) scale(0.97);
+  transform-origin: top left;
 }
-.typing i:nth-child(2) { animation-delay: 0.15s; }
-.typing i:nth-child(3) { animation-delay: 0.3s; }
-@keyframes typing-dot {
-  0%, 80%, 100% { opacity: 0.35; transform: translateY(0); }
-  40% { opacity: 1; transform: translateY(-3px); }
+.thinking__text {
+  color: var(--text-2);
+  font-size: var(--fs-small);
 }
 .caret {
   display: inline-block;
@@ -1090,8 +1132,12 @@ legend {
 }
 .replies__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  /* 隨字級決定欄數；小手機及大字模式留足每個選項的閱讀寬度。 */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
   gap: var(--space-2);
+}
+.replies__grid > .reply:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 .replies__row {
   display: flex;
@@ -1103,7 +1149,9 @@ legend {
 }
 .reply {
   display: grid;
-  gap: 2px;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: var(--space-1);
   align-content: center;
   min-height: var(--touch);
   padding: var(--space-2) var(--space-4);
@@ -1126,17 +1174,30 @@ legend {
   background: var(--accent-soft);
 }
 .reply__label {
+  line-height: var(--lh-tight);
+  text-wrap: balance;
+  overflow-wrap: break-word;
   font-weight: var(--fw-bold);
 }
 .reply__sub {
+  line-height: 1.5;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
   font-size: var(--fs-small);
   color: var(--text-2);
+}
+/* 詞組連同頓號一起換行，避免「獎學金」「婦女」被拆成孤字。 */
+.reply__phrase {
+  display: inline-block;
 }
 .reply--chip {
   align-content: start;
   padding: var(--space-2) var(--space-3);
 }
 .reply--chip .reply__sub {
+  line-height: 1.5;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
   font-size: var(--fs-caption);
 }
 .reply--primary {
@@ -1292,7 +1353,7 @@ li.wheel__item + li.wheel__item {
 
 @media (prefers-reduced-motion: reduce) {
   .msg, .reply, .bubble__extra, .msg__after { animation: none; }
-  .typing i, .caret { animation: none; }
+  .caret, .logo--ring .logo__ink { animation: none; }
 }
 @media (forced-colors: active) {
   .bubble, .reply { border: 1px solid CanvasText; }
