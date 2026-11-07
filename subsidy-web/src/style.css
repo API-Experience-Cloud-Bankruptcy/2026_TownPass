@@ -1332,8 +1332,12 @@ li.wheel__item + li.wheel__item {
   gap: var(--space-2);
   align-items: center;
   padding: var(--space-2) var(--gutter) calc(var(--space-2) + env(safe-area-inset-bottom));
-  background: var(--bg);
-  border-top: 1px solid var(--line);
+  /* 輸入列本身透明，訊息捲動時從後面經過；只有輸入框與送出鈕有填色。 */
+  background: transparent;
+  pointer-events: none;
+}
+.composer > * {
+  pointer-events: auto;
 }
 .composer__input {
   flex: 1;
@@ -1342,7 +1346,8 @@ li.wheel__item + li.wheel__item {
   padding: 0 var(--space-4);
   border: 1px solid var(--line-input);
   border-radius: var(--radius-pill);
-  background: var(--raised);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
   color: var(--text);
   font: inherit;
 }
@@ -1358,6 +1363,7 @@ li.wheel__item + li.wheel__item {
   border: 0;
   border-radius: 50%;
   background: var(--accent);
+  box-shadow: var(--shadow-card);
   color: var(--on-accent);
   cursor: pointer;
 }
