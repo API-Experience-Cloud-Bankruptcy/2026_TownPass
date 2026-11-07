@@ -24,12 +24,14 @@ import {
 import { EXTRA_QUALIFICATION_FIELDS } from './domain/answer-fields';
 import { availability, discoveryScore, identityRanking, questionApplies, rankQuestions } from './domain/adaptive';
 import { filterCatalog, SITUATIONS } from './domain/situations';
+import { isClosed } from './domain/browse';
+import { taipeiToday } from './domain/reviewed-rules';
 import type { Answers, LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
 import { validFactValue, type CandidateFact } from './chat/interpretation';
 import { ActionPlanSync, savedPlan } from './domain/action-plan';
 import { forgetTyped, resetTyped } from './chat/typing';
 
-export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'planItem' | 'help' | 'browse';
+export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'planItem' | 'browse';
 /** 本人行動單的頁面：列表與單張行動單。 */
 export const PLAN_VIEWS: View[] = ['plan', 'planItem'];
 
@@ -53,9 +55,6 @@ interface State {
   questionRoute: Question[];
   questionBudget: number;
   runVisited: string[];
-  showIneligible: boolean;
-  /** 從詳情頁進入求助時帶入的資源與步驟 */
-  helpContext: { itemId: string | null; stepText?: string; target?: Target };
 }
 
 export const state = reactive<State>({
@@ -77,8 +76,6 @@ export const state = reactive<State>({
   questionRoute: [],
   questionBudget: 8,
   runVisited: [],
-  showIneligible: false,
-  helpContext: { itemId: null },
 });
 
 export const planSync = new ActionPlanSync(() => savedPlan(state.personalPlan, state.catalog?.items), (plan) => {
@@ -118,9 +115,12 @@ export const itemsById = computed(() => {
   return map;
 });
 
-export const candidates = computed(() =>
-  state.catalog ? filterCatalog(catalogItems.value, state.session.situation, state.session.query) : [],
-);
+// 已截止的案件不列入問答候選與結果。
+export const candidates = computed(() => {
+  if (!state.catalog) return [];
+  const today = taipeiToday();
+  return filterCatalog(catalogItems.value, state.session.situation, state.session.query).filter(item => !isClosed(item, today));
+});
 
 const candidateQuestions = computed<Question[]>(() =>
   state.bank ? questionsFor(state.bank.questions, candidates.value.map(c => c.id)) : [],
@@ -146,7 +146,6 @@ export const sortedCandidates = computed(() => sortByFit(candidates.value, resul
     return ia.unconfirmed-ib.unconfirmed || ib.preferred-ia.preferred || b.score-a.score || a.index-b.index;
   }).map(x=>x.item));
 export const focusedCandidates = computed(()=>sortedCandidates.value.filter(item=>results.value.get(item.id)?.fit!=='ineligible'&&discoveryScores.value.get(item.id)?.conflicts===0&&discoveryScores.value.get(item.id)?.unmapped===0));
-export const closedCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='closed'));
 export const uncertainCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='unknown'));
 export const recommendedCandidates = computed(()=> {
   const focused=new Set(focusedCandidates.value.map(i=>i.id));
@@ -187,7 +186,6 @@ function conditionsFor(answers: Answers, target: Target): ConditionEntry[] {
 export const conditionEntries = computed(() => conditionsFor(state.session.answers, state.session.target ?? 'self'));
 export const planConditions = computed(() => conditionsFor(state.personalPlan.answers, 'self'));
 export const planConditionLines = computed(() => planConditions.value.map(c => c.line));
-export const helpConditions = computed(() => conditionsFor(state.helpContext.target === 'other' || state.session.target === 'self' ? state.session.answers : state.personalPlan.answers, state.helpContext.target ?? 'self'));
 
 export const conditionLines = computed(() => conditionEntries.value.map((c) => c.line));
 
@@ -330,9 +328,7 @@ export function resetPerson(target: Target | null, keepGreeting = false): void {
   state.runVisited=[];
   state.questionBudget=8;
   lastAnswerAt = -Infinity;
-  state.showIneligible = false;
   state.detailId = null;
-  state.helpContext = { itemId: null };
   state.history = [];
   state.view = 'home';
 }
@@ -556,9 +552,4 @@ export function toggleStep(id: string, index: number): void {
   if (done.has(index)) done.delete(index);
   else done.add(index);
   state.personalPlan.stepDone = { ...state.personalPlan.stepDone, [id]: [...done].sort((a, b) => a - b) };
-}
-
-export function openHelp(itemId: string | null, stepText?: string): void {
-  state.helpContext = { itemId, stepText, target: state.view === 'detail' ? state.detailTarget : PLAN_VIEWS.includes(state.view) ? 'self' : state.session.target ?? 'self' };
-  go('help');
 }

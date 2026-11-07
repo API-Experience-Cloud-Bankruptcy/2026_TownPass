@@ -8,7 +8,7 @@ import { PLAN_STATUS_LABEL, planProgress } from '../domain/plan-progress';
 import { buildRoute } from '../domain/route';
 import { applicationStatusAlert, benefitLabel, progressText, sourceExcerpt } from '../presentation';
 import {
-  itemsById, openDetail, openHelp, planConditions, planItems, planResults,
+  itemsById, openDetail, planConditions, planItems, planResults,
   removeFromPlan, resetSteps, state, toggleDoc, toggleStep,
 } from '../store';
 import ConfirmDialog from './ConfirmDialog.vue';
@@ -195,7 +195,6 @@ const planText = computed(() => item.value ? buildPlanText({
               <Expand>
                 <div v-if="i === progress.current" class="task-step__actions">
                   <button type="button" class="btn btn--primary btn--block" @click="complete(i)">這步完成了</button>
-                  <button type="button" class="btn btn--text" @click="openHelp(item.id, step)">這一步做不到</button>
                 </div>
               </Expand>
             </div>
@@ -215,7 +214,6 @@ const planText = computed(() => item.value ? buildPlanText({
 
       <template v-else>
         <p>原文沒有列出辦理步驟，請先問承辦窗口。</p>
-        <button type="button" class="btn btn--block" @click="openHelp(item.id)">不知道怎麼問</button>
       </template>
     </section>
 

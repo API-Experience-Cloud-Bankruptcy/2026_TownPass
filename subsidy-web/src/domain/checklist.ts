@@ -3,7 +3,7 @@ import { plainLanguageFor } from './plain-language';
 import { mergeDocuments, OTHER_REGION_TITLE, regionText, type MergedDocument } from './documents';
 import { DISCLAIMER, disclosedLines, type PlanInput } from './export';
 import { FIT_LABEL, text } from './match';
-import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE, STATUS_LABEL, stuckAdvice } from './route';
+import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE, STATUS_LABEL, applicationInquiry } from './route';
 
 export interface ChecklistBlock {
   kind: 'text' | 'check' | 'heading' | 'link' | 'notes';
@@ -212,7 +212,7 @@ export function buildChecklist(input: PlanInput): Checklist {
     if (route.rejectedUrls) line('網址提醒', `${route.rejectedUrls} 個無效或不安全網址未列入，請向窗口確認。`);
     for (const extension of item.extensions ?? []) line(extension.label || '補充說明', extension.raw);
     blocks.push({ kind: 'heading', text: '求助時可以照著說' });
-    blocks.push({ kind: 'text', text: stuckAdvice(item, 'understand', undefined, input.target).askText });
+    blocks.push({ kind: 'text', text: applicationInquiry(item, input.target) });
     blocks.push({ kind: 'text', text: '若不方便到場或想請人協助，請先詢問是否接受郵寄、線上或委託，以及需要哪些文件；本表不代表已取得委託權。' });
     blocks.push({ kind: 'notes', text: '詢問紀錄：日期＿＿＿＿　承辦／窗口＿＿＿＿　下一步／約定時間：' });
     sections.push({ id: `resource:${item.id}`, title: `${index + 1}. ${item.name}`, blocks });
@@ -319,7 +319,7 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
       stepsNote: route.steps.length && !route.splitFromArrow ? '流程原文，未自行拆步。' : '',
       contact,
       ask: [
-        { label: '詢問時可以這樣說', text: stuckAdvice(item, 'understand', undefined, input.target).askText },
+        { label: '詢問時可以這樣說', text: applicationInquiry(item, input.target) },
         { label: '委託或不便到場', text: '若不方便到場或想請人協助，請先詢問是否接受郵寄、線上或委託，以及需要哪些文件；本表不代表已取得委託權。' },
       ],
       verification, sources,

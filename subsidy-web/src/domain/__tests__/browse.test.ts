@@ -25,12 +25,12 @@ describe('補助總覽的時效與完整分類', () => {
     expect(browseCatalog([unknown, expired], { today })).toEqual([]);
     expect(browseCatalog([unknown, expired], { today, includeUncertain: true })).toEqual([unknown]);
   });
-  it('勾選後可查已截止與尚未開放的項目，排在可申請項目之後', () => {
+  it('勾選後可查尚未開放的項目，排在可申請項目之後；已截止一律不列', () => {
     const open = makeSubsidy({ id: 'open', application: { deadline: { type: 'ongoing', end: null } } });
     const expired = { ...dated(null, '2026-11-07'), id: 'expired' };
     const later = { ...dated('2026-11-09', '2026-12-01'), id: 'later' };
     expect(browseCatalog([expired, later, open], { today }).map(i => i.id)).toEqual(['open']);
-    expect(browseCatalog([expired, later, open], { today, includeClosed: true }).map(i => i.id)).toEqual(['open', 'expired', 'later']);
+    expect(browseCatalog([expired, later, open], { today, includeUncertain: true, includeUpcoming: true }).map(i => i.id)).toEqual(['open', 'later']);
     expect(browseStatusLabel(expired, today)).toBe('已截止（2026-11-07）');
     expect(browseStatusLabel(later, today)).toBe('尚未開放（2026-11-09 起）');
   });

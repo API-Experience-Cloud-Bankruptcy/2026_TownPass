@@ -1,10 +1,10 @@
-// ActionPlanExporter：行動單與求助文字。畫面、純文字、列印共用同一份內容。
+// ActionPlanExporter：行動單文字。畫面、純文字、列印共用同一份內容。
 // 預設不含任何個人條件；使用者可在預覽中選擇加入或移除。
 
 import { plainLanguageFor } from './plain-language';
 import { mergeDocuments, OTHER_REGION_TITLE, regionText } from './documents';
 import { FIT_LABEL, text } from './match';
-import { buildRoute, SOURCE_KIND_LABEL, STATUS_LABEL, stuckAdvice, STUCK_OPTIONS, type StuckReason } from './route';
+import { buildRoute, SOURCE_KIND_LABEL, STATUS_LABEL } from './route';
 import type { MatchResult, Subsidy, Target } from './types';
 
 export const DISCLAIMER = '這份摘要供申請前準備，不代表已送件或核准。資格由主管機關審核。';
@@ -164,50 +164,6 @@ export function buildPlanText(input: PlanInput): string {
   lines.push('');
   lines.push(DISCLAIMER);
   lines.push(`資料版本：${meta.catalogVersion}`);
-  return lines.join('\n');
-}
-
-export interface HelpInput {
-  meta: ExportMeta;
-  target: Target;
-  reason: StuckReason;
-  item: Subsidy | null;
-  stepText?: string;
-  conditions: ConditionEntry[];
-}
-
-export function buildHelpText(input: HelpInput): string {
-  const label = STUCK_OPTIONS.find((o) => o.id === input.reason)?.label ?? '';
-  const lines: string[] = [];
-  lines.push(input.target === 'self' ? '我需要協助' : '我正在替家人或其他人詢問');
-  lines.push(`遇到的問題：${label}`);
-  if (input.item) {
-    const advice = stuckAdvice(input.item, input.reason, input.stepText, input.target);
-    lines.push(`想申請：${input.item.name}`);
-    if (input.stepText) lines.push(`卡住的步驟：${input.stepText}`);
-    lines.push('');
-    lines.push('可以這樣詢問：');
-    lines.push(advice.askText);
-    if (advice.found.length) {
-      lines.push('');
-      lines.push('資料列出的資訊：');
-      for (const f of advice.found) lines.push(`- ${f}`);
-    }
-    for (const n of advice.notFound) lines.push(`- ${n}`);
-    const route = buildRoute(input.item);
-    for (const l of route.links.filter((x) => x.kind === 'program')) lines.push(`${l.label}（${SOURCE_KIND_LABEL[l.sourceKind]}）：${l.url}`);
-  } else {
-    lines.push('');
-    lines.push('可以這樣詢問：');
-    lines.push(`您好，${input.target === 'other' ? '我正在協助家人或其他人申請福利，遇到困難' : '我在申請福利時遇到困難'}（${label}），請問可以協助我了解下一步嗎？`);
-  }
-  if (input.conditions.length) {
-    lines.push('');
-    lines.push('補充回答（自行填寫，尚未查證）：');
-    for (const c of input.conditions) lines.push(`- ${c.line}`);
-  }
-  lines.push('');
-  lines.push(`${DISCLAIMER}（${formatDate(input.meta.generatedAt)}，資料版本 ${input.meta.catalogVersion}）`);
   return lines.join('\n');
 }
 

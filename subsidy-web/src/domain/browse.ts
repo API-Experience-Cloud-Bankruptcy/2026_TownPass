@@ -1,5 +1,6 @@
 // 補助總覽獨立於個人問答：分類、時效及搜尋均不改動答案。
 import { availability } from './adaptive';
+import { taipeiToday } from './reviewed-rules';
 import { searchScore } from './situations';
 import type { Subsidy } from './types';
 
@@ -21,7 +22,7 @@ export const BROWSE_CATEGORIES = [
 export function browseCategory(item: Subsidy): string {
   return BROWSE_CATEGORIES.find(c => c.pattern.test(item.classification.category))?.id ?? 'other';
 }
-/** closed：已截止或暫停受理；upcoming：尚未開放。兩者預設不列出，但資料保留可查。 */
+/** closed：已截止或暫停受理，微服務任何地方都不列出；upcoming：尚未開放，預設不列出，可勾選查看。 */
 export type BrowseStatus = 'available' | 'uncertain' | 'closed' | 'upcoming';
 export function browseStatus(item: Subsidy, today: string): BrowseStatus {
   const d = item.application.deadline;
@@ -44,12 +45,17 @@ export function browseStatus(item: Subsidy, today: string): BrowseStatus {
   return 'uncertain';
 }
 
-export function browseCatalog(items: Subsidy[], options: { today: string; category?: string | null; query?: string; includeUncertain?: boolean; includeClosed?: boolean }): Subsidy[] {
+/** 已截止的案件不在微服務出現（總覽、問答結果皆排除）。 */
+export function isClosed(item: Subsidy, today = taipeiToday()): boolean {
+  return browseStatus(item, today) === 'closed';
+}
+
+export function browseCatalog(items: Subsidy[], options: { today: string; category?: string | null; query?: string; includeUncertain?: boolean; includeUpcoming?: boolean }): Subsidy[] {
   const query = (options.query ?? '').normalize('NFKC').trim();
   return items.map((item, index) => ({ item, index, status: browseStatus(item, options.today), score: searchScore(item, query) }))
-    .filter(x => (x.status === 'available' || x.status === 'uncertain' && options.includeUncertain || isInactive(x.status) && options.includeClosed)
+    .filter(x => (x.status === 'available' || x.status === 'uncertain' && options.includeUncertain || x.status === 'upcoming' && options.includeUpcoming)
       && (!options.category || browseCategory(x.item) === options.category) && x.score > 0)
-    // 已截止與尚未開放的排在可申請項目之後，避免蓋過目前能辦的。
+    // 尚未開放的排在可申請項目之後，避免蓋過目前能辦的。
     .sort((a, b) => Number(isInactive(a.status)) - Number(isInactive(b.status)) || b.score - a.score || a.index - b.index)
     .map(x => x.item);
 }

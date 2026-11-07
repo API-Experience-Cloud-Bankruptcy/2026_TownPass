@@ -1,3 +1,4 @@
+import { isClosed } from '../domain/browse';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { emptySession } from '../domain/session';
 import { makeSubsidy } from '../domain/__tests__/fixtures';
@@ -301,7 +302,7 @@ it('探索要求對象，略過生活分類後仍可從具體支出進住宅分�
   expect(questions.value.slice(state.qIndex).some(q=>q.field==='housing_support'||q.field==='is_renting')).toBe(true);
   const seen=questions.value.slice(0,state.qIndex).map(q=>q.id);go('results');continueQuestions();
   expect(questions.value.every(q=>!seen.includes(q.id))).toBe(true);
-  const nonIneligible=state.catalog!.items.filter(i=>state.session.situation===null&&i.id).length;
+  const nonIneligible=state.catalog!.items.filter(i=>state.session.situation===null&&!isClosed(i)).length;
   expect(new Set([...recommendedCandidates.value,...otherCandidates.value].map(i=>i.id)).size).toBe(nonIneligible);
   expect(focusedCandidates.value.length).toBeLessThan(217);
 },15000);

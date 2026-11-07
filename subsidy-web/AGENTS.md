@@ -95,7 +95,7 @@ subsidy-web/
 └─ src/
    ├─ main.ts / App.vue  福利通逐頁流程與三入口導覽
    ├─ store.ts           對象、需求、題目、行動單與導覽狀態
-   ├─ components/       ChatView（對話式：選對象→需求→問答→結果）、詳情、行動單、求助頁
+   ├─ components/       ChatView（對話式：選對象→需求→問答→結果）、詳情、行動單
    │  └─ chat/          BotMessage（打字效果）、UserMessage（點擊改答案）、WheelPicker（年齡滾輪）
    ├─ chat/followups.ts 一句話含多件事時拆成逐題追問（對象→不明主體→哪一位→條件→方向），全部答完才一次套用
    ├─ chat/typing.ts    打字速度（字多加快但仍逐字，整則上限 3.5 秒）、已播放紀錄、自動往下捲（長訊息停在開頭）
@@ -259,11 +259,12 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 ## 12. 目前進度與待辦
 
-已完成福利通前後端核心流程，並升級為依答案重排的動態問答：217 筆完整資料 API 與逐筆探索映射、來源綁定必要條件、本機保守初篩、不確定需求的生活情境探索、辦理路線、文件準備、求助及行動單輸出。題目來自共用模板，不由執行時 AI 生成；探索方向與資格判斷分開。詳細範圍及驗證見 `README.md` 與 `../docs/welfare-implementation-contract.md`。
+已完成福利通前後端核心流程，並升級為依答案重排的動態問答：217 筆完整資料 API 與逐筆探索映射、來源綁定必要條件、本機保守初篩、不確定需求的生活情境探索、辦理路線、文件準備及行動單輸出。題目來自共用模板，不由執行時 AI 生成；探索方向與資格判斷分開。詳細範圍及驗證見 `README.md` 與 `../docs/welfare-implementation-contract.md`。
 
 行動單持久化：`domain/action-plan.ts` 透過 `/api/personal-action-plan` 讀寫 SQLite 的 `personal_action_plans`，本人行動單狀態為 `state.personalPlan`，與查詢 `state.session` 分開，舊 `/api/action-plan` 及資料表保留相容，僅保存資源與準備進度，不傳資格答案／聊天原句。後端須明確啟用 `DEMO_MODE=1`；App、瀏覽器與 DB 共用 `assets/mock_data/account.json` 的虛擬測試者，非正式台北通登入。資料欄位與限制見 `../docs/townpass-profile.md`。保存狀態以後端回覆為準，revision 衝突不得靜默覆寫。`../scripts/install_macos_service.py --demo` 將 DB 放在 release 以外的持久目錄。
 
 行動單畫面：`PlanView.vue` 只列方框，一張行動單＝一筆補助，依進行中／還沒開始／待問窗口／已完成排序，底部可匯出全部。點進去是 `PlanItemView.vue`（view `planItem`、`state.planItemId`）：各自的辦理步驟（逐步完成、可取消、焦點移到下一步）、該筆文件勾選、去哪裡辦、申請表、單張匯出與移除；「看補助詳細內容」才開 `DetailView`，兩頁互相返回不疊層。進度計算在 `domain/plan-progress.ts`。詳情頁的步驟是唯讀；步驟進度只記在本人行動單，移除行動單會一併清除該筆步驟進度。
+
 
 連結處理：App 的 WebView 不會自己處理 `target="_blank"`、`tel:`、`mailto:`，所以 `main.ts` 安裝 `townpass/links.ts` 的全域點擊攔截（只在城市通內生效）。外部網頁走 `open_link`，電話走 `phone_call`，其他協定走 `launch_map`。同頁錨點、`download`、blob 交還給 WebView。新增連結直接寫 `<a href>` 即可，不要自己呼叫 `postMessage`。受理窗口與步驟原文經 `LinkedText.vue`（`domain/channel-text.ts`）把網址、電話變成可點連結，原文不改寫。App 內不顯示 blob 的「下載／開啟 PDF」（WKWebView 無法使用），改用「儲存／分享 PDF」。Flutter 端 `tp_web_view.dart` 也處理新視窗、非網頁協定與檔案下載（交給系統瀏覽器）；改完要重新建置 App。地圖依競賽規則只能用開源方案，目前不提供。
 
@@ -273,7 +274,7 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊查詢答案，保留獨立的本人行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。
 
-動態問答維護須涵蓋返回改答後恢復分支、已略過問題不重複追問、切需求清除不相關探索偏好，以及 catalog／資格／探索／模板版本更新後的工作階段失效。顯示的聚焦筆數不等於符合資格筆數；其他候選、時效不明與已截止項目須保留可查入口。
+動態問答維護須涵蓋返回改答後恢復分支、已略過問題不重複追問、切需求清除不相關探索偏好，以及 catalog／資格／探索／模板版本更新後的工作階段失效。顯示的聚焦筆數不等於符合資格筆數；其他候選與時效不明項目須保留可查入口；已截止案件（`browse.ts` 的 `isClosed`）不在微服務任何地方出現。
 
 替他人查詢的交付為詳情頁單筆 A4 PDF 檢核表：`checklist.ts` 建共用內容、`checklist-pdf.ts` 本機產生實際 PDF（TTF 完整嵌入以避免閱讀器缺字，不改成未驗證的 subset），`ChecklistView.vue` 接收當前資源並在詳情內預覽／下載，不寫入本人行動單；總覽詳情只有本人行動單入口，主要「行動單」分頁不隨查詢對象改名或換頁。PDF 需保留完整條件、待確認、來源與文件差異，個人填答沿用欄位揭露控制；內容變更撤銷舊檔。字型為附授權的本站 Noto Sans TC，按需載入，不用 CDN。App 的 `share_pdf` 由 printing 開啟系統分享選單，回覆不代表已保存或送出；新增外掛需重新建置 App。
 

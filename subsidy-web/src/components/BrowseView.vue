@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 補助總覽：可查看全部、選分類或輸入關鍵字，均保留整份資料的時效標示。
-// 受理時間待確認、已截止與尚未開放的項目預設都列出（後兩者排在最後、以灰字標示）。
+// 受理時間待確認與尚未開放的項目都列出（後者排在最後、以灰字標示）；已截止的案件不列出。
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { BROWSE_CATEGORIES, browseCatalog, browseCategory, browseStatus, browseStatusLabel, isInactive } from '../domain/browse';
 import { plainLanguageFor } from '../domain/plain-language';
@@ -22,11 +22,11 @@ onUnmounted(() => { clearInterval(timer); window.clearTimeout(searchTimer); });
 
 const heading = ref<HTMLElement | null>(null);
 const pendingFocus = ref(false);
-const all = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, includeUncertain: true, includeClosed: true }));
+const all = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, includeUncertain: true, includeUpcoming: true }));
 const categories = computed(() => BROWSE_CATEGORIES.map(c => ({ ...c, count: all.value.filter(i => browseCategory(i) === c.id).length })));
 const selected = computed(() => BROWSE_CATEGORIES.find(c => c.id === category.value));
 const showingItems = computed(() => showAll.value || !!category.value || !!applied.value);
-const items = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, category: category.value, query: applied.value, includeUncertain: true, includeClosed: true }));
+const items = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, category: category.value, query: applied.value, includeUncertain: true, includeUpcoming: true }));
 const headingText = computed(() => {
   const q = applied.value ? `・「${applied.value}」` : '';
   if (showAll.value) return `全部福利與補助${q}`;
@@ -101,7 +101,7 @@ function chooseAll() { reset(); showAll.value = true; focusHeading(); }
       <p v-if="state.loading" key="loading" role="status">正在載入補助資料…</p>
       <div v-else-if="!showingItems" key="home" class="browse-home">
         <button type="button" class="btn btn--secondary btn--block" @click="chooseAll">查看全部 {{ all.length }} 項福利與補助</button>
-        <p class="muted">可以依分類找，也能查看全部項目，包含已截止、尚未開放及受理時間待確認的補助。</p>
+        <p class="muted">可以依分類找，也能查看全部項目，包含尚未開放及受理時間待確認的補助。</p>
         <ul class="browse-grid" aria-label="補助分類">
           <li v-for="c in categories" :key="c.id">
             <button type="button" class="browse-category" @click="chooseCategory(c.id)">

@@ -795,10 +795,7 @@ details.bubble-more.is-closing[open] > summary::after {
 .share .btn {
   line-height: 1;
 }
-.help-stage {
-  animation: help-in var(--dur-slow) var(--ease);
-}
-@keyframes help-in {
+@keyframes panel-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
@@ -2153,7 +2150,7 @@ li.wheel__item + li.wheel__item {
   font-size: var(--fs-caption);
   font-weight: var(--fw-bold);
   line-height: var(--lh-tight);
-  animation: help-in var(--dur) var(--ease);
+  animation: panel-in var(--dur) var(--ease);
 }
 .task-step__actions {
   display: grid;
@@ -2218,7 +2215,6 @@ li.wheel__item + li.wheel__item {
   margin: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  .help-stage,
   .task-step__now,
   .task-step__glyph.is-pop,
   .task-docs .check.is-pop input,

@@ -12,7 +12,7 @@ export type InputRoute =
   | { kind: 'search'; query: string }
   | { kind: 'conversation' }
   | { kind: 'clarify'; message: string }
-  | { kind: 'command'; command: 'back' | 'cancel' | 'help' | 'restart' };
+  | { kind: 'command'; command: 'back' | 'cancel' | 'restart' };
 
 /** 比對用字形；不改寫原始 evidence，也不把否定字或數字移除。 */
 export function normalizeInput(input: string): string {
@@ -170,10 +170,9 @@ function nounQuery(input: string): boolean {
     && !/(?:或|以及|然後|請問|請幫|幫忙|告訴|解釋|忽略)/u.test(input);
 }
 
-const commands: Readonly<Record<string, 'back' | 'cancel' | 'help' | 'restart'>> = {
+const commands: Readonly<Record<string, 'back' | 'cancel' | 'restart'>> = {
   返回: 'back', 上一步: 'back', 回上一步: 'back',
   取消: 'cancel', 取消操作: 'cancel',
-  幫助: 'help', 使用說明: 'help',
   重新開始: 'restart', 重來: 'restart',
 };
 

@@ -20,7 +20,6 @@ import {
   back,
   applyConfirmedFacts,
   canRefine,
-  closedCandidates,
   continueQuestions,
   discoverWithKnownAnswers,
   go,
@@ -34,7 +33,6 @@ import {
   results,
   searchResources,
   selectNeed,
-  sortedCandidates,
   startExplore,
   startQuestions,
   state,
@@ -185,21 +183,17 @@ const PAGE = 10;
 const shownCount = ref<Record<string, number>>({});
 const notIneligible = (i: Subsidy) => results.value.get(i.id)?.fit !== 'ineligible';
 const groups = computed(() => {
-  const [recommended, closed, uncertain, general] = distinctGroups([
+  const [recommended, uncertain, general] = distinctGroups([
     recommendedCandidates.value.filter(notIneligible),
-    closedCandidates.value.filter(notIneligible),
     uncertainCandidates.value.filter(notIneligible),
     otherCandidates.value.filter(notIneligible),
   ]);
-  return { recommended, closed, uncertain, general };
+  return { recommended, uncertain, general };
 });
-const ineligible = computed(() => sortedCandidates.value.filter((i) => !notIneligible(i)));
 const sections = computed(() =>
   [
     { key: 'general', title: '其他相關資源', note: `這些也可能和${ask.value}的情況有關，沒有排在前面不代表不能申請。`, list: groups.value.general },
     { key: 'uncertain', title: '受理時間需確認', note: '資料沒有寫清楚現在是否受理，請看原文或問承辦窗口。', list: groups.value.uncertain },
-    { key: 'closed', title: '目前已截止', note: '依資料原文的受理情形或期限；之後可能再開放，請看官方公告。', list: groups.value.closed },
-    { key: 'ineligible', title: '與填寫條件不符的資源', note: '只依填寫的答案判斷；填錯或情況改變，可以改答案再看。', list: ineligible.value },
   ].filter((s) => s.list.length),
 );
 const answeredCount = computed(() => questionInsight.value?.answeredCount ?? 0);
@@ -219,7 +213,7 @@ const resultLines = computed<Line[]>(() => [
     tone: 'title',
   },
   { text: answeredCount.value === 0 && !nothing.value ? `還沒回答問題，這些是依需求列出的資源，還沒比對${ask.value}的情況。` : '', tone: 'muted' },
-  { text: nothing.value ? '沒找到不代表沒有可以申請的福利。可以換個需求、改答案，或找人幫忙。' : '這些資源是否適用，還要由承辦機關審核。', tone: 'muted' },
+  { text: nothing.value ? '沒找到不代表沒有可以申請的福利。可以換個需求，或改答案再找。' : '這些資源是否適用，還要由承辦機關審核。', tone: 'muted' },
 ]);
 const nextKey = computed(() => `${resultsKey.value}:next`);
 const nextLines: Line[] = [{ text: '接下來想怎麼做？' }];
@@ -320,7 +314,7 @@ const context = computed<InterpretationContext>(() => {
     : view.value === 'needs' || view.value === 'search'
       ? [{ id: 'explore', label: '還不確定，帶我找' }, ...SITUATIONS.map(s => ({ id: `need:${s.id}`, label: s.label, description: s.hint }))]
       : q ? [...(q.options ?? []).map((o, i) => ({ id: `option:${i}`, label: o.label, description: optionalText(o, 'description') })), { id: 'skip', label: '不知道，先跳過' }, { id: 'results', label: '先看目前結果' }]
-        : [{ id: 'needs', label: '換需求' }, { id: 'help', label: '找人幫忙' }, ...(canRefine.value ? [{ id: 'continue', label: '再回答幾題，繼續縮小' }] : []), ...(target.value === 'self' && planItems.value.length ? [{ id: 'plan', label: '看行動單' }] : [])];
+        : [{ id: 'needs', label: '換需求' }, ...(canRefine.value ? [{ id: 'continue', label: '再回答幾題，繼續縮小' }] : []), ...(target.value === 'self' && planItems.value.length ? [{ id: 'plan', label: '看行動單' }] : [])];
   return {
     stage: view.value as InterpretationContext['stage'], target: state.session.target, choices,
     ...(q ? { question: { id: q.id, field: q.field, title: titleFor(q, target.value), kind: q.kind, min: q.min, max: q.max, options: choices.filter(c => c.id.startsWith('option:')) } } : {}),
@@ -568,7 +562,6 @@ async function applyAnswer(result: Extract<Interpretation, { kind: 'answer' }>, 
   if (id === 'explore') { discoverWithKnownAnswers(); typedNeed.value = { situation: null, query: '', text }; return true; }
   if (id === 'results') go('results');
   else if (id === 'needs') go('needs');
-  else if (id === 'help') tab('help');
   else if (id === 'continue') continueQuestions();
   else if (id === 'plan') tab('plan');
   else return false;
@@ -584,16 +577,16 @@ function showRecovery(id: number, input: string, lead: string, mode: 'current' |
   const prompt = nextPrompt(mode);
   fallbackCount.value++;
   searchSuggestions.value = [];
-  const t = turns.value.find(t => t.id === id); if (t) t.reply = `${lead} ${prompt}${fallbackCount.value >= 2 ? ' 也可以直接選下方選項，或找人幫忙。' : ''}`;
+  const t = turns.value.find(t => t.id === id); if (t) t.reply = `${lead} ${prompt}${fallbackCount.value >= 2 ? ' 也可以直接選下方選項。' : ''}`;
   recovery.value = { turnId: id, mode };
   clarification.value = { input: input.slice(-1600), prompt, fingerprint: fingerprint.value };
 }
 const recoveryChoices = computed(() => {
   if (!recovery.value) return [];
   if (!state.session.target) return [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }];
-  if (recovery.value.mode === 'need') return [...SITUATIONS.map(s => ({ id: `need:${s.id}`, label: s.label })), { id: 'discover', label: '還不確定，帶我找' }, { id: 'help', label: '找人幫忙' }];
-  if (view.value === 'questions' && current.value) return [...(current.value.options ?? []).map((o, i) => ({ id: `option:${i}`, label: o.label })), { id: 'skip', label: '不知道，先跳過' }, { id: 'show-question', label: '回到目前題目' }, { id: 'show-needs', label: '改說其他需求' }, { id: 'help', label: '找人幫忙' }];
-  return [{ id: 'discover', label: '還不確定，帶我找' }, { id: 'show-needs', label: '選一個需求方向' }, { id: 'rephrase', label: '我再說清楚一點' }, { id: 'help', label: '找人幫忙' }];
+  if (recovery.value.mode === 'need') return [...SITUATIONS.map(s => ({ id: `need:${s.id}`, label: s.label })), { id: 'discover', label: '還不確定，帶我找' }];
+  if (view.value === 'questions' && current.value) return [...(current.value.options ?? []).map((o, i) => ({ id: `option:${i}`, label: o.label })), { id: 'skip', label: '不知道，先跳過' }, { id: 'show-question', label: '回到目前題目' }, { id: 'show-needs', label: '改說其他需求' }];
+  return [{ id: 'discover', label: '還不確定，帶我找' }, { id: 'show-needs', label: '選一個需求方向' }, { id: 'rephrase', label: '我再說清楚一點' }];
 });
 async function recoverWith(id: string) {
   if (id === 'rephrase') { document.getElementById('chat-search')?.focus(); return; }
@@ -742,7 +735,6 @@ async function onInput() {
   if (route.kind === 'command') {
     cancelInput();
     if (route.command === 'back') back();
-    else if (route.command === 'help') tab('help');
     else if (route.command === 'restart') pendingSwitch.value = 'clear';
     else addInputTurn(text, '已取消尚未確認的內容，原本資料仍保留。');
     return;
@@ -988,8 +980,7 @@ async function onInput() {
 
                 <BotMessage v-if="isTyped(resultsKey) && sections.length" :key="sectionsKey" :msg-key="sectionsKey" :lines="[{ text: '另外還有這些，點開可以看：' }]" wide>
                   <div class="bubble-groups">
-                    <details v-for="s in sections" :key="s.key" v-smooth-details class="bubble-more" :open="s.key === 'ineligible' ? state.showIneligible : undefined"
-                      @toggle="s.key === 'ineligible' && (state.showIneligible = ($event.target as HTMLDetailsElement).open)">
+                    <details v-for="s in sections" :key="s.key" v-smooth-details class="bubble-more">
                       <summary>{{ s.title }}（{{ s.list.length }}）</summary>
                       <p class="bubble-more__note">{{ s.note }}</p>
                       <TransitionGroup name="list" tag="ul" class="cards" :aria-label="s.title">
@@ -1022,7 +1013,6 @@ async function onInput() {
                         <button v-if="answeredCount" type="button" class="reply reply--quiet" @click="redoAnswers"><span class="reply__label">改答案</span></button>
                         <button type="button" class="reply reply--quiet" @click="collapseFlow(() => go('needs'))"><span class="reply__label">換需求</span></button>
                         <button v-if="!exploring && state.session.target" type="button" class="reply reply--quiet" @click="startExplore"><span class="reply__label">帶我找</span></button>
-                        <button type="button" class="reply reply--quiet" @click="tab('help')"><span class="reply__label">找人幫忙</span></button>
                       </div>
                     </div>
                   </template>

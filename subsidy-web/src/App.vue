@@ -4,7 +4,6 @@ import { followBottom } from './chat/typing';
 import ChatView from './components/ChatView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import DetailView from './components/DetailView.vue';
-import HelpView from './components/HelpView.vue';
 import LogoMark from './components/LogoMark.vue';
 import { dismissSplash, SPLASH_MAX_WAIT_MS } from './brand/splash';
 import BrowseView from './components/BrowseView.vue';
@@ -108,9 +107,9 @@ function sectionOf(view: View): Section {
   if (CHAT_VIEWS.includes(view)) return 'find';
   if (view === 'plan' || view === 'planItem') return 'plan';
   if (view === 'browse') return 'browse';
-  // 詳情、求助頁屬於開啟它的分頁（返回紀錄的最底層；tab() 會清空紀錄）
+  // 詳情頁屬於開啟它的分頁（返回紀錄的最底層；tab() 會清空紀錄）
   const root = state.history[0];
-  return root && root !== 'detail' && root !== 'help' ? sectionOf(root) : 'find';
+  return root && root !== 'detail' ? sectionOf(root) : 'find';
 }
 const pageTransition = ref('page-fade');
 let lastSection = sectionOf(state.view);
@@ -204,7 +203,6 @@ const page = computed<Component | null>(() =>
   : state.view === 'plan' ? PlanView
   : state.view === 'planItem' ? PlanItemPage
   : state.view === 'browse' ? BrowseView
-  : state.view === 'help' ? HelpView
   : null,
 );
 

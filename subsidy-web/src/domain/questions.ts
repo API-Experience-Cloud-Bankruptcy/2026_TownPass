@@ -258,7 +258,7 @@ export function parseNumberAnswer(
   return { ok: true, value: n };
 }
 
-/** 答案的可讀文字，用於摘要與求助預覽。 */
+/** 答案的可讀文字，用於摘要與輸出預覽。 */
 export function describeAnswer(question: Question, value: string | number | boolean | undefined): string {
   if (value === undefined) return '不知道／略過';
   if (question.kind === 'number') return `${value}${question.field === 'age' ? ' 歲' : ''}`;

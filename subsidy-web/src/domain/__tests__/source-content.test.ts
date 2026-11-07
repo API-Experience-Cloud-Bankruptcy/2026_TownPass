@@ -2,7 +2,8 @@ import { createSSRApp } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it } from 'vitest';
 import { sourceConditions, sourceParagraphs } from '../source-content';
-import { browseCatalog } from '../browse';
+import { browseCatalog, isClosed } from '../browse';
+import { taipeiToday } from '../reviewed-rules';
 import { realItems } from './real-data';
 import SourceText from '../../components/SourceText.vue';
 import DetailView from '../../components/DetailView.vue';
@@ -42,11 +43,14 @@ describe('所有福利的完整原文閱讀', () => {
     expect(html).toContain('但不得與其他方案併領。');
     expect(html).toContain('https://example.org/a?q=1&amp;n=2');
   });
-  it('總覽全部模式不遺漏任何資料，入口顯示真實總數', async () => {
+  it('總覽全部模式列出所有未截止資料，不列已截止案件，入口顯示真實總數', async () => {
     loadCatalog();
-    const all = browseCatalog(realItems, { today: '2026-11-08', includeUncertain: true, includeClosed: true });
-    expect(new Set(all.map(i => i.id))).toEqual(new Set(realItems.map(i => i.id)));
-    expect(await render(BrowseView)).toContain(`查看全部 ${realItems.length} 項福利與補助`);
+    const today = taipeiToday();
+    const all = browseCatalog(realItems, { today, includeUncertain: true, includeUpcoming: true });
+    const open = realItems.filter(i => !isClosed(i, today));
+    expect(open.length).toBeLessThan(realItems.length);
+    expect(new Set(all.map(i => i.id))).toEqual(new Set(open.map(i => i.id)));
+    expect(await render(BrowseView)).toContain(`查看全部 ${open.length} 項福利與補助`);
   });
   it('217 筆詳情與結果卡均可渲染，完整條件與來源入口皆保留', async () => {
     loadCatalog();
