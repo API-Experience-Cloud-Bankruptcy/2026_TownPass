@@ -148,7 +148,7 @@ notify('補助專區', '有新的補助可以申請');
 | `launch_map` | 網址字串 | `true`/`false` | `launchMap(url)` | 同上，data 非字串時回 `false` 後拋例外 |
 | `1999agree` | 任意非 null | 失敗時 `false`，**成功不回覆** | `call1999()` | 會先要求同意使用條款，再跳撥號對話框 |
 | `notify` | `{ title, content }` | 失敗時 `false`，**成功不回覆** | `notify(t, c)` | content 符合「已訂閱X」「已取消訂閱X」時會同步更新 App 的訂閱清單 |
-| `open_link` | 網址字串 | 失敗時 `false`，**成功不回覆** | `openLink(url)` | 在 App 內以新的 WebView 頁面開啟 |
+| `open_link` | 網址字串 | 失敗時 `false`，**成功不回覆** | `openLink(url)` | 在 App 內以新的 WebView 頁面開啟；`TPRoute.openUri` 設 `preventDuplicates: false`，否則從 WebView 內開會被 GetX 擋掉 |
 
 ### 擴充 App 能力（自訂 Handler）
 
