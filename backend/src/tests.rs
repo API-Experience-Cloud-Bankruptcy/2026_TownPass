@@ -71,10 +71,7 @@ fn original_records_and_verification_status_are_preserved() {
             .entry(entry.subsidy.source_meta.verification_status.as_str())
             .or_insert(0) += 1;
     }
-    assert_eq!(
-        status,
-        BTreeMap::from([("verified", 125), ("partial", 90), ("unverified", 2)])
-    );
+    assert_eq!(status, BTreeMap::from([("verified", 129), ("partial", 88)]));
     let raw = &entry("WEL-0001").original;
     for key in ["period", "year", "multiplier_base", "multiplier_value"] {
         assert!(raw["eligibility"]["income"][0].get(key).is_some(), "{key}");
@@ -417,7 +414,7 @@ async fn http_health_catalog_questions_and_facets_are_complete() {
     let (_, facet) = request(router.clone(), "GET", "/api/facets", None).await;
     assert_eq!(
         facet["verification_status"],
-        json!({"verified":125,"partial":90,"unverified":2})
+        json!({"verified":129,"partial":88})
     );
     let (status, error) = request(router, "GET", "/api/subsidies/does-not-exist", None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);

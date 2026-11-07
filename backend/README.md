@@ -28,7 +28,7 @@ SUBSIDY_DATA=./data/subsidies.json cargo run --locked --release
 
 ## 資料完整性與版本
 
-正式輸入共 **217 筆**，資料原有狀態為 `verified` 125、`partial` 90、`unverified` 2；本次沒有逐筆重新查核，不將這些狀態當作當期政策有效或已核准的證明。原資料檔與 schema 均不修改。
+正式輸入共 **217 筆**，查核狀態為 `verified` 129、`partial` 88；狀態不代表當期政策有效或已核准。資料修改後須重新審閱受影響紀錄並更新其規則指紋；schema 不修改。
 
 每筆保留完整的原始 JSON 值，Rust 型別只供內部搜尋／索引使用。catalog、單筆詳情、列表 `view=full` 與 match `view=full` 都從保留的 JSON 輸出，不將型別重新序列化成資料原文。因此 `income.period`、`year`、`multiplier_base`、`multiplier_value`，以及各層未識別欄位、空值、來源與原文仍保留。JSON 空白排版及物件鍵順序不屬於保留承諾；summary 是有意精簡的視圖。
 
@@ -94,7 +94,7 @@ Question 欄位為 `id`、`field`、`kind`、`title`、`description`、選用 `o
 - 每條必要條件記錄來源 JSON Pointer、逐字引文、來源 URL 及整筆原始資料的 canonical FNV-1a 64-bit 指紋。物件鍵排序、陣列順序保留、整數值統一；這是變更偵測，不是對抗惡意碰撞的密碼學證明。任何原文、來源、未知條件或其他欄位改動，該筆舊規則即停用並回到待確認，不沿用硬排除；沒有自動補寫／重綁規則。
 - 兩端都要求有規則的記錄具非空 `source_urls`，且各 URL 仍屬該筆 `source_meta.sources` 的 official 來源。新增規則必須先逐筆審閱主體、必要性、例外及替代途徑，再更新引文、來源與指紋，不能只為了讓測試通過而重算指紋。
 
-本輪保留資料既有 verified／partial／unverified，沒有宣稱重新向官方查核全部資料。未結構化的資格、文件、時效、同質補助、收入、財產、國籍與審核仍須查原文。
+查核狀態不代表已重新向官方查核全部資料。未結構化的資格、文件、時效、同質補助、收入、財產、國籍與審核仍須查原文。
 
 ## 匹配界線
 

@@ -599,16 +599,15 @@
       }
     ],
     "source_meta": {
-      "verification_status": "partial",
-      "verification_note": "官方方案頁已讀取",
+      "verification_status": "verified",
+      "verification_note": "官方方案頁已讀取；免申請，註冊時直接減免",
       "application_status": "常態性；註冊時直接減免",
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [
-        "申請方式.form_fields",
-        "申請方式.form_url"
+        "申請方式.form_fields"
       ],
-      "notes": "資格與是否核定仍由承辦單位依個案審查。一般免另申請；身分或競合異動洽學校。",
+      "notes": "資格與是否核定仍由承辦單位依個案審查。一般免另申請；身分或競合異動洽學校。 2026-11-07依官方頁面確認免申請，無應備文件。官方原文：每學期註冊繳費單上直接減免，學生免申請。",
       "sources": [
         {
           "url": "https://www.edu.tw/helpdreams/cp.aspx?n=12DCCAD47B49E27F&s=E5B60D75EBD02E77",
@@ -1188,7 +1187,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "金額及校內操作以教育部與學校核定為準；臺北市立大學頁作申請實例，非全國共用期限。",
+      "notes": "金額及校內操作以教育部與學校核定為準；臺北市立大學頁作申請實例，非全國共用期限。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.moe.gov.tw/News_Content.aspx?n=0217161130F0B192&s=B4EEFD2E8E124788",
@@ -6505,7 +6504,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "國內慈善社福等NPO服務須有證明；不是一般低收入戶固定學費補助。",
+      "notes": "國內慈善社福等NPO服務須有證明；不是一般低收入戶固定學費補助。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.edu.tw/scholarshipinfo/cp.aspx?n=E32BD85D334D1446&s=2220B8464156EC91",
@@ -6765,7 +6764,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "服務須符合簡章範圍；學校必修時數不認列。",
+      "notes": "服務須符合簡章範圍；學校必修時數不認列。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.edu.tw/scholarshipinfo/cp.aspx?n=E32BD85D334D1446&s=2220B8464156EC91",
@@ -6983,7 +6982,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "與護理公費生培育不同，無法從此簡章推定附帶醫院服務年限。",
+      "notes": "與護理公費生培育不同，無法從此簡章推定附帶醫院服務年限。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.edu.tw/scholarshipinfo/cp.aspx?n=E32BD85D334D1446&s=2220B8464156EC91",
@@ -7518,7 +7517,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "報名系統本次讀取回傳502；資格及流程由E政府教育部資料交叉確認。表單欄位尚未取得，非錄取保證。",
+      "notes": "報名系統本次讀取回傳502；資格及流程由E政府教育部資料交叉確認。表單欄位尚未取得，非錄取保證。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.gov.tw/News_Content_2_396415",
@@ -8997,7 +8996,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "補貼的是核定貸款範圍的利息，貸款本金需償還。",
+      "notes": "補貼的是核定貸款範圍的利息，貸款本金需償還。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.moi.gov.tw/News_Content.aspx?n=2&s=340589",
@@ -9251,7 +9250,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "補貼的是核定貸款範圍的利息，貸款本金需償還。",
+      "notes": "補貼的是核定貸款範圍的利息，貸款本金需償還。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.moi.gov.tw/News_Content.aspx?n=2&s=340589",
@@ -10424,7 +10423,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "此案為完工後申請，與需事前核定的住宅整建補助流程不同。",
+      "notes": "此案為完工後申請，與需事前核定的住宅整建補助流程不同。 2026-11-07複查官方頁面：未公告下一期，保留原期間。 建管處網站已改為cmo.gov.taipei，該處115年度頁面亦未見第二階段或116年度公告。",
       "sources": [
         {
           "url": "https://www.gov.taipei/News_Content.aspx?n=F0DDAF49B89E9413&s=C1EE7CC9E0A1470C&sms=72544237BBE4C5F6",
@@ -10882,7 +10881,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。",
+      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。 2026-11-07複查官方頁面：未公告下一期，保留原期間。 節能補助網站各類別仍標示額滿。",
       "sources": [
         {
           "url": "https://powersaving.gov.taipei/",
@@ -11105,7 +11104,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。",
+      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。 2026-11-07複查官方頁面：未公告下一期，保留原期間。 節能補助網站各類別仍標示額滿。",
       "sources": [
         {
           "url": "https://powersaving.gov.taipei/",
@@ -11334,7 +11333,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。",
+      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。 2026-11-07複查官方頁面：未公告下一期，保留原期間。 節能補助網站各類別仍標示額滿。",
       "sources": [
         {
           "url": "https://powersaving.gov.taipei/",
@@ -11561,7 +11560,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。",
+      "notes": "網站序號不是核准通知；本次僅保存方案資訊，未代任何人登記或申請。 2026-11-07複查官方頁面：未公告下一期，保留原期間。 節能補助網站各類別仍標示額滿。",
       "sources": [
         {
           "url": "https://powersaving.gov.taipei/",
@@ -13427,7 +13426,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "E政府摘要同時寫16歲及民國99年1月1日前，出生截止文字不一致，保留待以動滋網原簡章核對，未自行修正成確定條件。",
+      "notes": "E政府摘要同時寫16歲及民國99年1月1日前，出生截止文字不一致，保留待以動滋網原簡章核對，未自行修正成確定條件。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.gov.tw/News_Content_37_861961",
@@ -13787,10 +13786,10 @@
         }
       ],
       "deadline": {
-        "start": "2026-10-01",
-        "end": "2026-11-02",
+        "start": "2026-11-01",
+        "end": "2026-12-10",
         "type": "ongoing",
-        "raw": "116年度常態第1期2026-10-01至11-02已截止；第2期2027-04-01至04-30。國際交流第1期2026-11-01至12-10受理中；後續2027年2/1–3/10、5/1–6/10、8/1–9/10"
+        "raw": "116年度國際交流第1期2026-11-01至12-10受理中；第2期2027-02-01至03-10、第3期05-01至06-10、第4期08-01至09-10。常態第1期2026-10-01至11-02已截止；第2期2027-04-01至04-30"
       },
       "urls": {
         "program": "https://culture.gov.taipei/News_Content.aspx?n=9305B5181A62191D&s=6DAD09B7CD74CB1D&sms=39A01F1F3DB5F46C",
@@ -13857,7 +13856,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "已更新至116年度；補助之計畫執行期為2027年。各藝術類型整合一列，國際交流限受國外單位邀請及設籍／立案北市者。",
+      "notes": "已更新至116年度；補助之計畫執行期為2027年。各藝術類型整合一列，國際交流限受國外單位邀請及設籍／立案北市者。 2026-11-07複查官方頁面：期間改為目前受理中的國際交流第1期。",
       "sources": [
         {
           "url": "https://culture.gov.taipei/News_Content.aspx?n=9305B5181A62191D&s=6DAD09B7CD74CB1D&sms=39A01F1F3DB5F46C",
@@ -15377,7 +15376,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "本列為核配類；國科會甄選類之資格與期限另依當期辦法。未將單一學校名額當成全國名額。",
+      "notes": "本列為核配類；國科會甄選類之資格與期限另依當期辦法。未將單一學校名額當成全國名額。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.nstc.gov.tw/sci/ch/detail/24ad4e4a-bd37-4ba0-9955-5b2e2ffd5ac6",
@@ -16039,7 +16038,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "來源位於內湖區公所轉知頁，實際資格仍為中正區；已排除官網另一個404連結。",
+      "notes": "來源位於內湖區公所轉知頁，實際資格仍為中正區；已排除官網另一個404連結。 2026-11-07複查：原公告頁已回404，公所最新消息未見下一期，保留原期間；下一期請洽區公所人文課。",
       "sources": [
         {
           "url": "https://nhdo.gov.taipei/News_Content.aspx?n=E604685ABB2F0678&s=099319489CDB5489&sms=78D644F2755ACCAA",
@@ -16265,7 +16264,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "名額可依經費調整；並非全臺北市國中小皆適用。",
+      "notes": "名額可依經費調整；並非全臺北市國中小皆適用。 2026-11-07複查：原公告頁已回404，公所最新消息未見下一期，保留原期間；下一期請洽區公所人文課。",
       "sources": [
         {
           "url": "https://dtdo.gov.taipei/News_Content.aspx?n=CE7ED3463050EFD9&s=B3E79217746CDA46",
@@ -16501,7 +16500,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "網址雖為萬華區公所轉知，獎學金屬中山區，未因此放寬戶籍資格。研究補充：已從官方兩頁掃描PDF讀出完整文件清單、條件式低收／中低收入戶證明、補件期限及申請書欄位；郵寄申請以郵戳為憑。",
+      "notes": "網址雖為萬華區公所轉知，獎學金屬中山區，未因此放寬戶籍資格。研究補充：已從官方兩頁掃描PDF讀出完整文件清單、條件式低收／中低收入戶證明、補件期限及申請書欄位；郵寄申請以郵戳為憑。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://whdo.gov.taipei/News_Content.aspx?n=16B2CB1B675D53DF&s=A4B3BA7E28A3CEDE&sms=EF042250E10B7F6C",
@@ -16729,7 +16728,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "國中限敦化、民生、介壽、中崙、中山、西松、永吉、五常；五專1至3年級列高中，4至5年級列大專。",
+      "notes": "國中限敦化、民生、介壽、中崙、中山、西松、永吉、五常；五專1至3年級列高中，4至5年級列大專。 2026-11-07複查：原公告頁已回404，公所最新消息未見下一期，保留原期間；下一期請洽區公所人文課。",
       "sources": [
         {
           "url": "https://ssdo.gov.taipei/News_Content.aspx?n=205D15C398F0378E&s=7F8112B37D67599D&sms=78D644F2755ACCAA",
@@ -16969,7 +16968,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "高中／國中／大學一年級可用前一學年度原校成績，仍須符合當期辦法。",
+      "notes": "高中／國中／大學一年級可用前一學年度原校成績，仍須符合當期辦法。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://www.lssh.tp.edu.tw/news/%E8%BD%89%E7%9F%A5%E8%87%BA%E5%8C%97%E5%B8%82%E5%8D%97%E6%B8%AF%E5%8D%80%E6%B0%91%E4%BF%97%E5%A7%94%E5%93%A1%E6%9C%83%E3%80%8C114%E5%B9%B4%E5%AD%B8%E5%B9%B4%E5%BA%A6%E5%84%AA%E7%A7%80%E7%8D%8E/",
@@ -17221,7 +17220,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "11/6為已核准戶請款期限，並非新戶可登記到11/6；原簡章9/30請款期限已更新。",
+      "notes": "11/6為已核准戶請款期限，並非新戶可登記到11/6；原簡章9/30請款期限已更新。 2026-11-07複查官方頁面：未公告下一期，保留原期間。",
       "sources": [
         {
           "url": "https://dosw.gov.taipei/News_Content.aspx?n=40C86180686507FA&s=B6EE2E3B2D2E4362&sms=78D644F2755ACCAA",
@@ -17803,10 +17802,10 @@
         }
       ],
       "deadline": {
-        "start": null,
-        "end": "2026-09-08",
+        "start": "2026-01-01",
+        "end": "2026-12-20",
         "type": "yearly",
-        "raw": "每年1/1至12/20或經費用罄；2026-09-08公告一般家犬貓預算已無餘額、僅認養組仍可申請，當前認養餘額需確認"
+        "raw": "每年1/1至12/20或經費用罄；2026-09-08公告一般家犬貓預算已無餘額，僅完成臺北市動物之家認養犬貓投保者可申請，至12/20或經費用罄"
       },
       "urls": {
         "program": "https://www.tcapo.gov.taipei/cp.aspx?n=007412e5c1da2716&s=8CFA1E719164F841",
@@ -17911,11 +17910,11 @@
     "source_meta": {
       "verification_status": "partial",
       "verification_note": "現行要點、官方申辦頁、預算公告及申請表已讀取",
-      "application_status": "一般組115額度已用罄；認養組額度須再確認",
+      "application_status": "一般組115額度已用罄；認養組受理至12/20或經費用罄",
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "一般申辦頁仍寫全年受理，但較新的9月新聞已限制預算組別，因此未標全體飼主目前皆可申請。",
+      "notes": "一般申辦頁仍寫全年受理，但較新的9月新聞已限制預算組別，因此未標全體飼主目前皆可申請。 2026-11-07複查：9月公告後未見認養組用罄公告，當前餘額仍須洽動保處。",
       "sources": [
         {
           "url": "https://www.tcapo.gov.taipei/cp.aspx?n=007412e5c1da2716&s=8CFA1E719164F841",
@@ -18687,7 +18686,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "保留原方案描述並以臺北市政府官方附件補齊。本期僅設大專組及高中職組；兩組各30名。",
+      "notes": "保留原方案描述並以臺北市政府官方附件補齊。本期僅設大專組及高中職組；兩組各30名。 2026-11-07複查：原公告頁已回404，公所最新消息未見下一期，保留原期間；下一期請洽區公所人文課。",
       "sources": [
         {
           "url": "https://wsdo.gov.taipei/News_Content.aspx?n=927252479D3F786F&sms=EF042250E10B7F6C&s=CB09DFCF865D59EF",
@@ -23615,7 +23614,26 @@
       "agency": "勞動部勞動力發展署、公立就業服務機構",
       "channel_text": "公立就業服務機構",
       "process_text": "求職登記→諮詢及推介→機構評估臨時工作資格→安排至核定用人單位→出勤及按月核發。",
-      "required_documents": [],
+      "required_documents": [
+        {
+          "name": "國民身分證正反面影本",
+          "required": true,
+          "condition": "依就業促進津貼實施辦法申請者",
+          "notes": ""
+        },
+        {
+          "name": "同意代為查詢勞工保險、就業保險、勞工職業災害保險資料委託書",
+          "required": true,
+          "condition": "依就業促進津貼實施辦法申請者",
+          "notes": ""
+        },
+        {
+          "name": "非自願離職證明文件影本或其他足資證明文件",
+          "required": true,
+          "condition": "非自願離職者",
+          "notes": ""
+        }
+      ],
       "deadline": {
         "start": null,
         "end": null,
@@ -23720,13 +23738,27 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "與天然災害臨時工作制度分列，兩者發動條件及適用對象不同。",
+      "notes": "與天然災害臨時工作制度分列，兩者發動條件及適用對象不同。 2026-11-07依就業促進津貼實施辦法第5條補應備文件；失業被保險人依就業保險促進就業實施辦法辦理，官方頁面未列另附文件。",
       "sources": [
         {
           "url": "https://emps.wda.gov.tw/Internet/Index/labor-temporaryWorker.aspx",
           "type": "official",
           "role": "program",
           "source_date": "頁面更新114/05/08",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=N0090025",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "就業促進津貼實施辦法第5條",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=N0050025",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "就業保險促進就業實施辦法第39條",
           "checked_date": "2026-11-07"
         }
       ]
@@ -25173,10 +25205,8 @@
       "application_status": "常態性；依資格審查",
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV已有－補充官方資訊",
-      "missing_fields": [
-        "申請方式.form_fields"
-      ],
-      "notes": "原CSV名稱為失業者健保費補助；並非所有失業者均可申請。",
+      "missing_fields": [],
+      "notes": "原CSV名稱為失業者健保費補助；並非所有失業者均可申請。 2026-11-07依官方頁面確認免申請，無應備文件。勞動部原文：勞工不必另外提出申請，勞保局審核符合後主動補助。",
       "sources": [
         {
           "url": "https://www.bli.gov.tw/0011992.html",
@@ -25197,6 +25227,13 @@
           "type": "official",
           "role": "supplementary",
           "source_date": "補助標準2025/05/26；補助對象2020/03/20；勞動部115/10/16索引仍列現行",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://www.mol.gov.tw/1607/1632/1640/20274/post",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "勞動部頁面更新115-11-06",
           "checked_date": "2026-11-07"
         }
       ]
@@ -25767,7 +25804,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "原CSV未見－新增",
       "missing_fields": [],
-      "notes": "重大新制：115學年度第1學期改名生活扶助金，已刪除與政府學雜費減免擇一請領限制；不得沿用舊制排除已享私大1.75萬元減免者。中央新制與臺北市就學費用補助的併領規則不同。線上系統本次開啟逾時。",
+      "notes": "重大新制：115學年度第1學期改名生活扶助金，已刪除與政府學雜費減免擇一請領限制；不得沿用舊制排除已享私大1.75萬元減免者。中央新制與臺北市就學費用補助的併領規則不同。線上系統本次開啟逾時。 2026-11-07複查官方頁面：未公告下一期，保留原期間。 115學年第2學期尚未公告。",
       "sources": [
         {
           "url": "https://www.mol.gov.tw/1607/28162/28540/28582/66175/",
@@ -28240,7 +28277,7 @@
       "missing_fields": [
         "申請方式.form_fields"
       ],
-      "notes": "官方公告連至台北服務通AJ004，但本次開啟回404；保留實際公告連結並提醒改洽勞動局。ODT可定位但搜尋工具不支援讀取，未查表單欄位。",
+      "notes": "官方公告連至台北服務通AJ004，但本次開啟回404；保留實際公告連結並提醒改洽勞動局。ODT可定位但搜尋工具不支援讀取，未查表單欄位。 2026-11-07複查官方頁面：未公告下一期，保留原期間。 勞動局公告稱本期為115學年度第1學期。",
       "sources": [
         {
           "url": "https://www.gov.taipei/News_Content.aspx?n=34D693182716CD30&s=1DD249B3DECA921C&sms=572B9625A0886E9F",
@@ -32329,30 +32366,78 @@
       "property": [],
       "nationality": [],
       "exclusions": [],
-      "raw_summary": "交通部觀光署「平日住宿獎助」活動（官方Q&A為旅宿業者說明）。",
+      "raw_summary": "國人於國旅補助申請系統以身分證字號登錄，每一身分證字號限參加一次；於平日（週日至週四，不含國定假日及其連續假期）入住參加活動之旅宿。登錄不保證可折抵。",
       "taipei_applicability": ""
     },
     "benefit": {
       "kind": "補助金",
-      "amounts": [],
-      "raw": "null"
+      "amounts": [
+        {
+          "min": null,
+          "max": 800,
+          "fixed": null,
+          "currency": "TWD",
+          "period": "night",
+          "percentage": null,
+          "condition": "一般地區第1晚",
+          "raw": "一般地區第1晚最高800元"
+        },
+        {
+          "min": null,
+          "max": 1200,
+          "fixed": null,
+          "currency": "TWD",
+          "period": "night",
+          "percentage": null,
+          "condition": "一般地區連續入住第2晚",
+          "raw": "一般地區第2晚最高1,200元"
+        },
+        {
+          "min": null,
+          "max": 1000,
+          "fixed": null,
+          "currency": "TWD",
+          "period": "night",
+          "percentage": null,
+          "condition": "離島第1晚",
+          "raw": "離島第1晚最高1,000元"
+        },
+        {
+          "min": null,
+          "max": 1500,
+          "fixed": null,
+          "currency": "TWD",
+          "period": "night",
+          "percentage": null,
+          "condition": "離島連續入住第2晚",
+          "raw": "離島第2晚最高1,500元"
+        }
+      ],
+      "raw": "每人限一次、最多2晚（第2晚須連續入住）：一般地區第1晚最高800元、第2晚最高1,200元；離島第1晚最高1,000元、第2晚最高1,500元"
     },
     "application": {
       "methods": [
         "online"
       ],
       "agency": "交通部觀光署",
-      "channel_text": "Taiwan PASS 平日住宿獎助活動",
-      "process_text": "",
-      "required_documents": [],
+      "channel_text": "國旅補助申請系統登錄；入住參加活動之旅宿時折抵",
+      "process_text": "115-08-20起依身分證字號尾數分流登錄→平日入住參加旅宿→出示身分證或健保卡供旅宿核對本人→房價直接折抵",
+      "required_documents": [
+        {
+          "name": "國民身分證或健保卡（二擇一）",
+          "required": true,
+          "condition": null,
+          "notes": "入住時出示，供旅宿核對為登錄者本人"
+        }
+      ],
       "deadline": {
-        "start": null,
-        "end": null,
-        "type": "unknown",
-        "raw": ""
+        "start": "2026-09-01",
+        "end": "2026-11-30",
+        "type": "fixed",
+        "raw": "115-09-01至11-30平日入住，或經費用罄提前結束"
       },
       "urls": {
-        "program": "https://admin.taiwan.net.tw/fapi/AttFile?type=AttFile&id=41960",
+        "program": "https://www.ey.gov.tw/Page/88F151FFCE5C741E/285b819a-41c2-4ce6-84d7-ef616e47c0f8",
         "apply": null,
         "form": null
       }
@@ -32361,10 +32446,11 @@
       "keywords": [
         "平日住宿獎助",
         "觀光署",
+        "觀光雙輪驅動",
+        "國旅補助",
         "旅宿",
         "住宿",
-        "獎助",
-        "旅宿業"
+        "獎助"
       ],
       "facets": {
         "scope": "central",
@@ -32374,42 +32460,48 @@
         "category": "節能/家電/交通",
         "benefit_type": "補助金",
         "applicant_types": [
-          "機構／團體"
+          "一般民眾"
         ]
       },
-      "text": "平日住宿獎助（觀光署）。交通部觀光署「平日住宿獎助」活動（官方Q&A為旅宿業者說明）。。類別：節能/家電/交通。"
+      "text": "平日住宿獎助（觀光署）。國人於國旅補助申請系統以身分證字號登錄，每一身分證字號限參加一次；於平日（週日至週四，不含國定假日及其連續假期）入住參加活動之旅宿。登錄不保證可折抵。每人限一次、最多2晚（第2晚須連續入住）：一般地區第1晚最高800元、第2晚最高1,200元；離島第1晚最高1,000元、第2晚最高1,500元。類別：節能/家電/交通。"
     },
     "extensions": [],
     "source_meta": {
-      "verification_status": "unverified",
-      "verification_note": "",
-      "application_status": "",
+      "verification_status": "verified",
+      "verification_note": "行政院方案說明及觀光署開辦、最新消息頁已讀取",
+      "application_status": "受理中至115-11-30或經費用罄",
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
-      "missing_fields": [
-        "補助對象",
-        "金額",
-        "期限",
-        "應備文件",
-        "申請表名稱"
-      ],
-      "notes": "找到的官方文件為旅宿業者申請說明PDF（非消費者條件）；活動名稱與原表不完全相同（平日住宿獎助／平日住宿及生日券獎助）。 來源官方PDF為旅宿業者申請說明（非消費者條件），且PDF無法轉讀，故應備文件、金額、期限均未填。",
+      "missing_fields": [],
+      "notes": "觀光雙輪驅動方案之平日住宿獎助，對象為一般國人；原官方PDF為旅宿業者Q&A，保留作補充。同方案生日券登錄已於115-09-08截止，不含於本筆。觀光署115-10-31新聞稿仍列為進行中，未見提前截止公告，當日經費餘額未確認。",
       "sources": [
+        {
+          "url": "https://www.ey.gov.tw/Page/88F151FFCE5C741E/285b819a-41c2-4ce6-84d7-ef616e47c0f8",
+          "type": "official",
+          "role": "program",
+          "source_date": "115-08-20方案說明",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://www.taiwan.net.tw/m1.aspx?sNo=0044552",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "115-09-02開辦",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://www.taiwan.net.tw/m1.aspx?sNo=0001001",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "觀光署最新消息",
+          "checked_date": "2026-11-07"
+        },
         {
           "url": "https://admin.taiwan.net.tw/fapi/AttFile?type=AttFile&id=41960",
           "type": "official",
-          "role": "program",
-          "source_date": null,
-          "checked_date": "2026-11-07",
-          "title": "平日住宿及生日券獎助活動Q&A（旅宿業者）"
-        },
-        {
-          "url": "https://twsuan.walletgoalie.com/subsidy",
-          "type": "third_party",
           "role": "supplementary",
-          "source_date": null,
-          "checked_date": "2026-11-07",
-          "title": "第三方彙整頁（twsuan）"
+          "source_date": "旅宿業者Q&A",
+          "checked_date": "2026-11-07"
         }
       ]
     },
@@ -32553,17 +32645,15 @@
       }
     ],
     "source_meta": {
-      "verification_status": "partial",
-      "verification_note": "",
+      "verification_status": "verified",
+      "verification_note": "衛福部新聞稿及辦法已讀取；免申請，由地方政府列冊撥入",
       "application_status": "",
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [
-        "應備文件（官方辦法未列申請文件）",
-        "申請表名稱",
         "申請方式細節（各地方社會局）"
       ],
-      "notes": "加發制度、金額（法規第4條）與期間（衛福部新聞稿：115年1月起至116年1月止）已由官方確認。辦法條文未列申請文件，且加發由地方政府列冊後發給，故應備文件留空；申請表名稱與各縣市申請流程未核對。",
+      "notes": "加發制度、金額（法規第4條）與期間（衛福部新聞稿：115年1月起至116年1月止）已由官方確認。辦法條文未列申請文件，且加發由地方政府列冊後發給，故應備文件留空；申請表名稱與各縣市申請流程未核對。 2026-11-07依官方頁面確認免申請，無應備文件。衛福部原文：本項加發民眾免申請，由地方政府核對資格後直接撥入帳戶。",
       "sources": [
         {
           "url": "https://www.mohw.gov.tw/cp-16-83786-1.html",
@@ -33227,7 +33317,20 @@
       "agency": "衛生福利部疾病管制署",
       "channel_text": "合約醫療院所",
       "process_text": "官方：115年度公費流感及新冠疫苗自10月1日起正式開打。",
-      "required_documents": [],
+      "required_documents": [
+        {
+          "name": "健保卡",
+          "required": true,
+          "condition": null,
+          "notes": ""
+        },
+        {
+          "name": "戶籍謄本或戶口名簿等原住民身分證明文件",
+          "required": true,
+          "condition": "55至64歲原住民於第一階段接種",
+          "notes": "疾管署QA"
+        }
+      ],
       "deadline": {
         "start": "2026-10-01",
         "end": null,
@@ -33272,10 +33375,9 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [
-        "補助對象（符合資格條件）",
-        "應備文件"
+        "補助對象（符合資格條件）"
       ],
-      "notes": "官方公告確認開打日期；對象細節（年齡、高風險等）未擷取，故留空。 官方頁面未列接種應備文件，故應備文件留空。",
+      "notes": "官方公告確認開打日期；對象細節（年齡、高風險等）未擷取，故留空。 官方頁面未列接種應備文件，故應備文件留空。 2026-11-07依疾管署QA補應備文件：持健保卡至合約院所接種；第二階段11/2起持健保卡逕自前往。",
       "sources": [
         {
           "url": "https://www.mohw.gov.tw/cp-16-88184-1.html",
@@ -33292,6 +33394,13 @@
           "source_date": null,
           "checked_date": "2026-11-07",
           "title": "第三方彙整頁（twsuan）"
+        },
+        {
+          "url": "https://www.cdc.gov.tw/Category/QAPage/T93ZfoLyyuCaZvKf7v9eww",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": null,
+          "checked_date": "2026-11-07"
         }
       ]
     },
@@ -33943,12 +34052,25 @@
       "agency": "勞動部勞工保險局",
       "channel_text": "無（由勞保局核給生育給付時一併加發）",
       "process_text": "民眾無須另行申請；核給生育給付時一併加發",
-      "required_documents": [],
+      "required_documents": [
+        {
+          "name": "生育給付申請書及給付收據",
+          "required": true,
+          "condition": "申請勞保生育給付時檢附",
+          "notes": "補助以與生育給付合併發給為原則"
+        },
+        {
+          "name": "嬰兒出生證明書或死產證明書",
+          "required": true,
+          "condition": "未辦理出生登記者",
+          "notes": "已辦理出生登記者得免附"
+        }
+      ],
       "deadline": {
         "start": null,
         "end": null,
         "type": "ongoing",
-        "raw": "勞保局核給生育給付時一併加發（官方公告）"
+        "raw": "勞保局核給生育給付時一併加發（官方公告）；生育給付請求權自分娩或早產翌日起5年內"
       },
       "urls": {
         "program": "https://www.bli.gov.tw/0109851.html",
@@ -34003,11 +34125,8 @@
       "application_status": "",
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
-      "missing_fields": [
-        "應備文件（自動加發，未核對生育給付申請文件）",
-        "申請期限"
-      ],
-      "notes": "官方公告為115年補發作業說明；適用於115年（含）以後之生育給付核給；本項補助依胎數比例增給。 依官方公告民眾無須另行申請，由勞保局核給生育給付時一併加發，故無應備文件。 2026-11-07 比對：CT-0155（生育給付加生育補助（115年起每胎合計10萬元））與本筆應為同一政策（115年起生育給付加給生育補助至每胎合計10萬元、由勞保局併同生育給付發給、免另申請）；CT-0155 專就勞保生育給付及勞工生育補助詳列資格（加保日數、本國籍或外籍配偶）與請領期限，本筆涵蓋勞保、國保、農保女性被保險人之加發公告。兩筆互列 related_ids，均保留未刪除。",
+      "missing_fields": [],
+      "notes": "官方公告為115年補發作業說明；適用於115年（含）以後之生育給付核給；本項補助依胎數比例增給。 依官方公告民眾無須另行申請，由勞保局核給生育給付時一併加發，故無應備文件。 2026-11-07 比對：CT-0155（生育給付加生育補助（115年起每胎合計10萬元））與本筆應為同一政策（115年起生育給付加給生育補助至每胎合計10萬元、由勞保局併同生育給付發給、免另申請）；CT-0155 專就勞保生育給付及勞工生育補助詳列資格（加保日數、本國籍或外籍配偶）與請領期限，本筆涵蓋勞保、國保、農保女性被保險人之加發公告。兩筆互列 related_ids，均保留未刪除。 2026-11-07依勞工保險條例施行細則第56條補生育給付應備文件；可於辦理出生登記時一併申請、線上或郵寄臨櫃。勞保局頁面本次無法連線。",
       "sources": [
         {
           "url": "https://www.bli.gov.tw/0109851.html",
@@ -34024,6 +34143,20 @@
           "source_date": null,
           "checked_date": "2026-11-07",
           "title": "第三方聚合網站（twsuan.walletgoalie.com）"
+        },
+        {
+          "url": "https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0050002&flno=56",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "勞工保險條例施行細則第56條",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://www.mol.gov.tw/1607/28162/28472/28474/86878/86914/post",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": null,
+          "checked_date": "2026-11-07"
         }
       ]
     },
@@ -34072,29 +34205,50 @@
       "property": [],
       "nationality": [],
       "exclusions": [],
-      "raw_summary": "成人預防保健（免費健檢）（第三方摘要；官方頁面僅擷取到孕婦產檢與肝炎篩檢項目）",
+      "raw_summary": "30歲以上未滿40歲每5年1次；40歲以上未滿65歲每3年1次；55歲以上原住民、罹患小兒麻痺且年在35歲以上者、65歲以上每年1次（國健署）。",
       "taipei_applicability": ""
     },
     "benefit": {
       "kind": "實物/服務",
       "amounts": [],
-      "raw": "null"
+      "raw": "成人健康檢查免費（國健署補助院所每案880元，符合B、C型肝炎篩檢資格者另補助370元）；院所掛號費依各院所規定自付"
     },
     "application": {
-      "methods": [],
+      "methods": [
+        "in_person"
+      ],
       "agency": "衛生福利部國民健康署",
-      "channel_text": "",
-      "process_text": "",
-      "required_documents": [],
+      "channel_text": "健保特約成人預防保健服務院所",
+      "process_text": "查詢特約院所→空腹8小時並攜帶證件至院所受檢→院所回報結果；免另提申請",
+      "required_documents": [
+        {
+          "name": "身分證",
+          "required": true,
+          "condition": null,
+          "notes": ""
+        },
+        {
+          "name": "健保卡",
+          "required": true,
+          "condition": null,
+          "notes": ""
+        },
+        {
+          "name": "戶口名簿或相關證明文件",
+          "required": true,
+          "condition": "以原住民身分受檢",
+          "notes": ""
+        }
+      ],
       "deadline": {
         "start": null,
         "end": null,
         "type": "ongoing",
-        "raw": "常態受理（第三方摘要）"
+        "raw": "常態服務，依年齡間隔使用"
       },
       "urls": {
         "program": "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=189",
-        "apply": null,
+        "apply": "https://info.nhi.gov.tw/INAE1000/INAE1000S01",
         "form": null
       }
     },
@@ -34104,7 +34258,6 @@
         "免費健檢",
         "預防保健",
         "健檢",
-        "孕婦產檢",
         "肝炎篩檢",
         "醫療",
         "健康"
@@ -34120,38 +34273,47 @@
           "一般民眾"
         ]
       },
-      "text": "成人預防保健（免費健檢）：醫療/健康類實物/服務。 成人預防保健（免費健檢）（第三方摘要；官方頁面僅擷取到孕婦產檢與肝炎篩檢項目）"
+      "text": "成人預防保健（免費健檢）：醫療/健康類實物/服務。 30歲以上未滿40歲每5年1次；40歲以上未滿65歲每3年1次；55歲以上原住民、罹患小兒麻痺且年在35歲以上者、65歲以上每年1次（國健署）。"
     },
     "extensions": [],
     "source_meta": {
-      "verification_status": "unverified",
-      "verification_note": "",
-      "application_status": "",
+      "verification_status": "verified",
+      "verification_note": "國健署成人預防保健頁、衛福部新聞稿及臺北市衛生局常見問答已讀取",
+      "application_status": "常態服務",
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [
-        "補助對象條件",
-        "應備文件",
-        "申請方式",
-        "金額"
+        "應備文件（小兒麻痺身分證明）"
       ],
-      "notes": "官方頁面為國健署列表頁，未找到本項目之對象、文件與申請規定；第三方摘要稱免費健檢，未核對。 國健署頁面已讀取，但擷取內容未包含成人預防保健之對象、文件與申請規定，應備文件留空。",
+      "notes": "30至39歲每5年1次自114年起新增。應備文件依臺北市衛生局常見問答；國健署頁面未列。年齡條件僅記於原文摘要，未編為結構化年齡規則。",
       "sources": [
         {
           "url": "https://www.hpa.gov.tw/Pages/List.aspx?nodeid=189",
           "type": "official",
           "role": "program",
-          "source_date": null,
-          "checked_date": "2026-11-07",
-          "title": "衛生福利部國民健康署 - 成人預防保健"
+          "source_date": "更新2026-11-06",
+          "checked_date": "2026-11-07"
         },
         {
-          "url": "https://twsuan.walletgoalie.com/subsidy",
-          "type": "third_party",
+          "url": "https://www.mohw.gov.tw/cp-16-81240-1.html",
+          "type": "official",
           "role": "supplementary",
+          "source_date": "114-01-14發布，114-08-05更新",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://health.gov.taipei/cp.aspx?n=293D8994EC45D445&s=09097E4B5AA9749F",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "更新115-11-07",
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://info.nhi.gov.tw/INAE1000/INAE1000S01",
+          "type": "official",
+          "role": "apply",
           "source_date": null,
-          "checked_date": "2026-11-07",
-          "title": "第三方聚合網站（twsuan.walletgoalie.com）"
+          "checked_date": "2026-11-07"
         }
       ]
     },
@@ -34714,10 +34876,9 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [
-        "應備文件（官方說明為不需申請）",
         "申請期限"
       ],
-      "notes": "健保署官方頁 cp-3789 於本次抓取時遭Cloudflare攔阻，改以搜尋摘要確認「保險對象不需申請」；等級比例（全額/1/2/1/4）仍取自衛福部旗山醫院轉載及第三方摘要，未逐字核對。",
+      "notes": "健保署官方頁 cp-3789 於本次抓取時遭Cloudflare攔阻，改以搜尋摘要確認「保險對象不需申請」；等級比例（全額/1/2/1/4）仍取自衛福部旗山醫院轉載及第三方摘要，未逐字核對。 2026-11-07依官方頁面確認免申請，無應備文件。衛福部原文：符合補助資格的民眾不需向健保署提出申請，由補助機關每月提供名單、繳款單直接扣除。",
       "sources": [
         {
           "url": "https://www.nhi.gov.tw/ch/cp-3789-62c16-3246-1.html",
@@ -34734,6 +34895,13 @@
           "source_date": null,
           "checked_date": "2026-11-07",
           "title": "第三方聚合網站（twsuan.walletgoalie.com）"
+        },
+        {
+          "url": "https://www.mohw.gov.tw/cp-5266-67807-1.html",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": null,
+          "checked_date": "2026-11-07"
         }
       ]
     },
@@ -36362,7 +36530,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [],
-      "notes": "官方頁為教育部 FAQ，確認免學費機制與不需另外申請；「不需排富」與「常態受理」取自第三方頁面。",
+      "notes": "官方頁為教育部 FAQ，確認免學費機制與不需另外申請；「不需排富」與「常態受理」取自第三方頁面。 2026-11-07依官方頁面確認免申請，無應備文件。",
       "sources": [
         {
           "url": "https://www.k12ea.gov.tw/Tw/Unique/FAQDetail?cate1_id=C0C06A62-A856-48BB-A410-9E9C361BE503&filter=C49CFCC1-11D8-49BD-AFB8-95856E82E58D&page=0",
@@ -37656,11 +37824,20 @@
       "raw": "公費補助檢查（第三方頁面）"
     },
     "application": {
-      "methods": [],
+      "methods": [
+        "in_person"
+      ],
       "agency": "衛生福利部國民健康署",
       "channel_text": "",
       "process_text": "國健署懶人包頁（2026-11-07 已讀取）列出補助項目與年齡；申請與送檢流程未擷取，請至國健署或各篩檢醫療院所確認。",
-      "required_documents": [],
+      "required_documents": [
+        {
+          "name": "健保卡",
+          "required": true,
+          "condition": null,
+          "notes": "至篩檢醫療院所受檢時攜帶"
+        }
+      ],
       "deadline": {
         "start": null,
         "end": null,
@@ -37719,10 +37896,9 @@
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [
         "申請方式（送檢與院所流程）",
-        "應備文件（官方頁未列）",
         "費用（補助金額未於懶人包列示）"
       ],
-      "notes": "補助年齡條件已由國健署懶人包補上；仍無法確認申請方式與文件，屬部分核對。",
+      "notes": "補助年齡條件已由國健署懶人包補上；仍無法確認申請方式與文件，屬部分核對。 2026-11-07依國健署頁面補應備文件：攜帶健保卡到醫療院所接受篩檢，免另提申請。",
       "sources": [
         {
           "url": "https://dep.mohw.gov.tw/pro/cp-2731-86304-120.html",
@@ -37747,6 +37923,20 @@
           "source_date": null,
           "checked_date": "2026-11-07",
           "title": "台灣試算所｜補助（第三方整理頁）"
+        },
+        {
+          "url": "https://www.hpa.gov.tw/Pages/Detail.aspx?nodeid=4809&pid=18712",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": null,
+          "checked_date": "2026-11-07"
+        },
+        {
+          "url": "https://www.hpa.gov.tw/Pages/Detail.aspx?nodeid=4878&pid=19126",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": null,
+          "checked_date": "2026-11-07"
         }
       ]
     },
@@ -37923,7 +38113,7 @@
         "補助對象（詳細資格條件）",
         "應備文件（官方說明無須另行申請書）"
       ],
-      "notes": "金額與開始日期已對照官方新聞稿（已讀取全文）；官方說明無須另備申請書，故應備文件留空；詳細資格條件未擷取。",
+      "notes": "金額與開始日期已對照官方新聞稿（已讀取全文）；官方說明無須另備申請書，故應備文件留空；詳細資格條件未擷取。 2026-11-07產前遺傳診斷依官方新聞稿免申請、無應備文件；新生兒SMA篩檢官方未說明應備文件。",
       "sources": [
         {
           "url": "https://www.mohw.gov.tw/cp-16-87007-1.html",
@@ -39002,7 +39192,7 @@
       "checked_date": "2026-11-07",
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [],
-      "notes": "官方頁面確認毋須申請（應備文件不適用）；金額已依官方服務內容說明補入。",
+      "notes": "官方頁面確認毋須申請（應備文件不適用）；金額已依官方服務內容說明補入。 2026-11-07依官方頁面確認免申請，無應備文件。社會局頁面更新115-11-07。",
       "sources": [
         {
           "url": "https://dosw.gov.taipei/cp.aspx?n=2FDE53A3B92057AA",
@@ -41461,10 +41651,9 @@
       "relation_to_original": "central_taipei_dataset",
       "missing_fields": [
         "申請方式",
-        "應備文件",
-        "公私立對象範圍（官方新聞未明確）"
+        "應備文件（實施計畫未列）"
       ],
-      "notes": "官方新聞標題確認免費營養午餐同步上路，並說明「國中小營養午餐全面免費」；私立學校範圍與申請流程未擷取。",
+      "notes": "官方新聞標題確認免費營養午餐同步上路，並說明「國中小營養午餐全面免費」；私立學校範圍與申請流程未擷取。 2026-11-07依教育局實施計畫（北市教體字第1153076319號函修正）：對象含公私立國民中小學參與學校營養午餐之學生，115-08-31起國小每餐70元、國中每餐75元；計畫未要求家長申請，亦未列應備文件。計畫PDF取自市立學校轉載。",
       "sources": [
         {
           "url": "https://www.gov.taipei/News_Content.aspx?n=F0DDAF49B89E9413&s=DDB72DE829B21EEE&sms=72544237BBE4C5F6",
@@ -41481,6 +41670,13 @@
           "source_date": null,
           "checked_date": "2026-11-07",
           "title": "台灣試算所 補助頁"
+        },
+        {
+          "url": "https://www.chhs.tp.edu.tw/uploads/1786605342871x3xjWEdt.pdf",
+          "type": "official",
+          "role": "supplementary",
+          "source_date": "北市教體字第1153076319號函修正",
+          "checked_date": "2026-11-07"
         }
       ]
     },
@@ -43983,7 +44179,20 @@
       "agency": "臺北市政府社會局",
       "channel_text": "由社會局逕予撥付；外縣市就學加發向社會局提出申請",
       "process_text": "符合資格者由本局逕予撥付，不需另提出申請。15歲以上未滿18歲就讀外縣市高中職以上者，加發部分須每學期向本局提出申請。",
-      "required_documents": [],
+      "required_documents": [
+        {
+          "name": "通勤證明",
+          "required": true,
+          "condition": "就讀外縣市高中、職以上學校申請加發500元",
+          "notes": "每學期向社會局申請"
+        },
+        {
+          "name": "在學證明",
+          "required": true,
+          "condition": "就讀外縣市高中、職以上學校申請加發500元",
+          "notes": "每學期向社會局申請"
+        }
+      ],
       "deadline": {
         "start": null,
         "end": null,
@@ -44031,7 +44240,7 @@
       "missing_fields": [
         "期限（外縣市就學加發申請截止日）"
       ],
-      "notes": "一般交通補助免申請，依指示應備文件留空且不列缺漏；例外加發500元，官方明列須檢具「通勤證明」及「在學證明」，每學期向本局申請。",
+      "notes": "一般交通補助免申請，依指示應備文件留空且不列缺漏；例外加發500元，官方明列須檢具「通勤證明」及「在學證明」，每學期向本局申請。 2026-11-07依官方頁面補加發部分應備文件；一般交通補助仍由社會局逕予撥付。",
       "sources": [
         {
           "url": "https://dosw.gov.taipei/cp.aspx?n=7712F537E721ACDF",
