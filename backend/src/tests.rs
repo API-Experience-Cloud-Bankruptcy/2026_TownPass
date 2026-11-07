@@ -7,6 +7,55 @@ use axum::{
 use matcher::{evaluate, Fit};
 use tower::ServiceExt;
 
+#[tokio::test]
+async fn optional_web_serves_built_files_and_preserves_api_and_missing_asset_errors() {
+    let root = std::env::temp_dir().join(format!(
+        "townpass-web-test-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(root.join("assets")).unwrap();
+    std::fs::write(
+        root.join("index.html"),
+        "<!doctype html><title>福利通</title>",
+    )
+    .unwrap();
+    std::fs::write(root.join("assets/app.js"), "export const ready = true;").unwrap();
+    let router = with_web(app(state()), &root).unwrap();
+    for (path, status, content_type) in [
+        ("/", StatusCode::OK, Some("text/html")),
+        ("/assets/app.js", StatusCode::OK, Some("javascript")),
+        ("/assets/missing.js", StatusCode::NOT_FOUND, None),
+        ("/%2e%2e/Cargo.toml", StatusCode::NOT_FOUND, None),
+        ("/api/unknown", StatusCode::NOT_FOUND, None),
+    ] {
+        let response = router
+            .clone()
+            .oneshot(Request::builder().uri(path).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status, "{path}");
+        if let Some(expected) = content_type {
+            assert!(response.headers()["content-type"]
+                .to_str()
+                .unwrap()
+                .contains(expected));
+            assert_eq!(response.headers()["cache-control"], "no-cache");
+        }
+    }
+    let (status, body) = request(router.clone(), "GET", "/api/catalog", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["items"].as_array().unwrap().len(), 217);
+    let (status, body) = request(router, "GET", "/health", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["records"], 217);
+    assert!(with_web(app(state()), &root.join("missing")).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn state() -> AppState {
     state_from_str(EMBEDDED_DATA).expect("embedded dataset")
 }

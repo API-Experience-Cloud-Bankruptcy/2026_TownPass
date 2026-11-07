@@ -18,6 +18,7 @@ use models::{Entry, Subsidy};
 use serde_json::{json, Value};
 use std::{collections::BTreeMap, collections::HashMap, net::SocketAddr, sync::Arc};
 use tower_http::cors::CorsLayer;
+use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 
 const EMBEDDED_DATA: &str = include_str!("../data/subsidies.json");
 const DEFAULT_LIMIT: usize = 20;
@@ -244,6 +245,20 @@ pub fn app(state: AppState) -> Router {
         .with_state(Arc::new(state))
 }
 
+/// Only an explicitly configured built web directory is served, never the repository.
+fn with_web(app: Router, root: &std::path::Path) -> Result<Router, String> {
+    if !root.join("index.html").is_file() {
+        return Err("WEB_ROOT must contain the built index.html".into());
+    }
+    let web = Router::new().fallback_service(ServeDir::new(root)).layer(
+        SetResponseHeaderLayer::overriding(
+            axum::http::header::CACHE_CONTROL,
+            axum::http::HeaderValue::from_static("no-cache"),
+        ),
+    );
+    Ok(app.fallback_service(web))
+}
+
 #[tokio::main]
 async fn main() {
     let state = load_state().unwrap_or_else(|e| {
@@ -266,7 +281,14 @@ async fn main() {
             eprintln!("bind {addr}: {e}");
             std::process::exit(1);
         });
-    if let Err(e) = axum::serve(listener, app(state)).await {
+    let mut router = app(state);
+    if let Some(root) = std::env::var_os("WEB_ROOT") {
+        router = with_web(router, std::path::Path::new(&root)).unwrap_or_else(|e| {
+            eprintln!("invalid web configuration: {e}");
+            std::process::exit(1);
+        });
+    }
+    if let Err(e) = axum::serve(listener, router).await {
         eprintln!("server error: {e}");
     }
 }

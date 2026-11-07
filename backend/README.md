@@ -34,6 +34,31 @@ SUBSIDY_DATA=./data/subsidies.json cargo run --locked --release
 
 `catalog.version` 為 `catalog-v1-<FNV-1a 64-bit 指紋>`，由實際載入檔案的位元組計算；排版改變也會換版。這是穩定的快照識別，並非密碼學簽章、查核日期或政策有效性證明。題庫版本為 `questions-v3/<catalog.version>/<eligibility.version>/<adaptive.version>/<template.version>`；規則版本另包含共享 sidecar 的內容指紋，模板或規則變更會使前端舊準備進度失效。離線快照應保存相同 items 結構並自行清楚標示來源版本。
 
+## 同網路 iPhone 的 Mac 常駐服務
+
+後端可同時提供已建置的網頁與 API。設定 `WEB_ROOT` 指向含 `index.html` 的前端 `dist/`，未設定時保持純 API 行為。靜態檔案使用正確 MIME 與 `Cache-Control: no-cache`；不存在的 JS/CSS 回 404，不以 HTML 冒充。只可指定建置產物目錄，不要指定專案根目錄。
+
+在 repo 根目錄建置及安裝（需要 macOS、已登入桌面的使用者、Python 3）：
+
+```sh
+npm --prefix subsidy-web run build
+cargo build --release --locked --manifest-path backend/Cargo.toml
+python3 scripts/install_macos_service.py --binary backend/target/release/townpass-backend
+```
+
+若有自訂 `CARGO_TARGET_DIR`，請將 `--binary` 改為實際的 release 執行檔。安裝程式將執行檔與網頁複製到 `~/Library/Application Support/TownPassLocal/releases/` 的獨立版本目錄，建立 `~/Library/LaunchAgents/org.townpass.local.plist`。使用內嵌資料快照，在 `0.0.0.0:5173` 同時提供網頁與 API，無須 Vite 或一直開著終端機；登入後啟動，程序退出時由 launchd 重啟。更新後須重新建置並再次執行安裝程式；舊版本保留，不自動刪除。
+
+```sh
+launchctl print gui/$(id -u)/org.townpass.local
+curl -f http://127.0.0.1:5173/health
+# 手動重啟本服務
+launchctl kickstart -k gui/$(id -u)/org.townpass.local
+# 停止本服務（plist 保留；下次登入仍會啟動）
+launchctl bootout gui/$(id -u)/org.townpass.local
+```
+
+日誌位於 `~/Library/Logs/TownPassLocal/`。iPhone 的 `SUBSIDY_URL` 必須是這台 Mac 的區網位址與 5173 埠；不是 `localhost` 或只綁定 `127.0.0.1` 的預覽網址。Mac 須保持開機、未睡眠且使用者已登入，手機與 Mac 須同網路；IP 更換時需更新 App 建置網址或使用固定區網位址。這是區網測試服務，未配置公開 HTTPS，也不改動系統睡眠設定或防火牆；Mac 關機仍可使用需要另外部署。
+
 ## API
 
 回應為 JSON；公開讀取 API 不需要個人答案。

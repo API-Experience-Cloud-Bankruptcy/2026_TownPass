@@ -8,16 +8,14 @@ import 'package:get/get.dart';
 import 'package:town_pass/gen/assets.gen.dart';
 import 'package:town_pass/util/tp_app_bar.dart';
 import 'package:town_pass/util/tp_colors.dart';
+import 'package:town_pass/util/tp_web_load_state.dart';
 import 'package:town_pass/util/web_message_handler/tp_web_message_listener.dart';
 
 class WebViewArgument {
   final String? url;
   final String? forceTitle;
 
-  const WebViewArgument({
-    this.url,
-    this.forceTitle,
-  });
+  const WebViewArgument({this.url, this.forceTitle});
 }
 
 /// App 內開網頁使用，可使用 `openUrl` 並以 `url` 為參數帶入開啟網頁： \
@@ -26,25 +24,52 @@ class WebViewArgument {
 /// ```
 /// Get.toNamed(TPRoute.webView, arguments: url);
 /// ```
-class TPWebView extends StatelessWidget {
+class TPWebView extends StatefulWidget {
   final TPAppBarController? titleController;
 
-  TPWebView({
-    super.key,
-    this.titleController,
-  });
+  const TPWebView({super.key, this.titleController});
 
-  String get url => (Get.arguments as WebViewArgument?)?.url ?? '';
+  @override
+  State<TPWebView> createState() => _TPWebViewState();
+}
 
-  String? get forceTitle => (Get.arguments as WebViewArgument?)?.forceTitle;
+class _TPWebViewState extends State<TPWebView> {
+  final TPWebLoadState loadState = TPWebLoadState();
+  late final WebViewArgument? argument = Get.arguments as WebViewArgument?;
+  String? retryUrl;
+
+  String get url => argument?.url ?? '';
+
+  String? get forceTitle => argument?.forceTitle;
 
   final TPAppBarController _defaultTitleController = TPAppBarController();
 
-  TPAppBarController get appBarController => titleController ?? _defaultTitleController;
+  TPAppBarController get appBarController =>
+      widget.titleController ?? _defaultTitleController;
 
-  final Rxn<InAppWebViewController> webViewController = Rxn<InAppWebViewController>();
+  final Rxn<InAppWebViewController> webViewController =
+      Rxn<InAppWebViewController>();
 
   final RxBool canGoBack = RxBool(false);
+
+  Future<void> loadPage() async {
+    final controller = webViewController.value;
+    if (controller == null) return;
+    loadState.begin();
+    try {
+      await controller.loadUrl(
+        urlRequest: URLRequest(url: WebUri(retryUrl ?? url)),
+      );
+    } catch (_) {
+      loadState.fail('目前無法開啟網頁，請確認網路連線後重試。');
+    }
+  }
+
+  @override
+  void dispose() {
+    loadState.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +80,12 @@ class TPWebView extends StatelessWidget {
         leading: Obx(
           () => switch (canGoBack.value) {
             true => IconButton(
-                icon: Assets.svg.expand.svg(),
-                onPressed: () async => await webViewController.value?.goBack(),
-                style: const ButtonStyle(
-                  iconSize: WidgetStatePropertyAll<double>(24),
-                ),
+              icon: Assets.svg.expand.svg(),
+              onPressed: () async => await webViewController.value?.goBack(),
+              style: const ButtonStyle(
+                iconSize: WidgetStatePropertyAll<double>(24),
               ),
+            ),
             false => const SizedBox.shrink(),
           },
         ),
@@ -76,29 +101,98 @@ class TPWebView extends StatelessWidget {
         title: appBarController.title.value,
         controller: appBarController,
       ),
-      body: TPInAppWebView(
-        onWebViewCreated: (controller) {
-          webViewController.value = controller;
-          try {
-            controller.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
-          } catch (_) {
-            controller.loadData(data: _failedToLoadUrlData(url: url));
-          }
-        },
-        onUpdateVisitedHistory: (_, __, ___) async {
-          canGoBack.value = await webViewController.value?.canGoBack() ?? false;
-        },
-        onTitleChanged: (_, title) {
-          appBarController.title.value = switch (forceTitle == null) {
-            true => title,
-            false => forceTitle,
-          };
-        },
-        onGeolocationPermissionsShowPrompt: (controller, origin) async {
-          // should be deal individually (ask for user agreement)
-          return GeolocationPermissionShowPromptResponse(origin: origin, allow: true, retain: true);
-        },
-        onCloseWindow: (_) => Get.back(),
+      body: Stack(
+        children: [
+          TPInAppWebView(
+            onWebViewCreated: (controller) {
+              webViewController.value = controller;
+              loadPage();
+            },
+            onLoadStart: (_, nextUrl) {
+              retryUrl = nextUrl?.toString() ?? retryUrl;
+              loadState.begin();
+            },
+            onLoadStop: (_, _) => loadState.complete(),
+            onReceivedError: (_, request, error) {
+              if (error.type == WebResourceErrorType.CANCELLED) return;
+              loadState.fail(
+                '目前連不上這個服務，請確認網路與服務是否正常，再試一次。',
+                mainFrame: request.isForMainFrame == true,
+              );
+            },
+            onReceivedHttpError: (_, request, _) {
+              loadState.fail(
+                '服務暫時無法提供這個頁面，請稍後重試。',
+                mainFrame: request.isForMainFrame == true,
+              );
+            },
+            onWebContentProcessDidTerminate: (_) =>
+                loadState.fail('網頁已暫停，請重新載入以繼續使用。'),
+            onRenderProcessGone: (_, _) => loadState.fail('網頁已暫停，請關閉此頁後重新開啟。'),
+            onUpdateVisitedHistory: (_, _, _) async {
+              canGoBack.value =
+                  await webViewController.value?.canGoBack() ?? false;
+            },
+            onTitleChanged: (_, title) {
+              appBarController.title.value = switch (forceTitle == null) {
+                true => title,
+                false => forceTitle,
+              };
+            },
+            onGeolocationPermissionsShowPrompt: (controller, origin) async {
+              // should be deal individually (ask for user agreement)
+              return GeolocationPermissionShowPromptResponse(
+                origin: origin,
+                allow: true,
+                retain: true,
+              );
+            },
+            onCloseWindow: (_) => Get.back(),
+          ),
+          AnimatedBuilder(
+            animation: loadState,
+            builder: (context, _) {
+              if (loadState.error != null) {
+                return Positioned.fill(
+                  child: ColoredBox(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '暫時無法載入',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(loadState.error!, textAlign: TextAlign.center),
+                            const SizedBox(height: 24),
+                            FilledButton(
+                              onPressed: loadPage,
+                              child: const Text('重新載入'),
+                            ),
+                            TextButton(
+                              onPressed: () => Get.back(),
+                              child: const Text('返回城市通'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+              return loadState.loading
+                  ? const Align(
+                      alignment: Alignment.topCenter,
+                      child: LinearProgressIndicator(),
+                    )
+                  : const SizedBox.shrink();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -328,26 +422,4 @@ class TPInAppWebView extends StatelessWidget {
       onMicrophoneCaptureStateChanged: onMicrophoneCaptureStateChanged,
     );
   }
-}
-
-String _failedToLoadUrlData({String? url}) {
-  return '''
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <title>Failed to load URL</title>
-  </head>
-  <body>
-
-  <h1>Failed to load url:</h1>
-
-  <h3>${switch (url) {
-    null => '(null)',
-    String() when url.isEmpty => '(empty)',
-    _ => url,
-  }}</h3>
-
-  </body>
-  </html>
-  ''';
 }

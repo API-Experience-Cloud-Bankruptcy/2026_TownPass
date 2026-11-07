@@ -139,6 +139,10 @@ firebase deploy --only hosting
 - 快照 chunk 約 1.7 MB（gzip 約 240 KB），首次 API 失敗時才下載。
 - 逐筆審閱與探索映射隨主程式載入，目前主程式約 2.64 MB（gzip 約 359 KB），仍有建置大小警告；桌面驗證不代表低階手機載入與反應速度已達標。
 
+## 實機持續試用
+
+同網路 iPhone 持續試用可使用後端的靜態網頁託管與 macOS LaunchAgent，操作見 [後端常駐服務說明](../backend/README.md#同網路-iphone-的-mac-常駐服務)。此方式使用已建置的網頁與同來源 API；程式修改後須重新建置、安裝常駐版本，並非即時熱更新。原生 WebView 另提供載入進度、連線錯誤／逾時／網頁程序中止提示及重試，需安裝新版 App 才生效。
+
 ## 授權與第三方套件
 
 本資料夾以 AGPL-3.0-only 授權：聲明見 `LICENSE`，完整條文見 `COPYING`（GNU 官方 agpl-3.0.txt）；repo 根目錄的上游 TownPass 授權不變。
