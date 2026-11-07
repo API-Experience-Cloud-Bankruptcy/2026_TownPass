@@ -117,7 +117,7 @@ export function buildPlanText(input: PlanInput): string {
   lines.push('文件準備清單（勾選僅代表自己準備，不代表已送件）：');
   for (const d of merged.documents) {
     const mark = input.docChecks[d.key] ? '[已準備]' : '[ ]';
-    const detail = [d.condition && `條件：${d.condition}`, d.notes && `備註：${d.notes}`].filter(Boolean).join('；');
+    const detail = [d.required === false && '非必備（依個案需要）', d.condition && `條件：${d.condition}`, d.notes && `備註：${d.notes}`].filter(Boolean).join('；');
     lines.push(`${mark} ${d.name}${detail ? `（${detail}）` : ''}`);
     lines.push(`    用於：${d.usedBy.map((u) => u.name).join('、')}`);
   }

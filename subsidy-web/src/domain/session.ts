@@ -2,6 +2,7 @@
 // 不提供長期保存。顯示偏好（大字、高對比）不含個資，另存於 localStorage。
 // 不讀取 TownPass userinfo（mock 帳號）作為任何人的資格條件。
 
+import { validExtraValue } from './answer-fields';
 import { MAX_AGE } from './questions';
 import type { Answers, Target } from './types';
 
@@ -21,6 +22,7 @@ export interface SessionState {
   stepDone: Record<string, number[]>;
   catalogVersion: string | null;
   rulesVersion?: string | null;
+  engineVersion?: string | null;
   savedAt: string | null;
 }
 
@@ -44,6 +46,7 @@ export function emptySession(target: Target | null = null): SessionState {
     stepDone: {},
     catalogVersion: null,
     rulesVersion: null,
+    engineVersion: null,
     savedAt: null,
   };
 }
@@ -90,7 +93,7 @@ function sanitizeAnswers(v: unknown): Answers {
   if (a.extra && typeof a.extra === 'object') {
     const extra: Record<string, string | number | boolean> = {};
     for (const [k, val] of Object.entries(a.extra as Record<string, unknown>)) {
-      if (['string', 'number', 'boolean'].includes(typeof val)) extra[k] = val as string | number | boolean;
+      if (Object.keys(extra).length < 32 && validExtraValue(k,val)) extra[k] = val;
     }
     if (Object.keys(extra).length) out.extra = extra;
   }
@@ -122,6 +125,7 @@ export function loadSession(storage: StorageLike | null = defaultStorage()): Ses
       stepDone,
       catalogVersion: typeof s.catalogVersion === 'string' ? s.catalogVersion : null,
       rulesVersion: typeof s.rulesVersion === 'string' ? s.rulesVersion : null,
+      engineVersion: typeof s.engineVersion === 'string' ? s.engineVersion : null,
       savedAt: typeof s.savedAt === 'string' ? s.savedAt : null,
     };
   } catch {

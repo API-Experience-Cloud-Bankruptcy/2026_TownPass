@@ -19,8 +19,10 @@ import {
   type Prefs,
   type SessionState,
 } from './domain/session';
+import { EXTRA_QUALIFICATION_FIELDS } from './domain/answer-fields';
+import { availability, discoveryScore, questionApplies, rankQuestions } from './domain/adaptive';
 import { filterCatalog, SITUATIONS } from './domain/situations';
-import type { LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
+import type { Answers, LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
 
 export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help';
 
@@ -38,6 +40,8 @@ interface State {
   qIndex: number;
   questionPool: Question[] | null;
   questionRoute: Question[];
+  questionBudget: number;
+  runVisited: string[];
   showIneligible: boolean;
   /** 從詳情頁進入求助時帶入的資源與步驟 */
   helpContext: { itemId: string | null; stepText?: string };
@@ -57,6 +61,8 @@ export const state = reactive<State>({
   qIndex: 0,
   questionPool: null,
   questionRoute: [],
+  questionBudget: 8,
+  runVisited: [],
   showIneligible: false,
   helpContext: { itemId: null },
 });
@@ -72,14 +78,17 @@ watch(
   { deep: true },
 );
 
+// Track source mutations once, then evaluate a plain snapshot. Vue proxies around the
+// full evidence dataset make repeated canonical hashing needlessly expensive.
+const catalogItems = computed<Subsidy[]>(()=>state.catalog?JSON.parse(JSON.stringify(state.catalog.items)) as Subsidy[]:[]);
 export const itemsById = computed(() => {
   const map = new Map<string, Subsidy>();
-  for (const item of state.catalog?.items ?? []) map.set(item.id, item);
+  for (const item of catalogItems.value) map.set(item.id, item);
   return map;
 });
 
 export const candidates = computed(() =>
-  state.catalog ? filterCatalog(state.catalog.items, state.session.situation, state.session.query) : [],
+  state.catalog ? filterCatalog(catalogItems.value, state.session.situation, state.session.query) : [],
 );
 
 const candidateQuestions = computed<Question[]>(() =>
@@ -88,9 +97,39 @@ const candidateQuestions = computed<Question[]>(() =>
 // Keep visited identities stable. Only answerAndAdvance rebuilds the future tail.
 export const questions = computed<Question[]>(() => state.questionPool === null ? candidateQuestions.value : state.questionRoute);
 
-export const results = computed(() => evaluateAll(state.catalog?.items ?? [], state.session.answers));
+export const results = computed(() => evaluateAll(catalogItems.value, state.session.answers));
 
-export const sortedCandidates = computed(() => sortByFit(candidates.value, results.value));
+const discoveryScores=computed(()=>new Map(candidates.value.map(item=>[item.id,discoveryScore(item,state.session.answers,state.session.situation)])));
+export const sortedCandidates = computed(() => sortByFit(candidates.value, results.value)
+  .map((item,index)=>({item,index,score:discoveryScores.value.get(item.id)?.score??0}))
+  .sort((a,b)=> {
+    const fa=results.value.get(a.item.id)?.fit==='ineligible',fb=results.value.get(b.item.id)?.fit==='ineligible';
+    return fa!==fb?(fa?1:-1):b.score-a.score||a.index-b.index;
+  }).map(x=>x.item));
+export const focusedCandidates = computed(()=>candidates.value.filter(item=>results.value.get(item.id)?.fit!=='ineligible'&&discoveryScores.value.get(item.id)?.conflicts===0&&discoveryScores.value.get(item.id)?.unmapped===0));
+export const closedCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='closed'));
+export const uncertainCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='unknown'));
+export const recommendedCandidates = computed(()=> {
+  const focused=new Set(focusedCandidates.value.map(i=>i.id));
+  const relevant=sortedCandidates.value.filter(i=>focused.has(i.id));
+  const preparing=relevant.filter(i=>availability(i)==='prepare');
+  return (preparing.length?preparing:relevant.filter(i=>availability(i)==='unknown')).slice(0,5);
+});
+export const otherCandidates = computed(()=> {
+  const first=new Set(recommendedCandidates.value.map(i=>i.id));
+  return sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&!first.has(i.id));
+});
+export const canRefine = computed(()=>rankQuestions(state.bank?.questions??[],candidates.value,state.session.answers,state.session.situation,new Set(state.session.seenQuestions)).length>0);
+export const questionInsight = computed(()=> {
+  const current=questions.value[state.qIndex];
+  const nonIneligibleCount=candidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible').length;
+  return {initialCount:candidates.value.length,remainingCount:focusedCandidates.value.length,nonIneligibleCount,
+    excludedCount:candidates.value.length-nonIneligibleCount,weakCount:nonIneligibleCount-focusedCandidates.value.length,
+    answeredCount:conditionEntries.value.length,
+    reason:['need_area','explore_context','expense_priority'].includes(current?.field??'') ? '從容易回答的生活狀況與支出，找出接下來值得確認的資源方向；不知道可以略過。' : current?.purpose==='qualification'
+      ? '目前候選包含已逐筆審閱的這項必要條件；回答後會重算初篩與下一題，其他資格仍待確認。'
+      : '這題依目前候選的原文協助聚焦需求；方向不同的方案仍保留在其他資源，不判定資格不符。'};
+});
 
 export const planItems = computed(() =>
   state.session.planIds.map((id) => itemsById.value.get(id)).filter((x): x is Subsidy => !!x),
@@ -128,6 +167,9 @@ export async function init(): Promise<void> {
     state.session.docChecks = patch.docChecks;
     state.session.catalogVersion = patch.catalogVersion;
     state.session.rulesVersion = patch.rulesVersion;
+    state.session.engineVersion=patch.engineVersion;
+    state.session.answers=patch.answers;
+    state.session.seenQuestions=patch.seenQuestions;
     if (patch.notice) state.notice = patch.notice;
     state.questionPool = null;
     state.questionRoute = [];
@@ -202,12 +244,16 @@ export function confirmPending(): void {
 export function resetPerson(target: Target | null): void {
   const version = state.session.catalogVersion;
   const rulesVersion = state.session.rulesVersion;
+  const engineVersion=state.session.engineVersion;
   state.session = target ? switchPerson(target) : emptySession();
   state.session.catalogVersion = version;
   state.session.rulesVersion = rulesVersion;
+  state.session.engineVersion=engineVersion;
   state.qIndex = 0;
   state.questionPool = null;
   state.questionRoute = [];
+  state.runVisited=[];
+  state.questionBudget=8;
   lastAnswerAt = -Infinity;
   state.showIneligible = false;
   state.detailId = null;
@@ -222,18 +268,43 @@ export function clearAllData(): void {
   state.notice = '已清除本分頁保存的答案、行動單與進度。';
 }
 
-export function startQuestions(): void {
-  state.qIndex = 0;
-  state.questionPool = [...candidateQuestions.value];
-  state.questionRoute = [...state.questionPool];
-  lastAnswerAt = -Infinity;
-  if (questions.value.length > 0) go('questions');
-  else go('results');
+function beginQuestions(continuing: boolean): void {
+  state.qIndex=0;
+  state.runVisited=continuing?[...state.session.seenQuestions]:[];
+  state.questionBudget=8;
+  state.questionPool=[...candidateQuestions.value];
+  // Revisit known questions without letting their own old answers hide the edit controls.
+  const editable=continuing?[]:state.questionPool.filter(q=>questionApplies(q,state.session.answers,state.session.situation)&&(state.session.seenQuestions.includes(q.id)||answerOf(state.session.answers,q.field)!==undefined));
+  const unseen=rankQuestions(state.questionPool,candidates.value,state.session.answers,state.session.situation,new Set([...state.runVisited,...editable.map(q=>q.id)]));
+  state.questionRoute=[...editable,...unseen];
+  lastAnswerAt=-Infinity;
+  if(state.questionRoute.length) go('questions'); else go('results');
+}
+/** Revisit answers; previously skipped questions may be considered in this new run. */
+export function startQuestions(): void { beginQuestions(false); }
+/** Continue with unseen useful questions, retaining prior answers and skips. */
+export function continueQuestions(): void { beginQuestions(true); }
+export function startExplore(): void {
+  if(state.loading) return;
+  if(!state.session.target) {state.notice='請先選擇查詢對象，再開始探索。';return;}
+  state.session.situation=null; state.session.query='';
+  // A new discovery direction must not inherit old branch-specific preferences.
+  clearDiscoveryPreferences(); state.session.seenQuestions=[];
+  startQuestions();
+}
+
+function clearDiscoveryPreferences(): void {
+  const removedFields=new Set(Object.keys(state.session.answers.extra??{}).filter(field=>!EXTRA_QUALIFICATION_FIELDS.has(field)));
+  const removedIds=new Set((state.bank?.questions??[]).filter(q=>removedFields.has(q.field)).map(q=>q.id));
+  state.session.seenQuestions=state.session.seenQuestions.filter(id=>!removedIds.has(id));
+  const kept=Object.fromEntries(Object.entries(state.session.answers.extra??{}).filter(([field])=>EXTRA_QUALIFICATION_FIELDS.has(field)));
+  if(Object.keys(kept).length) state.session.answers.extra=kept; else delete state.session.answers.extra;
 }
 
 /** 分類與搜尋分開使用，換需求時不留下另一種篩選。 */
 export function selectNeed(id: string): void {
   if (!SITUATIONS.some((s) => s.id === id) || !state.session.target || state.loading) return;
+  clearDiscoveryPreferences();
   state.session.situation = id;
   state.session.query = '';
   startQuestions();
@@ -241,6 +312,7 @@ export function selectNeed(id: string): void {
 
 export function searchResources(query: string): void {
   if (!state.session.target || state.loading || !query.trim()) return;
+  clearDiscoveryPreferences();
   state.session.situation = null;
   state.session.query = query.trim().slice(0, 100);
   startQuestions();
@@ -256,20 +328,32 @@ export function answerAndAdvance(
   const question = questions.value[state.qIndex];
   if (state.view !== 'questions' || !question || question.id !== questionId || now - lastAnswerAt < 450) return false;
   lastAnswerAt = now;
-  const prefix = questions.value.slice(0, state.qIndex + 1);
-  answer(question, value);
-  // Future answers retained from an earlier run must not hide their own questions.
-  const knownFields = new Set(prefix.map(q => q.field));
-  const knownAnswers = Object.fromEntries(Object.entries(state.session.answers).filter(([field]) => knownFields.has(field)));
-  const partialResults = evaluateAll(candidates.value, knownAnswers);
-  const remainingIds = candidates.value.filter(item => partialResults.get(item.id)?.fit !== 'ineligible').map(item => item.id);
-  const useful = new Set(questionsFor(state.bank?.questions ?? [], remainingIds).map(q => q.id));
-  const pool = state.questionPool ?? candidateQuestions.value;
-  const position = pool.findIndex(q => q.id === questionId);
-  const tail = pool.slice(position + 1).filter(q => useful.has(q.id));
-  state.questionRoute = [...prefix, ...tail];
-  if (!tail.length) go('results');
-  else state.qIndex = prefix.length;
+  const prefix = questions.value.slice(0,state.qIndex+1);
+  const futureIds=new Set(questions.value.slice(state.qIndex+1).map(q=>q.id));
+  state.runVisited=state.runVisited.filter(id=>!futureIds.has(id));
+  const oldValue=answerOf(state.session.answers,question.field);
+  if(oldValue!==value) {
+    // Editing an earlier choice invalidates later answers, including hidden branches.
+    const futureFields=new Set(questions.value.slice(state.qIndex+1).map(q=>q.field));
+    const branchFields=new Set((state.bank?.questions??[]).filter(q=>q.situations?.length||q.depends_on).map(q=>q.field));
+    if(['need_area','explore_context','expense_priority'].includes(question.field)) for(const field of branchFields) futureFields.add(field);
+    for(const q of state.bank?.questions??[]) if(futureFields.has(q.field)) state.session.answers=setAnswer(state.session.answers,q,undefined);
+    const removedIds=new Set((state.bank?.questions??[]).filter(q=>futureFields.has(q.field)).map(q=>q.id));
+    state.session.seenQuestions=state.session.seenQuestions.filter(id=>!removedIds.has(id));
+    state.runVisited=state.runVisited.filter(id=>!removedIds.has(id));
+  }
+  answer(question,value);
+  const visited=new Set([...state.runVisited,...prefix.map(q=>q.id)]);
+  state.runVisited=[...visited];
+  const routeAnswers={...state.session.answers,extra:{...state.session.answers.extra}};
+  const confirmedFields=new Set(prefix.map(q=>q.field));
+  let rankingAnswers:Answers=routeAnswers;
+  for(const q of state.questionPool??candidateQuestions.value) if(!confirmedFields.has(q.field)&&!state.runVisited.includes(q.id)) rankingAnswers=setAnswer(rankingAnswers,q,undefined);
+  const tail=rankQuestions(state.questionPool??candidateQuestions.value,candidates.value,rankingAnswers,state.session.situation,visited);
+  state.questionRoute=[...prefix,...tail];
+  // Budget pauses questioning, never truncates accessible result candidates.
+  if(!tail.length||prefix.length>=state.questionBudget) go('results');
+  else state.qIndex=prefix.length;
   return true;
 }
 

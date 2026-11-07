@@ -1,5 +1,6 @@
 // 行動單文件合併：只有名稱、條件、備註、必要性完全相同才合併；同名但要求不同者分列並標示。
 
+import { adaptiveReviewFor } from './adaptive';
 import { text } from './match';
 import type { Subsidy } from './types';
 
@@ -24,11 +25,19 @@ export function documentKey(name: string, condition: string, notes: string, requ
   return JSON.stringify([name, condition, notes, required]);
 }
 
+export function effectiveDocuments(item:Subsidy):Subsidy['application']['required_documents'] {
+  const overrides=adaptiveReviewFor(item)?.document_overrides??[];
+  return (item.application?.required_documents??[]).map((doc,index)=> {
+    const overlay=overrides.find(o=>o.index===index);
+    return overlay?{...doc,required:overlay.required,condition:overlay.condition,notes:[doc.notes,overlay.notes].filter(Boolean).join('；')}:doc;
+  });
+}
+
 export function mergeDocuments(items: Subsidy[]): MergeResult {
   const map = new Map<string, MergedDocument>();
   const incomplete: MergeResult['incomplete'] = [];
   for (const item of items) {
-    const docs = (item.application?.required_documents ?? []).filter((d) => text(d?.name));
+    const docs = effectiveDocuments(item).filter((d) => text(d?.name));
     if (docs.length === 0) incomplete.push({ id: item.id, name: item.name });
     for (const d of docs) {
       const name = text(d.name);

@@ -248,7 +248,28 @@ pub fn verdict(r: &Requirement, p: &Profile, today: &str) -> Option<bool> {
             return Some(r.values.as_ref().is_some_and(|xs| xs.contains(&region)));
         }
         "age" => {}
-        _ => return None,
+        field => {
+            if !crate::questions::qualification_field(field) {
+                return None;
+            }
+            let value = p.extra.get(field)?;
+            if !crate::questions::valid_extra_value(field, value) {
+                return None;
+            }
+            return if let Some(required) = r.required_boolean {
+                value.as_bool().map(|actual| actual == required)
+            } else {
+                let allowed = r.values.as_ref().filter(|values| {
+                    !values.is_empty()
+                        && values.iter().all(|v| {
+                            crate::questions::valid_extra_value(field, &Value::String(v.clone()))
+                        })
+                })?;
+                value
+                    .as_str()
+                    .map(|actual| allowed.iter().any(|expected| expected == actual))
+            };
+        }
     }
     let age = p.age?;
     if !age.is_finite() || !(0.0..=130.0).contains(&age) {

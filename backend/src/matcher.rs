@@ -4,6 +4,7 @@
 use crate::models::Entry;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -40,6 +41,8 @@ pub struct Profile {
     /// "low_income" | "mid_low_income" | "general"
     pub household_type: Option<String>,
     pub applicant_types: Vec<String>,
+    /// Additional shared-template scalar answers; discovery answers never exclude.
+    pub extra: BTreeMap<String, Value>,
     pub q: Option<String>,
     pub include_ineligible: bool,
     pub view: Option<String>,
@@ -220,12 +223,10 @@ pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
         "僅初篩來源支持的必要條件；其他原文資格、例外、期間及證明仍待機關確認，非核准或送件證明"
             .into(),
     );
-    if s.source_meta.verification_status != "verified" {
-        warnings.push(format!(
-            "資料原有查核狀態為 {}，本次未重新查核",
-            s.source_meta.verification_status
-        ));
-    }
+    warnings.push(format!(
+        "資料原有查核狀態為 {}，僅為來源標示，本次未重新查核最新政策",
+        s.source_meta.verification_status
+    ));
     if let Some(review) = e.reviewed {
         for rule in &review.requirements {
             let verdict = crate::reviewed_rules::verdict(rule, p, today);
@@ -399,6 +400,15 @@ impl Profile {
     pub fn validate(&self) -> Result<(), String> {
         validate_age(self.age)?;
         validate_view(&self.view)?;
+        if self.extra.len() > 32
+            || serde_json::to_vec(&self.extra).map_or(true, |bytes| bytes.len() > 4096)
+            || self
+                .extra
+                .iter()
+                .any(|(field, value)| !crate::questions::valid_extra_value(field, value))
+        {
+            return Err("extra 僅接受題庫支援的有限選項；未知請略過".into());
+        }
         if self
             .household_type
             .as_deref()

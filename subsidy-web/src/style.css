@@ -720,3 +720,63 @@ legend {
 .tabs__item {
   font-size: 0.9rem;
 }
+
+/* 兩行主要按鈕：「還不確定，帶我找」 */
+.btn--tall {
+  min-height: 64px;
+  padding: 12px 20px;
+}
+.btn__stack {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+.btn__sub {
+  font-size: 0.85rem;
+  font-weight: 400;
+  opacity: 0.92;
+}
+.btn:disabled .btn__sub {
+  opacity: 1;
+}
+
+/* 首頁說明 */
+.intro {
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
+}
+.intro__list {
+  display: grid;
+  gap: 6px;
+  padding-left: 1.4rem;
+  color: var(--text-2);
+}
+.intro__list li {
+  margin: 0;
+}
+
+/* 問答回饋：一行細線下的短句，不用彩色框 */
+.feedback {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 0.95rem;
+}
+
+/* 詳情頁區塊：標題＋內容，以細線分隔 */
+.block {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.view-head + .block {
+  border-top: 0;
+  padding-top: 0;
+}
+.sub-title {
+  font-size: 1rem;
+  font-weight: 600;
+}

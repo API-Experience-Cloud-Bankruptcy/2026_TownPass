@@ -1,3 +1,4 @@
+import { effectiveDocuments } from './documents';
 // JourneyBuilder：只用資料原文組合辦理路線，不自行發明窗口、電話或地址。
 
 import { text } from './match';
@@ -120,7 +121,7 @@ export function buildRoute(item: Subsidy): Route {
   }
   const agency = text(app.agency) || text(item.provider?.name);
   const channel = text(app.channel_text);
-  const documents = (app.required_documents ?? []).filter((d) => text(d?.name));
+  const documents = (effectiveDocuments(item) ?? []).filter((d) => text(d?.name));
   const missing: string[] = [];
   if (steps.length === 0) missing.push('辦理步驟原文未提供，請向窗口確認。');
   if (!channel) missing.push('受理窗口原文未提供，請以官方網站為準。');

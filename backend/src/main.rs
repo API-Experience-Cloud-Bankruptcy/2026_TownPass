@@ -1,3 +1,4 @@
+mod adaptive_rules;
 mod matcher;
 mod models;
 mod questions;
@@ -122,7 +123,7 @@ async fn catalog(State(st): State<Shared>) -> Json<Value> {
 
 async fn question_bank(State(st): State<Shared>) -> Json<Value> {
     Json(
-        json!({"version": format!("questions-v2/{}/{}", st.version, reviewed_rules::version()), "questions": st.questions}),
+        json!({"version": format!("questions-v3/{}/{}/{}/{}", st.version, reviewed_rules::version(), adaptive_rules::version(), questions::version()), "questions": st.questions}),
     )
 }
 

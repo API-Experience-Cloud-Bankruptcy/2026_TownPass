@@ -6,7 +6,8 @@ import { currentStepIndex, progressText } from '../presentation';
 import { openHelp, state, toggleStep } from '../store';
 import ExternalLink from './ExternalLink.vue';
 
-const props = defineProps<{ item: Subsidy }>();
+/** hideDeadline：詳情頁已在「要先注意」列出期限時不重複。 */
+const props = defineProps<{ item: Subsidy; hideDeadline?: boolean }>();
 const route = computed(() => buildRoute(props.item));
 const done = computed(() => new Set(state.session.stepDone[props.item.id] ?? []));
 const total = computed(() => route.value.steps.length);
@@ -16,7 +17,7 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
 
 <template>
   <section class="next" :aria-labelledby="`next-h-${item.id}`">
-    <h2 :id="`next-h-${item.id}`" class="sr-only">下一步</h2>
+    <h2 :id="`next-h-${item.id}`" class="sr-only">辦理步驟</h2>
     <template v-if="total && current >= 0">
       <p class="next__head">
         <span class="dot dot--on" aria-hidden="true">{{ current + 1 }}</span>
@@ -37,7 +38,7 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
       <p class="next__text">原文沒有列出辦理步驟，請先問承辦窗口</p>
       <button type="button" class="btn btn--text" @click="openHelp(item.id)">不知道怎麼問</button>
     </template>
-    <p v-if="route.deadline" class="note">期限：{{ route.deadline }}</p>
+    <p v-if="route.deadline && !hideDeadline" class="note">期限：{{ route.deadline }}</p>
   </section>
 
   <div class="more-group">

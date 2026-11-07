@@ -1,5 +1,6 @@
 // 情境分類與文字搜尋（規則式，不依賴 AI）。
 
+import { adaptiveReviewFor } from './adaptive';
 import type { Subsidy } from './types';
 
 export interface Situation {
@@ -18,10 +19,13 @@ export const SITUATIONS: Situation[] = [
   { id: 'health', label: '醫療與健康', hint: '健保、篩檢、醫療補助', categories: ['醫療'], applicants: [] },
   { id: 'disability', label: '身心障礙', hint: '身障補助、輔具、照顧', categories: ['身心障礙', '身障'], applicants: ['身心障礙者'] },
   { id: 'housing', label: '住宅與租屋', hint: '租金補貼、購屋、修繕', categories: ['住宅', '租屋'], applicants: ['租屋族', '購屋族'] },
+  { id:'community',label:'文化、競賽與社區',hint:'文化藝術、獎項、公益及環境',categories:['文化','體育','獎勵','社區'],applicants:[] },
   { id: 'work', label: '工作與失業', hint: '失業、職訓、職災、創業', categories: ['就業', '失業', '職訓', '職業災害', '勞工', '創業'], applicants: ['失業者', '勞工', '創業者'] },
 ];
 
 export function matchesSituation(item: Subsidy, situation: Situation): boolean {
+  const reviewed=adaptiveReviewFor(item);
+  if(reviewed) return reviewed.situations.includes(situation.id);
   const category = item.classification?.category ?? '';
   if (situation.categories.some((c) => category.includes(c))) return true;
   const applicants = item.search?.facets?.applicant_types ?? [];

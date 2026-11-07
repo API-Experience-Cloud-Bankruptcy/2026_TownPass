@@ -355,12 +355,17 @@ fn scope_never_excludes_cross_region_school_or_work_routes() {
 }
 
 #[test]
-fn fixed_questions_are_supported_by_actual_conditions_and_skips_are_absent() {
+fn shared_questions_are_supported_by_reviewed_conditions_and_discovery() {
     let st = state();
     let questions = serde_json::to_value(&st.questions).unwrap();
-    assert_eq!(questions.as_array().unwrap().len(), 4);
+    assert!(questions.as_array().unwrap().len() >= 4);
     for q in questions.as_array().unwrap() {
-        assert_eq!(q["id"], q["field"]);
+        assert_eq!(
+            q["id"],
+            format!("q-{}", q["field"].as_str().unwrap().replace('_', "-"))
+        );
+        assert!(q["burden"].as_u64().is_some_and(|n| n > 0));
+        assert!(["qualification", "discovery"].contains(&q["purpose"].as_str().unwrap()));
         assert!(!q["resource_ids"].as_array().unwrap().is_empty());
         for id in q["resource_ids"].as_array().unwrap() {
             assert!(st.by_id.contains_key(id.as_str().unwrap()));
@@ -413,7 +418,17 @@ async fn http_health_catalog_questions_and_facets_are_complete() {
         .as_str()
         .unwrap()
         .contains(cat["version"].as_str().unwrap()));
-    assert_eq!(qs["questions"].as_array().unwrap().len(), 4);
+    assert_eq!(
+        qs["questions"],
+        serde_json::to_value(questions::build_questions(&state().entries)).unwrap()
+    );
+    for version in [
+        reviewed_rules::version(),
+        adaptive_rules::version(),
+        questions::version(),
+    ] {
+        assert!(qs["version"].as_str().unwrap().contains(&version));
+    }
     let (_, facet) = request(router.clone(), "GET", "/api/facets", None).await;
     assert_eq!(
         facet["verification_status"],
@@ -457,6 +472,13 @@ async fn api_rejects_invalid_queries_and_personal_input_without_echoing_values()
         r#"{"region":" "}"#,
         r#"{"view":"unknown"}"#,
         r#"{"real_name":"PRIVATE_TEST_VALUE"}"#,
+        r#"{"extra":{"unknown":"PRIVATE_TEST_VALUE"}}"#,
+        r#"{"extra":{"education_level":"doctorate"}}"#,
+        r#"{"extra":{"disability_certificate":"false"}}"#,
+        r#"{"extra":{"education_level":["college"]}}"#,
+        r#"{"extra":{"education_level":null}}"#,
+        r#"{"extra":{"age":20}}"#,
+        r#"{"extra":{"housing_status":{"value":"renting"}}}"#,
     ] {
         let (status, error) = request(router.clone(), "POST", "/api/match", Some(body)).await;
         assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
@@ -908,4 +930,370 @@ fn hidden_age_in_taipei_applicability_is_reviewed_and_asked() {
         },
     );
     assert!(!r.warnings.iter().any(|w| w.contains("不據 scope 排除")));
+}
+
+#[test]
+fn additional_qualification_answers_are_bounded_and_unknown_is_not_false() {
+    let profile: Profile = serde_json::from_value(json!({"age":12,"extra":{
+        "education_level":"graduate", "employment_status":"unemployed",
+        "housing_status":"renting", "care_context":"home_care", "disability_certificate":false,
+        "need_area":"study", "education_support":"tuition"
+    }}))
+    .unwrap();
+    assert!(profile.validate().is_ok());
+    let requirement =
+        |value: Value| -> reviewed_rules::Requirement { serde_json::from_value(value).unwrap() };
+    for (field, values, expected) in [
+        (
+            "education_level",
+            json!(["college", "graduate"]),
+            Some(true),
+        ),
+        ("education_level", json!(["college"]), Some(false)),
+        ("education_level", json!(["unsupported"]), None),
+        ("education_level", json!(["graduate", "unsupported"]), None),
+        ("employment_status", json!(["unemployed", "training"]), None),
+        ("housing_status", json!(["owning"]), None),
+        ("care_context", json!(["home_care"]), None),
+        ("unknown", json!(["anything"]), None),
+        ("education_support", json!(["tuition"]), None),
+    ] {
+        let rule = requirement(json!({"field":field,"label":"test","values":values,"evidence":[]}));
+        assert_eq!(
+            reviewed_rules::verdict(&rule, &profile, "2026-11-07"),
+            expected,
+            "{field}"
+        );
+        assert_eq!(
+            reviewed_rules::verdict(&rule, &Profile::default(), "2026-11-07"),
+            None
+        );
+    }
+    let rule = requirement(
+        json!({"field":"disability_certificate","label":"test","required_boolean":true,"evidence":[]}),
+    );
+    assert_eq!(
+        reviewed_rules::verdict(&rule, &profile, "2026-11-07"),
+        Some(false)
+    );
+    let unknown = requirement(
+        json!({"field":"unknown","label":"test","min":65,"basis":"current_age","evidence":[]}),
+    );
+    assert_eq!(
+        reviewed_rules::verdict(&unknown, &profile, "2026-11-07"),
+        None
+    );
+    let mut invalid = profile;
+    invalid
+        .extra
+        .insert("housing_status".into(), json!("unknown"));
+    let rule = requirement(
+        json!({"field":"housing_status","label":"test","values":["renting"],"evidence":[]}),
+    );
+    assert!(invalid.validate().is_err());
+    assert_eq!(reviewed_rules::verdict(&rule, &invalid, "2026-11-07"), None);
+}
+
+#[test]
+fn discovery_quotes_values_and_original_content_must_all_bind() {
+    let original = records().remove(0);
+    let row = json!({
+        "id":original["id"], "name":original["name"],
+        "source_fingerprint":reviewed_rules::source_fingerprint(&original),
+        "manual_conditions":[{"path":"/name","value":original["name"],"reason":"test"}],
+        "source_urls":[],
+        "document_overrides":[{"index":0,"required":false,"condition":"test","notes":"test","evidence":[{"path":"/name","value":original["name"]}]}],
+        "facets":[{"field":"need_area","values":["living"],"reason":"test review",
+          "evidence":[{"path":"/name","value":original["name"]}]}]
+    });
+    let parse =
+        |row: Value| -> adaptive_rules::AdaptiveRecord { serde_json::from_value(row).unwrap() };
+    assert!(adaptive_rules::bound(&parse(row.clone()), &original));
+    for (pointer, value) in [
+        ("/facets/0/evidence/0/value", json!("fabricated quote")),
+        ("/facets/0/evidence/0/path", json!("/missing")),
+        ("/facets/0/evidence", json!([])),
+        ("/facets/0/values", json!(["unsupported"])),
+        ("/facets/0/field", json!("unsupported")),
+        ("/facets/0/reason", json!("")),
+        ("/facets", json!([])),
+        ("/manual_conditions/0/value", json!("unproven quote")),
+        (
+            "/document_overrides/0/evidence/0/value",
+            json!("unproven document quote"),
+        ),
+        ("/source_urls", json!(["https://example.org/unproven"])),
+        ("/source_fingerprint", json!("old")),
+    ] {
+        let mut changed = row.clone();
+        *changed.pointer_mut(pointer).unwrap() = value;
+        assert!(
+            !adaptive_rules::bound(&parse(changed), &original),
+            "{pointer}"
+        );
+    }
+    let mut changed = original.clone();
+    changed["eligibility"]["new_exception"] = json!("新例外");
+    assert!(!adaptive_rules::bound(&parse(row), &changed));
+}
+
+#[test]
+fn adaptive_question_support_is_bound_and_never_an_eligibility_rule() {
+    let st = state();
+    for entry in &st.entries {
+        if let Some(row) = entry.adaptive {
+            assert!(adaptive_rules::bound(row, &entry.original));
+            let need = st
+                .questions
+                .iter()
+                .find(|question| question.field == "need_area")
+                .unwrap();
+            assert!(need.resource_ids.contains(&entry.subsidy.id));
+        }
+    }
+    for question in &st.questions {
+        let template = questions::templates()
+            .iter()
+            .find(|template| template.field == question.field)
+            .unwrap();
+        assert_eq!(question.description, template.description);
+        assert_eq!(question.options, template.options);
+        assert_eq!(question.depends_on, template.depends_on);
+        let mut expected: Vec<_> = st
+            .entries
+            .iter()
+            .filter(|entry| {
+                entry.reviewed.is_some_and(|row| {
+                    row.requirements
+                        .iter()
+                        .any(|rule| rule.field == question.field)
+                }) || entry.adaptive.is_some_and(|row| {
+                    matches!(
+                        question.field.as_str(),
+                        "need_area" | "explore_context" | "expense_priority"
+                    ) || row.facets.iter().any(|facet| facet.field == question.field)
+                })
+            })
+            .map(|entry| entry.subsidy.id.clone())
+            .collect();
+        expected.sort();
+        expected.dedup();
+        assert_eq!(question.resource_ids, expected);
+    }
+    let discovery: Profile = serde_json::from_value(
+        json!({"extra":{"need_area":"study","education_support":"tuition"}}),
+    )
+    .unwrap();
+    assert!(discovery.validate().is_ok());
+    for entry in &st.entries {
+        assert_eq!(evaluate(entry, &discovery).fit, Fit::Possible);
+    }
+}
+
+#[tokio::test]
+async fn http_extra_answers_are_accepted_without_echoing_profile() {
+    let (status, body) = request(app(state()), "POST", "/api/match", Some(r#"{"extra":{"education_level":"college","disability_certificate":false,"work_support":"training"}}"#)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["total"].as_u64().unwrap() > 0);
+    for item in body["items"].as_array().unwrap() {
+        assert!(item.get("extra").is_none());
+    }
+}
+
+#[test]
+fn factual_boolean_gates_do_not_conflate_work_or_housing_preferences() {
+    for field in ["is_unemployed", "is_renting", "owns_home"] {
+        let rule: reviewed_rules::Requirement = serde_json::from_value(
+            json!({"field":field,"label":"test","required_boolean":true,"evidence":[]}),
+        )
+        .unwrap();
+        for (answer, expected) in [(true, Some(true)), (false, Some(false))] {
+            let profile: Profile = serde_json::from_value(json!({"extra":{field:answer}})).unwrap();
+            assert!(profile.validate().is_ok(), "{field}");
+            assert_eq!(
+                reviewed_rules::verdict(&rule, &profile, "2026-11-07"),
+                expected,
+                "{field}"
+            );
+        }
+        assert_eq!(
+            reviewed_rules::verdict(&rule, &Profile::default(), "2026-11-07"),
+            None
+        );
+    }
+    for field in ["employment_status", "housing_status", "care_context"] {
+        assert!(!questions::qualification_field(field));
+    }
+    assert!(questions::valid_facet_value(
+        "disability_certificate",
+        &json!("true")
+    ));
+    assert!(!questions::valid_facet_value(
+        "disability_certificate",
+        &json!(true)
+    ));
+}
+
+#[test]
+fn complete_adaptive_review_binds_every_original_record_and_discovery_field() {
+    let st = state();
+    assert_eq!(adaptive_rules::records().len(), st.entries.len());
+    assert_eq!(
+        st.entries
+            .iter()
+            .filter(|entry| entry.adaptive.is_some())
+            .count(),
+        217
+    );
+    let unique: std::collections::BTreeSet<_> = adaptive_rules::records()
+        .iter()
+        .map(|row| row.id.as_str())
+        .collect();
+    assert_eq!(unique.len(), 217);
+    for row in adaptive_rules::records() {
+        let entry = &st.entries[st.by_id[row.id.as_str()]];
+        assert!(adaptive_rules::bound(row, &entry.original), "{}", row.id);
+        assert!(!row.manual_conditions.is_empty(), "{}", row.id);
+        assert!(!row.source_urls.is_empty(), "{}", row.id);
+    }
+    let need = st
+        .questions
+        .iter()
+        .find(|q| q.field == "need_area")
+        .unwrap();
+    assert_eq!(need.resource_ids.len(), 217);
+    for field in ["explore_context", "expense_priority"] {
+        assert_eq!(
+            st.questions
+                .iter()
+                .find(|q| q.field == field)
+                .unwrap()
+                .resource_ids
+                .len(),
+            217
+        );
+    }
+    for field in [
+        "education_level",
+        "is_unemployed",
+        "is_renting",
+        "owns_home",
+        "disability_certificate",
+    ] {
+        let question = st.questions.iter().find(|q| q.field == field).unwrap();
+        assert_eq!(question.purpose, "qualification", "{field}");
+    }
+}
+
+#[test]
+fn adopted_new_gates_have_real_record_or_and_factual_boolean_regressions() {
+    for (id, field) in [
+        ("WEL-0107", "is_unemployed"),
+        ("WEL-0038", "is_renting"),
+        ("WEL-0068", "owns_home"),
+        ("WEL-0104", "disability_certificate"),
+    ] {
+        let e = entry(id);
+        for (answer, expected) in [(false, Fit::Ineligible), (true, Fit::Possible)] {
+            let p: Profile = serde_json::from_value(json!({"extra":{field:answer}})).unwrap();
+            assert!(p.validate().is_ok());
+            assert_eq!(
+                matcher::evaluate_at(&e, &p, "2026-11-07").fit,
+                expected,
+                "{id} {answer}"
+            );
+        }
+        assert_eq!(evaluate(&e, &Profile::default()).fit, Fit::Possible);
+    }
+    let e = entry("WEL-0028");
+    for (value, expected) in [
+        ("secondary", Fit::Possible),
+        ("college", Fit::Possible),
+        ("graduate", Fit::Possible),
+        ("preschool", Fit::Ineligible),
+    ] {
+        let p: Profile =
+            serde_json::from_value(json!({"extra":{"education_level":value}})).unwrap();
+        assert_eq!(
+            matcher::evaluate_at(&e, &p, "2026-11-07").fit,
+            expected,
+            "WEL-0028 {value}"
+        );
+    }
+    // Admitted and already-enrolled routes cannot become a shared current-stage gate.
+    assert!(!entry("WEL-0032")
+        .reviewed
+        .unwrap()
+        .requirements
+        .iter()
+        .any(|r| r.field == "education_level"));
+    let p: Profile = serde_json::from_value(
+        json!({"extra":{"employment_status":"employed","is_unemployed":true}}),
+    )
+    .unwrap();
+    assert_eq!(evaluate(&entry("WEL-0107"), &p).fit, Fit::Possible);
+}
+
+#[test]
+fn original_verification_status_is_provenance_and_never_current_policy_approval() {
+    let manifest: Value =
+        serde_json::from_str(include_str!("../rules/adaptive-reviewed.json")).unwrap();
+    for row in manifest["records"].as_array().unwrap() {
+        assert_eq!(row["current_policy_verified"], false, "{}", row["id"]);
+    }
+    for e in &state().entries {
+        let result = evaluate(e, &Profile::default());
+        assert_eq!(result.fit, Fit::Possible);
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|message| message.contains("本次未重新查核")),
+            "{}",
+            e.subsidy.id
+        );
+        assert_eq!(
+            e.original["source_meta"]["verification_status"],
+            e.subsidy.source_meta.verification_status
+        );
+    }
+}
+
+#[test]
+fn reviewed_elder_support_and_worker_role_are_discovery_only() {
+    let st = state();
+    for (field, count) in [("elder_support", 21), ("work_applicant", 36)] {
+        let question = st.questions.iter().find(|q| q.field == field).unwrap();
+        assert_eq!(question.resource_ids.len(), count, "{field}");
+        assert_eq!(question.purpose, "discovery");
+        assert!(!questions::qualification_field(field));
+        assert!(st.entries.iter().all(|entry| !entry
+            .reviewed
+            .unwrap()
+            .requirements
+            .iter()
+            .any(|rule| rule.field == field)));
+    }
+    assert!(!questions::qualification_field("work_support"));
+    for value in ["wage_claim", "family_education", "family_leave"] {
+        assert!(questions::valid_extra_value("work_support", &json!(value)));
+    }
+}
+
+#[test]
+fn current_disability_proof_does_not_disprove_pre_enrollment_historical_proof() {
+    let e = entry("CT-0068");
+    assert!(!e
+        .reviewed
+        .unwrap()
+        .requirements
+        .iter()
+        .any(|rule| rule.field == "disability_certificate"));
+    let profile: Profile =
+        serde_json::from_value(json!({"extra":{"disability_certificate":false}})).unwrap();
+    assert!(profile.validate().is_ok());
+    assert_eq!(
+        matcher::evaluate_at(&e, &profile, "2026-11-07").fit,
+        Fit::Possible
+    );
 }

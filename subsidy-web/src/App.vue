@@ -16,6 +16,7 @@ import {
   init,
   pendingSwitch,
   planItems,
+  questions,
   requestNewPerson,
   state,
   tab,
@@ -36,9 +37,10 @@ watchEffect(() => {
   root.classList.toggle('is-contrast', state.prefs.highContrast);
 });
 
-// 換頁時把焦點移到新頁標題，讓讀屏與鍵盤使用者知道位置。
+// 換頁或換題時把焦點移到新頁標題，讓讀屏與鍵盤使用者知道位置。
+// 動態題目可能在同一個 qIndex 換成別題，所以也看題目 id。
 watch(
-  () => [state.view, state.detailId, state.qIndex],
+  () => [state.view, state.detailId, state.qIndex, state.view === 'questions' ? questions.value[state.qIndex]?.id : null],
   async () => {
     settingsOpen.value = false;
     await nextTick();
@@ -56,6 +58,8 @@ const navItems: { view: View; label: string; match: View[] }[] = [
 const targetLabel = computed(() =>
   state.session.target === 'self' ? '幫自己找' : state.session.target === 'other' ? '幫別人找' : '尚未選擇',
 );
+
+const backLabel = computed(() => (state.view === 'questions' && state.qIndex > 0 ? '上一題' : '返回'));
 
 const dialogTitle = computed(() =>
   pendingSwitch.value === 'clear' ? '清除這次的資料？' : '換人嗎？',
@@ -97,7 +101,7 @@ const dialogTitle = computed(() =>
           <div><dt>資料</dt><dd>{{ state.catalog?.sourceLabel ?? '載入中' }}</dd></div>
           <div><dt>版本</dt><dd>{{ state.catalog?.version ?? '載入中' }}</dd></div>
           <div v-if="state.catalog?.fallbackReason"><dt>改用快照原因</dt><dd>{{ state.catalog.fallbackReason }}</dd></div>
-          <div><dt>題目</dt><dd>{{ state.bank ? (state.bank.origin === 'api' ? `後端題庫（${state.bank.version}）` : '本機固定題目') : '載入中' }}</dd></div>
+          <div><dt>題目</dt><dd>{{ state.bank ? (state.bank.origin === 'api' ? `後端題庫（${state.bank.version}）` : '本機題庫') : '載入中' }}</dd></div>
           <div><dt>裝置端模型</dt><dd>{{ modelStatus?.state === 'unavailable' ? modelStatus.reason : modelStatus?.state ?? '確認中' }}</dd></div>
           <div><dt>說明</dt><dd>本服務非政府官方服務；查核標記沿用資料原有狀態。</dd></div>
         </dl>
@@ -130,7 +134,7 @@ const dialogTitle = computed(() =>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已保存的資料，官方網站仍需連線</p>
 
     <div v-if="['needs', 'search', 'questions', 'results', 'detail'].includes(state.view)" class="topbar no-print">
-      <button type="button" class="btn btn--text" @click="back"><span aria-hidden="true">‹</span> 返回</button>
+      <button type="button" class="btn btn--text" @click="back"><span aria-hidden="true">‹</span> {{ backLabel }}</button>
       <span v-if="state.session.target" class="muted">{{ targetLabel }}</span>
     </div>
     <HomeView v-if="state.view === 'home'" />

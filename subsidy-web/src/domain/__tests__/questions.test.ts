@@ -20,7 +20,8 @@ describe('本機固定題庫', () => {
     expect(region.options?.map((o) => o.value)).toEqual(['臺北市', '其他縣市']);
   });
   it('依候選資源篩題', () => {
-    expect(questionsFor(bank, ['WEL-0055']).map((q) => q.field)).toEqual(['age']);
+    expect(questionsFor(bank, ['WEL-0055']).some(q=>q.field==='age')).toBe(true);
+    expect(questionsFor(bank,['WEL-0055']).some(q=>q.field==='need_area')).toBe(true);
     expect(questionsFor(bank, ['D'])).toEqual([]);
   });
   it('本人與他人問句不同', () => {

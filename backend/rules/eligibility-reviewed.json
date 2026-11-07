@@ -1,5 +1,5 @@
 {
-  "version": "eligibility-review-v2",
+  "version": "eligibility-review-v3",
   "binding": "fnv1a64-canonical-record-v1",
   "source_dataset_sha256": "7744b5bd8262226a2bee9b6c5a2ef2501a32c1a3121e8ed130c13ac0f1780d07",
   "review_scope": "本地217筆原文盤點；必要條件逐筆編碼，非重新官方查核或完整資格引擎。未編條件不推定符合。",
@@ -72,6 +72,20 @@
             }
           ],
           "required_boolean": true
+        },
+        {
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "國內私立大專、修業年限內學士／副學士班（含五專後二年及學士後）"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
         }
       ],
       "full_text_age_mentions": [],
@@ -148,7 +162,22 @@
         "https://www.moe.gov.tw/News_Content.aspx?n=0217161130F0B192&s=B4EEFD2E8E124788",
         "https://service.utaipei.edu.tw/p/412-1034-9922.php?Lang=zh-tw"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "日間學士班"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -263,7 +292,22 @@
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2M18xMTXlrbjlubTluqbnjY7lrbjph5HnlLPoq4vooago5ZCr5YCL6LOH5ZCM5oSP5pu4LOizh%2BioiuS4jeWFrOmWi%2BiBsuaYjuabuCkucGRm&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMGJjNGFhOTMtZWFhZi00NThhLTliODktODQzODhhOGU0NmFjLnBkZg%3D%3D",
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2Ml8xMTXlrbjvpo7vqIHnjY7lrbjvpIrnmbzmlL7poIXnm67lj4rlkI3poY1f5YWs5ZGKLnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMjhjZDNhNmEtYjYzOS00M2RjLTg1ZjEtYTQyYThiOTNlN2YzLnBkZg%3D%3D"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "secondary"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "本國籍高職（含五專1至3年級）成績優秀"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -311,7 +355,22 @@
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2M18xMTXlrbjlubTluqbnjY7lrbjph5HnlLPoq4vooago5ZCr5YCL6LOH5ZCM5oSP5pu4LOizh%2BioiuS4jeWFrOmWi%2BiBsuaYjuabuCkucGRm&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMGJjNGFhOTMtZWFhZi00NThhLTliODktODQzODhhOGU0NmFjLnBkZg%3D%3D",
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2Ml8xMTXlrbjvpo7vqIHnjY7lrbjvpIrnmbzmlL7poIXnm67lj4rlkI3poY1f5YWs5ZGKLnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMjhjZDNhNmEtYjYzOS00M2RjLTg1ZjEtYTQyYThiOTNlN2YzLnBkZg%3D%3D"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "secondary"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "清寒優秀高中職生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -326,7 +385,22 @@
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2M18xMTXlrbjlubTluqbnjY7lrbjph5HnlLPoq4vooago5ZCr5YCL6LOH5ZCM5oSP5pu4LOizh%2BioiuS4jeWFrOmWi%2BiBsuaYjuabuCkucGRm&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMGJjNGFhOTMtZWFhZi00NThhLTliODktODQzODhhOGU0NmFjLnBkZg%3D%3D",
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2Ml8xMTXlrbjvpo7vqIHnjY7lrbjvpIrnmbzmlL7poIXnm67lj4rlkI3poY1f5YWs5ZGKLnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMjhjZDNhNmEtYjYzOS00M2RjLTg1ZjEtYTQyYThiOTNlN2YzLnBkZg%3D%3D"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "secondary"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "清寒優秀高中職學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -371,7 +445,22 @@
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2M18xMTXlrbjlubTluqbnjY7lrbjph5HnlLPoq4vooago5ZCr5YCL6LOH5ZCM5oSP5pu4LOizh%2BioiuS4jeWFrOmWi%2BiBsuaYjuabuCkucGRm&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMGJjNGFhOTMtZWFhZi00NThhLTliODktODQzODhhOGU0NmFjLnBkZg%3D%3D",
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2Ml8xMTXlrbjvpo7vqIHnjY7lrbjvpIrnmbzmlL7poIXnm67lj4rlkI3poY1f5YWs5ZGKLnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvMjhjZDNhNmEtYjYzOS00M2RjLTg1ZjEtYTQyYThiOTNlN2YzLnBkZg%3D%3D"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "secondary"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "清寒優秀高中生或五專1至3年級"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -515,7 +604,7 @@
       "name": "感恩基金會清寒優秀學生公益活動獎助學金（C01）",
       "source_fingerprint": "82501c8453dabfe6",
       "age_review": "not_encoded",
-      "review_note": "已盤點本筆原始條件；未建立來源支持的本人必要年齡規則，其他未編條件保留待確認。",
+      "review_note": "就學必要條件保留；低／中低收入戶不是共同必要條件，原文明列可由學校、地方機關、社福機構證明困難的替代途徑。",
       "source_urls": [
         "https://www.edu.tw/scholarshipinfo/cp.aspx?n=E32BD85D334D1446&s=2220B8464156EC91",
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2OV8xMTXvqIHmhJ%2FmgannpL7mnIPvqJvvp53ln7rvpIrmnIPnjY7liqnlrbjvpIrnlLPoq4vooahfQzEsQzIucGRm&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvOTI1YTk1ZGUtZDczNi00NzdkLTk1M2MtODhkY2UzOTM3YmFmLnBkZg%3D%3D",
@@ -523,22 +612,20 @@
       ],
       "requirements": [
         {
-          "field": "household_type",
-          "label": "本筆明列必要的核定家戶身分",
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "secondary",
+            "college",
+            "graduate"
+          ],
           "evidence": [
-            {
-              "path": "/eligibility/household/0/raw",
-              "value": "持低／中低收入證明"
-            },
             {
               "path": "/eligibility/raw_summary",
               "value": "清寒且投入公益服務之高中職、大專及碩博士學生"
             }
           ],
-          "values": [
-            "low_income",
-            "mid_low_income"
-          ]
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
         }
       ],
       "full_text_age_mentions": [],
@@ -555,7 +642,24 @@
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2OV8xMTXvqIHmhJ%2FmgannpL7mnIPvqJvvp53ln7rvpIrmnIPnjY7liqnlrbjvpIrnlLPoq4vooahfQzEsQzIucGRm&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvOTI1YTk1ZGUtZDczNi00NzdkLTk1M2MtODhkY2UzOTM3YmFmLnBkZg%3D%3D",
         "https://ws.moe.edu.tw/Download.ashx?icon=..pdf&n=6ZmE5Lu2N1%2FosqHlnJjms5XkurrmhJ%2FmgannpL7mnIPnpo%2FliKnln7rph5HmnIMtMTE15a245bm05pyq5L6G5Li75Lq657%2BB5a2455Sf5YWs55uK5rS75YuV542O5Yqp5a246YeR55Sz6KuL6L6m5rOVKOWumueovykucGRm&u=LzAwMS9VcGxvYWQvNTcvcmVsZmlsZS85ODg4LzIwODUvODA5MTY2NDUtODU2Yy00YWJkLTg5OWMtMDg0Zjk2NzkzODI3LnBkZg%3D%3D"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "本筆學生受益者須屬原文明列學制；子女／先前畢業學歷不套用此規則",
+          "values": [
+            "secondary",
+            "college",
+            "graduate"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "長期公益志工之高中職、大專及碩博士學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -732,7 +836,20 @@
         "https://www.rent-allowance.gov.taipei/RentAllowance/Grading",
         "https://udd.gov.taipei/assets/qcaS1HEeeqWUptjEqMQ7Eh/attachs/%E9%99%84%E4%BB%B69.1%20115%E7%B4%99%E6%9C%AC%E8%87%BA%E5%8C%97%E5%B8%82%E4%BD%8F%E5%AE%85%E7%A7%9F%E9%87%91%E5%8A%A0%E7%A2%BC%E8%A3%9C%E8%B2%BC%E7%94%B3%E8%AB%8B%E6%9B%B8.pdf"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "is_renting",
+          "label": "本筆申請家庭須已有對應租屋／國宅承租關係，類型另核",
+          "evidence": [
+            {
+              "path": "/eligibility/residence/0/raw",
+              "value": "符合三類之一及臺北設籍租屋條件"
+            }
+          ],
+          "required_boolean": true,
+          "review_basis": "租屋／所有權是申請所指住宅的必要關係，與目前居住偏好分開詢問；家戶成員與例外仍核。"
+        }
+      ],
       "full_text_age_mentions": [
         {
           "path": "/benefit/amounts/0/condition",
@@ -809,7 +926,20 @@
         "https://udd.gov.taipei/events/fhqekzq-21141",
         "https://udd.gov.taipei/assets/oEGEsVztrvv3dhHWTHfkJF/attachs/%E8%87%BA%E5%8C%97%E5%B8%82%E5%87%BA%E7%A7%9F%E5%9C%8B%E5%AE%85%E8%82%B2%E5%85%92%E7%A7%9F%E9%87%91%E5%8A%A0%E7%A2%BC%E8%A3%9C%E8%B2%BC%E7%94%B3%E8%AB%8B%E6%9B%B8.pdf"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "is_renting",
+          "label": "本筆申請家庭須已有對應租屋／國宅承租關係，類型另核",
+          "evidence": [
+            {
+              "path": "/eligibility/residence/0/raw",
+              "value": "合法承租市府出租國宅並符合家庭成員、戶籍等規定"
+            }
+          ],
+          "required_boolean": true,
+          "review_basis": "租屋／所有權是申請所指住宅的必要關係，與目前居住偏好分開詢問；家戶成員與例外仍核。"
+        }
+      ],
       "full_text_age_mentions": [
         {
           "path": "/eligibility/household/0/raw",
@@ -1430,7 +1560,24 @@
         "https://udd.gov.taipei/events/eg4jnku-21042",
         "https://leasing-and-management.udd.gov.taipei/"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "owns_home",
+          "label": "申請者為願將合格住宅加入包租代管的所有權人",
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "願將臺北合格住宅加入社宅包租代管之屋主"
+            },
+            {
+              "path": "/eligibility/residence/0/raw",
+              "value": "所有權人持合法整戶、符合用途及安全條件之臺北住宅，加入指定業者包租包管或代租代管"
+            }
+          ],
+          "required_boolean": true,
+          "review_basis": "租屋／所有權是申請所指住宅的必要關係，與目前居住偏好分開詢問；家戶成員與例外仍核。"
+        }
+      ],
       "full_text_age_mentions": [
         {
           "path": "/benefit/amounts/4/condition",
@@ -1457,7 +1604,22 @@
         "https://www.nstc.gov.tw/sci/ch/detail/24ad4e4a-bd37-4ba0-9955-5b2e2ffd5ac6",
         "https://www.aa.ntnu.edu.tw/zh_tw/GSD/fellowship/NSTCfellowship"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "graduate"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "博士班在學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -1470,7 +1632,22 @@
       "source_urls": [
         "https://www.aa.ntnu.edu.tw/zh_tw/GSD/fellowship/MinistryofEducationFellowship"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "graduate"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "具中華民國國籍之非在職博士班1至3年級學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [
         {
           "path": "/eligibility/raw_summary",
@@ -1494,7 +1671,22 @@
         "https://www.nstc.gov.tw/",
         "https://www.nstc.gov.tw/nat/ch/list/9db1f46f-26a3-4d4a-9d5f-638ae8df8953"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "符合年級資格之大學與專科在學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -1507,7 +1699,23 @@
       "source_urls": [
         "https://nhdo.gov.taipei/News_Content.aspx?n=E604685ABB2F0678&s=099319489CDB5489&sms=78D644F2755ACCAA"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "secondary",
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "設籍中正區之高中職及大專在學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -1521,7 +1729,23 @@
         "https://dtdo.gov.taipei/News_Content.aspx?n=CE7ED3463050EFD9&s=B3E79217746CDA46",
         "https://www-ws.gov.taipei/Download.ashx?icon=..pdf&n=MTE05a245bm05bqm5aSn5ZCM5Y2A5rCR5L%2BX5aeU5ZOh5pyD5rCR5L%2BX542O5a246YeR55Sz6KuL5pu4LnBkZg%3D%3D&u=LzAwMS9VcGxvYWQvMzEyL3JlbGZpbGUvMTM5ODcvOTY4ODA1My9mNDhhYzg0NC1iMzgyLTQ1ZDItOWQ0My1jYTc0Njk4NTQyMTEucGRm"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "primary",
+            "secondary"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "設籍且就讀大同區國中／國小之學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -1536,7 +1760,23 @@
         "https://www-ws.gov.taipei/Download.ashx?icon=..pdf&n=6Ie65YyX5biC5Lit5bGx5Y2A5rCR5L%2BX5aeU5ZOh5pyDMTE05a245bm05bqm56ysMuWtuOacn%2BeNjuWtuOmHkeWvpuaWvei%2Bpuazle%2B8iOWQq%2BeUs%2Biri%2BabuO%2B8iS5wZGY%3D&u=LzAwMS9VcGxvYWQvMzEzL3JlbGZpbGUvMTQwNjYvOTcwMDI3NS81MGU0MzRlYy1kZmJmLTQ4YmEtYWFiZS02MmFlMzJhZjk2OGEucGRm",
         "https://zsdo.gov.taipei/"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "secondary",
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "設籍中山區之大專及高中職學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -1550,7 +1790,27 @@
         "https://ssdo.gov.taipei/News_Content.aspx?n=205D15C398F0378E&s=7F8112B37D67599D&sms=78D644F2755ACCAA",
         "https://www-ws.gov.taipei/Download.ashx?icon=..pdf&n=55Sz6KuL6L6m5rOV5Y%2BK55Sz6KuL6KGoICgxKS5wZGY%3D&u=LzAwMS9VcGxvYWQvMzI0L3JlbGZpbGUvMTAxNzMvOTcwNTI0NC84Y2RiMTZkYi05NWVlLTRhOWMtYTkxMy0yODE3NzQxYmQxYjAucGRm"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "secondary",
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/benefit/raw",
+              "value": "大專5,000元（10名）、高中職3,000元（10名）、指定8校國中2,000元（各5名）"
+            },
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "設籍松山區滿6個月之低收入戶在學子女"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -1564,7 +1824,24 @@
         "https://www.lssh.tp.edu.tw/news/%E8%BD%89%E7%9F%A5%E8%87%BA%E5%8C%97%E5%B8%82%E5%8D%97%E6%B8%AF%E5%8D%80%E6%B0%91%E4%BF%97%E5%A7%94%E5%93%A1%E6%9C%83%E3%80%8C114%E5%B9%B4%E5%AD%B8%E5%B9%B4%E5%BA%A6%E5%84%AA%E7%A7%80%E7%8D%8E/",
         "https://www.lssh.tp.edu.tw/wp-content/uploads/doc/ls203/%E8%87%BA%E5%8C%97%E5%B8%82%E5%8D%97%E6%B8%AF%E5%8D%80%E6%B0%91%E4%BF%97%E5%A7%94%E5%93%A1%E6%9C%83114%E5%AD%B8%E5%B9%B4%E5%BA%A6%E5%84%AA%E7%A7%80%E7%8D%8E%E5%8A%A9%E5%AD%B8%E9%87%91%E7%94%B3%E8%AB%8B%E8%A1%A8.pdf"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "primary",
+            "secondary",
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "設籍南港區滿1年之國小至大學學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -1743,7 +2020,23 @@
         "https://www-ws.gov.taipei/Download.ashx?u=LzAwMS9VcGxvYWQvMzIwL3JlbGZpbGUvMTQwNjYvOTcwMjIwNi8yZmVjMTM2Zi0zNmFjLTRiNjktYTE5NC1iMTZhZjc3NjBlYzMucGRm&n=MTE0MTY2MzYxXzExNTYwMjExNTlfQVRUQ0gyLnBkZg%3D%3D&icon=..pdf",
         "https://rb003.tcpa.edu.tw/p/406-1006-32863,r311.php"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "申請學生須屬原文列出的學段；年級、成績、特殊學籍及當期例外另審",
+          "values": [
+            "secondary",
+            "college"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "文山區符合身障家庭、失怙恃或低收入條件之大專及高中職學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -2510,7 +2803,24 @@
         "https://pto.gov.taipei/cp.aspx?n=DB9231FBEB003A41",
         "https://0809080650.gov.taipei/"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "disability_certificate",
+          "label": "一般復康巴士各分級均須持身心障礙證明，免費低收入資格另審",
+          "required_boolean": true,
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "持身心障礙證明者，依障別分級預約"
+            },
+            {
+              "path": "/eligibility/disability/0/raw",
+              "value": "依身障證明認定等級"
+            }
+          ],
+          "review_basis": "原文要求這次受助者本人持身心障礙證明，不是家屬、加碼或多身分擇一。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -2588,7 +2898,24 @@
       "source_urls": [
         "https://emps.wda.gov.tw/Internet/Index/labor-allowance.aspx"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "is_unemployed",
+          "label": "須為原文所指的失業求職者；登記推介、災區及工作安排另審",
+          "evidence": [
+            {
+              "path": "/eligibility/employment/0/raw",
+              "value": "失業者先辦理求職登記、就業諮詢並接受推介"
+            },
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "符合就業保險或就業促進津貼資格的失業求職者"
+            }
+          ],
+          "required_boolean": true,
+          "review_basis": "原文共同指向申請相關期間的失業事實；目前就業與否不直接套用，起迄日期、原因及失業後再就業另核。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -2601,7 +2928,24 @@
       "source_urls": [
         "https://emps.wda.gov.tw/Internet/Index/labor-temporaryWorker.aspx"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "is_unemployed",
+          "label": "須為原文所指的失業求職者；登記推介、災區及工作安排另審",
+          "evidence": [
+            {
+              "path": "/eligibility/employment/0/raw",
+              "value": "求職登記及就業諮詢後，推介就業14日內未能就業"
+            },
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "經公立就業服務機構登記、諮詢及推介仍未就業的失業者"
+            }
+          ],
+          "required_boolean": true,
+          "review_basis": "原文共同指向申請相關期間的失業事實；目前就業與否不直接套用，起迄日期、原因及失業後再就業另核。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -2614,7 +2958,24 @@
       "source_urls": [
         "https://emps.wda.gov.tw/Internet/Index/labor-temporaryWorker.aspx"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "is_unemployed",
+          "label": "須為原文所指的失業求職者；登記推介、災區及工作安排另審",
+          "evidence": [
+            {
+              "path": "/eligibility/employment/0/raw",
+              "value": "因災害失業，有工作能力與意願"
+            },
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "公告災區中有工作能力及意願的失業者"
+            }
+          ],
+          "required_boolean": true,
+          "review_basis": "原文共同指向申請相關期間的失業事實；目前就業與否不直接套用，起迄日期、原因及失業後再就業另核。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -3887,7 +4248,20 @@
       "source_urls": [
         "https://www.nhi.gov.tw/ch/cp-3789-62c16-3246-1.html"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "disability_certificate",
+          "label": "申請對象須領有身心障礙證明",
+          "required_boolean": true,
+          "evidence": [
+            {
+              "path": "/eligibility/disability/0/raw",
+              "value": "領有身心障礙證明的健保保險對象"
+            }
+          ],
+          "review_basis": "原文要求這次受助者本人持身心障礙證明，不是家屬、加碼或多身分擇一。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -3900,7 +4274,20 @@
       "source_urls": [
         "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0050060"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "disability_certificate",
+          "label": "申請對象須領有身心障礙證明",
+          "required_boolean": true,
+          "evidence": [
+            {
+              "path": "/eligibility/disability/0/raw",
+              "value": "領有身心障礙證明"
+            }
+          ],
+          "review_basis": "原文要求這次受助者本人持身心障礙證明，不是家屬、加碼或多身分擇一。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -4076,7 +4463,22 @@
       "source_urls": [
         "https://www.k12ea.gov.tw/Tw/Unique/FAQDetail?cate1_id=C0C06A62-A856-48BB-A410-9E9C361BE503&filter=C49CFCC1-11D8-49BD-AFB8-95856E82E58D&page=0"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "education_level",
+          "label": "就讀高中職為本筆全部適用途徑共同學階",
+          "values": [
+            "secondary"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "高級中等學校學生（免繳學費，不需排富）"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -5143,6 +5545,22 @@
           "values": [
             "low_income"
           ]
+        },
+        {
+          "field": "education_level",
+          "label": "本人須高中職、專科、大學以上在學；排除修課型態仍人工核驗",
+          "values": [
+            "secondary",
+            "college",
+            "graduate"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/student/0/raw",
+              "value": "就讀臺灣地區經教育部承認之高中（職）、專科學校或大學院校以上之學生"
+            }
+          ],
+          "review_basis": "原文直接限制本筆受益者的學段；多學段以OR集合表示，其他條件仍待確認。"
         }
       ],
       "full_text_age_mentions": [
@@ -5863,7 +6281,32 @@
       "source_urls": [
         "https://dosw.gov.taipei/cp.aspx?n=A119F2D98118E1D5"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "disability_certificate",
+          "label": "本人須領本市核換發或註記身障證明",
+          "required_boolean": true,
+          "evidence": [
+            {
+              "path": "/eligibility/disability/0/raw",
+              "value": "領有本市核(換)發或註記之身心障礙證明"
+            }
+          ],
+          "review_basis": "原文要求這次受助者本人持身心障礙證明，不是家屬、加碼或多身分擇一。"
+        },
+        {
+          "field": "is_renting",
+          "label": "本人方案為本市住宅租賃補貼",
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "設籍臺北市並領有身心障礙證明、家庭收入與住宅條件符合規定，於本市轄區租賃住宅者。"
+            }
+          ],
+          "required_boolean": true,
+          "review_basis": "租屋／所有權是申請所指住宅的必要關係，與目前居住偏好分開詢問；家戶成員與例外仍核。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },
@@ -5876,7 +6319,20 @@
       "source_urls": [
         "https://dosw.gov.taipei/cp.aspx?n=A6E6C76ECBD747A9"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "disability_certificate",
+          "label": "本人須領本市核換發或註記身障證明",
+          "required_boolean": true,
+          "evidence": [
+            {
+              "path": "/eligibility/disability/0/raw",
+              "value": "領有本市核(換)發或註記之身心障礙證明"
+            }
+          ],
+          "review_basis": "原文要求這次受助者本人持身心障礙證明，不是家屬、加碼或多身分擇一。"
+        }
+      ],
       "full_text_age_mentions": [],
       "full_text_review": "全部JSON字串未找到數字年齡／出生日期片語；不代表資格或年齡完整。"
     },

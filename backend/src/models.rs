@@ -151,6 +151,7 @@ pub struct Entry {
     pub subsidy: Subsidy,
     pub original: Value,
     pub reviewed: Option<&'static crate::reviewed_rules::ReviewedRecord>,
+    pub adaptive: Option<&'static crate::adaptive_rules::AdaptiveRecord>,
     pub blob: String,
     pub name_lc: String,
 }
@@ -184,9 +185,11 @@ impl Entry {
         }
         let name_lc = s.name.to_lowercase();
         let reviewed = crate::reviewed_rules::review_for(&original);
+        let adaptive = crate::adaptive_rules::review_for(&original);
         Ok(Entry {
             subsidy: s,
             reviewed,
+            adaptive,
             original,
             blob,
             name_lc,

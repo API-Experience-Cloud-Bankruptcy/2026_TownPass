@@ -32,7 +32,7 @@ SUBSIDY_DATA=./data/subsidies.json cargo run --locked --release
 
 每筆保留完整的原始 JSON 值，Rust 型別只供內部搜尋／索引使用。catalog、單筆詳情、列表 `view=full` 與 match `view=full` 都從保留的 JSON 輸出，不將型別重新序列化成資料原文。因此 `income.period`、`year`、`multiplier_base`、`multiplier_value`，以及各層未識別欄位、空值、來源與原文仍保留。JSON 空白排版及物件鍵順序不屬於保留承諾；summary 是有意精簡的視圖。
 
-`catalog.version` 為 `catalog-v1-<FNV-1a 64-bit 指紋>`，由實際載入檔案的位元組計算；排版改變也會換版。這是穩定的快照識別，並非密碼學簽章、查核日期或政策有效性證明。題庫版本為 `questions-v2/<catalog.version>/<review.version>`；規則版本另包含共享 sidecar 的內容指紋，模板或規則變更會使前端舊準備進度失效。離線快照應保存相同 items 結構並自行清楚標示來源版本。
+`catalog.version` 為 `catalog-v1-<FNV-1a 64-bit 指紋>`，由實際載入檔案的位元組計算；排版改變也會換版。這是穩定的快照識別，並非密碼學簽章、查核日期或政策有效性證明。題庫版本為 `questions-v3/<catalog.version>/<eligibility.version>/<adaptive.version>/<template.version>`；規則版本另包含共享 sidecar 的內容指紋，模板或規則變更會使前端舊準備進度失效。離線快照應保存相同 items 結構並自行清楚標示來源版本。
 
 ## API
 
@@ -54,7 +54,7 @@ SUBSIDY_DATA=./data/subsidies.json cargo run --locked --release
 
 `view` 僅接受 `summary`／`full`；`limit` 預設 20，數字夾在 1–200（0 視為 1）；`offset` 預設 0，超過筆數回傳空陣列。catalog 不受 200 筆上限影響。scope 僅接受 `central`／`taipei`／`private_national`／`mixed`，查核狀態僅接受三種既有狀態。格式錯誤、負數分頁、無效 view／狀態／scope 及未知列表／match 輸入欄位回傳 HTTP 400 `{error:"invalid_input", message:string}`。
 
-match JSON 可用欄位：`age`、`region`、`annual_income`、`monthly_income`、`is_student`、`household_type`、`applicant_types`（字串陣列）、`q`、`include_ineligible`（預設 false）、`view`、`limit`、`offset`。所有個人欄位選填；不知道／略過請不傳值，不用 false 或 `general` 代替未知。`age` 必須為 0–130 的有限歲數，不是出生年；`region` 是戶籍地，接受「臺北市」「其他縣市」或具名外縣市，不接受空白；`is_student` 為 JSON boolean。`household_type` 僅接受 `low_income`／`mid_low_income`／`general`。收入欄位為非負有限數字，但目前不作資格核算；預設題庫不詢問收入。
+match JSON 可用欄位：`age`、`region`、`annual_income`、`monthly_income`、`is_student`、`household_type`、`applicant_types`（字串陣列）、`q`、`include_ineligible`（預設 false）、`view`、`limit`、`offset`、`extra`（共享題庫中的有界選項物件，至多32欄/4096 bytes）。所有個人欄位選填；不知道／略過請不傳值，不用 false 或 `general` 代替未知。`age` 必須為 0–130 的有限歲數，不是出生年；`region` 是戶籍地，接受「臺北市」「其他縣市」或具名外縣市，不接受空白；`is_student` 為 JSON boolean。`household_type` 僅接受 `low_income`／`mid_low_income`／`general`。收入欄位為非負有限數字，但目前不作資格核算；預設題庫不詢問收入。
 
 ```sh
 curl -fsS http://127.0.0.1:8080/health
@@ -70,31 +70,37 @@ curl -fsS http://127.0.0.1:8080/api/match \
 
 match 新增 `personal` 標記含自述資訊的 reasons／blocked_by，供匯出時按欄位同意移除；原 fit／reasons／warnings／blocked_by 介面保留。match 不儲存或記錄答案，錯誤不回顯提交值；但呼叫本身仍會將內容傳到伺服器，不可宣稱此 API 是裝置端處理。
 
-## 固定題庫
+## 自適應題庫與探索
 
-Question 欄位為 `id`、`field`、`kind`、`title`、`description`、選用 `options`／`min`／`max`，以及可追溯的 `resource_ids`。不使用 LLM 產生題目。
+共享 `rules/question-templates.json` 定義26個固定題目模板；Rust及TypeScript使用相同欄位、選項及版本。Question仍支援 number/single/boolean，另有選用 `purpose`、`burden`、`situations`、`depends_on`。`resource_ids`是已綁定必要規則與審閱探索關聯的聯集，不表示每筆都有這項硬資格。
 
-| field | kind | 出題依據 |
-| --- | --- | --- |
-| `age` | `number`，0–130 | 來源綁定且已逐筆審閱的必要年齡條件（含藏在其他原文欄位的條件），先問目前已滿實歲，不問虛歲 |
-| `region` | `single` | 已審閱本人必要設籍；目前為「臺北市／臺北市以外」，後者 value 維持 `其他縣市` |
-| `is_student` | `boolean` | 已審閱本人在學或未就學必要條件；boolean false 不等於略過 |
-| `household_type` | `single` | 已審閱必要核定家戶身分，保留 low_income／mid_low_income／general；未知略過 |
+必要規則支援原本的實歲、戶籍、在學、核定家戶，以及新增的 `education_level`、`disability_certificate`、`is_unemployed`、`is_renting`、`owns_home`。`extra`只接受共享題庫的有限字串／布林選項，未知略過；不能存自由文字、收入、地址或任意欄位。學段以集合表達OR，子女、家戶、歷史學歷、入學許可及加碼條件不自動套申請人。租屋及失業題問這次申請所指住宅／期間，避免用目前居住／工作偏好誤排資格。
 
-`resource_ids` 只指向來源仍有效且有相應必要規則的資源，不因 scope、facet 或有 student 陣列就出題。前端忽略版本／支撐集合不符的舊 API 題庫，改用同一 sidecar 的本機固定模板。
+探索另有就學支出、工作方向、住宅安排、照顧情境、家庭階段、健康、日常生活、身障支持、文化社區與協助方式。這些回答只能聚焦相關方向，不改 `fit`；不符合探索方向但尚未明確不符必要條件者仍保留其他資源。
 
-本輪題目池與已走過的題目 ID 保留；每次回答只重算尚有可能的候選與未來題序。若年齡已明確排除全部候選，直接顯示結果，不再問無作用的在學／身分。返回修改先前答案後會恢復相關後續題，不會因 computed 陣列縮短而跳錯題。先前保留的未來答案不會隱藏其自身修改題。
+每次回答後，前端依現存候選支持的分組差異、必要規則覆蓋及答題負擔重新排序下一題；不是固定四題或固定先切五筆。未確定需求者先答生活狀況；仍不確定可答困擾支出或略過，再進入有根據的學制、工作、住宅或照顧分支。略過同輪不重問；返回改答清掉失效下游答案與看題紀錄，再恢復可用分支。
+
+每輪最多8題後可先看全部結果，再 `continueQuestions` 詢問未看過的有用題；`startQuestions`則重新檢視已填答案。問題預算不會藏掉可查看資源。`questionInsight.remainingCount`是探索聚焦筆數；`nonIneligibleCount`才是尚未被必要條件排除的筆數。推薦優先受理狀態已有說明的聚焦資源；只有時效不明者也可列供詢問，畫面必須明示待確認。結構明列過期、混合學校期限、受理未知與較弱關聯分開呈現，不宣稱目前可申請。
+
+題庫API僅在eligibility、adaptive及template版本和支撐集合一致時採用，否則本機降級。完整引擎版本納入session遷移；變更會保留同人的基本答案及行動單ID，清除舊探索選項、已看題目及文件／步驟進度並提示。答案預設僅保存在本分頁sessionStorage；UI不自動呼叫match。
 
 ## 來源綁定規則與審閱覆蓋
 
 共享檔案為 `rules/eligibility-reviewed.json`，Rust 編譯內嵌，TypeScript 匯入同一份檔案；不修改 `data/subsidies.json`、不引入執行時 AI、不自動解析中文 AND／OR。
 
 - **217 筆全文已盤點**：掃描所有 JSON 字串，包括 eligibility、taipei_applicability、benefit、application、extensions、source_meta 與 search；數字年齡／出生日期片語命中 95 筆，其中 30 筆沒有 age 陣列。各筆留下 `full_text_age_mentions` 的原文路徑及 `review_note` 採用／保留原因。線索掃描不代表完整自然語言理解，未命中也不代表沒有年齡條件。
-- 已建立 **27 筆必要年齡、8 筆在學／未就學、9 筆家戶身分、6 筆必要設籍**。原有 69 筆非空 age 陣列中 26 筆已編碼、43 筆保留逐筆理由；另外 WEL-0031 的 age 陣列雖空，完整記錄明定本人年滿20至未滿46歲，已編碼並納入題庫。
+- 原有必要規則含27筆年齡、8筆在學／未就學、6筆必要設籍；本輪撤銷WEL-0028遺漏困難證明替代途徑的家戶門檻，保留8筆共同必要家戶規則。新增31項規則（19學段、5身障證明、3承租、1所有權、3失業期間事實），目前64筆有80條可執行必要條件。CT-0068要求參加國保前的歷史領證，不以目前有效證明題硬排，保留人工核對。原有 69 筆非空 age 陣列中 26 筆已編碼、43 筆保留逐筆理由；另外 WEL-0031 的 age 陣列雖空，完整記錄明定本人年滿20至未滿46歲，已編碼並納入題庫。
 - 每條必要條件記錄來源 JSON Pointer、逐字引文、來源 URL 及整筆原始資料的 canonical FNV-1a 64-bit 指紋。物件鍵排序、陣列順序保留、整數值統一；這是變更偵測，不是對抗惡意碰撞的密碼學證明。任何原文、來源、未知條件或其他欄位改動，該筆舊規則即停用並回到待確認，不沿用硬排除；沒有自動補寫／重綁規則。
 - 兩端都要求有規則的記錄具非空 `source_urls`，且各 URL 仍屬該筆 `source_meta.sources` 的 official 來源。新增規則必須先逐筆審閱主體、必要性、例外及替代途徑，再更新引文、來源與指紋，不能只為了讓測試通過而重算指紋。
 
 本輪保留資料既有 verified／partial／unverified，沒有宣稱重新向官方查核全部資料。未結構化的資格、文件、時效、同質補助、收入、財產、國籍與審核仍須查原文。
+
+
+`rules/adaptive-reviewed.json`另存217/217逐筆審閱：870項探索映射、4,851項人工確認原文、個別主體／替代途徑說明、官方來源與附件URL、原始缺漏／期限狀態，以及新規則採用／拒絕理由。來源指紋、全部引文及官方URL任一失配即停用該筆審閱。此為本地完整原文盤點，全部`current_policy_verified=false`，不宣稱本輪逐一重新打開官方來源。
+
+長者21筆另逐一區分生活津貼、交通、居家照顧、機構住宿、照顧者、健康、住宅及再就業；工作36筆區分勞工／求職者、雇主事業、家屬及活動團體。具體方向沒有正向映射證據的方案列較弱關聯，仍保留可查且不改資格結果。
+
+文件以有證據的overlay補充，不修改原始資料：WEL-0002的低收、軍人子女、婚育證明只在對應加碼時提供；WEL-0100/0101的口腔篩檢文件疑混案；CT-0113永久居留外國人有不同證件途徑。路線與行動單共用effectiveDocuments，保留原文件名稱、原始資料與審閱提醒。`buildEvidencePack`可依單一資源輸出有界證據包，包含必要規則、替代條件、來源、附件、缺漏及明示被省略的人工條件數，供未來裝置端模型檢索；目前未接入模型。
 
 ## 匹配界線
 
@@ -133,7 +139,7 @@ npm --prefix subsidy-web test
 WELFARE_TEST_API=http://127.0.0.1:18081 npm --prefix subsidy-web test -- src/domain/__tests__/parity.http.test.ts
 ```
 
-一般 npm test 會略過需明確提供測試 API 的 HTTP 項；啟用後驗證17組合成條件 × 217筆（3,689次 fit 比較）、完整原始 catalog 及題庫支撐集合。純規則回歸包含0／17／18／29／40／41／65／99、逐筆數字上下界、出生年及參考日期、例外主體、不回答／否、來源失效、預設匯出隱私、資料／規則換版、題目 identity 與返回改答。效能測試記錄完整217筆耗時，但桌面 Node 的數值不能代替手機效能驗收。
+一般 npm test 會略過需明確提供測試 API 的 HTTP 項；啟用後驗證25組合成條件 × 217筆（5,425次 fit 比較）、完整原始 catalog 及題庫支撐集合。純規則回歸包含0／17／18／29／40／41／65／99、逐筆數字上下界、出生年及參考日期、例外主體、不回答／否、來源失效、預設匯出隱私、資料／規則換版、題目 identity 與返回改答。效能測試記錄完整217筆耗時，但桌面 Node 的數值不能代替手機效能驗收。
 
 實際啟動後可另用上列 curl 驗證監聽與 HTTP；這不替代前端整合、真實政策／資格查核、手機 WebView、公開部署或機關受理驗收。
 

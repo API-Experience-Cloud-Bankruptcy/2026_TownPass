@@ -1,6 +1,7 @@
 // 畫面用的白話標示。只轉換既有資料與 MatchResult 欄位，不產生新規則或摘要文字。
 
 import { text } from './domain/match';
+import { availability } from './domain/adaptive';
 import type { MatchResult, Subsidy } from './domain/types';
 
 /** 結果列的短標：只有明確不符才標示；其餘待確認是預設狀態，不重複標記。 */
@@ -50,4 +51,89 @@ const CLOSED = /截止|暫停|停止|停辦|結束|額滿|不受理|尚未開放
 export function applicationStatusAlert(status: string): string | null {
   const t = status.trim();
   return t && CLOSED.test(t) ? `受理情形：${t}` : null;
+}
+
+/** 清單列與詳情頁共用的提醒：不符、期限、受理情形；都來自既有欄位。 */
+export function itemFlags(item: Subsidy, result: MatchResult | undefined): string[] {
+  return [fitNote(result), deadlineNote(result), applicationStatusAlert(text(item.source_meta?.application_status)),
+    availability(item) === 'unknown' ? '受理時間需向窗口確認' : null].filter(
+    (x): x is string => !!x,
+  );
+}
+
+/**
+ * 問答進度摘要。initialCount 是需求或搜尋的初始筆數；remainingCount 是「目前聚焦」的筆數
+ * （去掉依填答明確不符者，並依探索方向收斂），不是符合資格的數量，也不是全部還不能排除的數量。
+ */
+export interface InsightLike {
+  initialCount: number;
+  remainingCount: number;
+  answeredCount: number;
+  reason?: string;
+  nonIneligibleCount?: number;
+  excludedCount?: number;
+  weakCount?: number;
+}
+
+function count(n: unknown): number | null {
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+}
+
+/** 例：「已回答 2 題・目前聚焦 14 項」；未回答時只說目前聚焦的數量。 */
+export function insightLine(insight: InsightLike | null | undefined): string {
+  if (!insight) return '';
+  const answered = count(insight.answeredCount);
+  const remaining = count(insight.remainingCount);
+  const parts: string[] = [];
+  if (answered) parts.push(`已回答 ${answered} 題`);
+  if (remaining !== null) parts.push(`目前聚焦 ${remaining} 項`);
+  return parts.join('・');
+}
+
+/** 結果頁的範圍說明；只有聚焦數少於初始數時才說「先從這 N 項了解」。不說排除或符合。 */
+export function rangeLine(insight: InsightLike | null | undefined): string {
+  if (!insight) return '';
+  const initial = count(insight.initialCount);
+  const remaining = count(insight.remainingCount);
+  if (initial === null || remaining === null) return '';
+  if (remaining < initial) return `依你的回答，從 ${initial} 項聚焦到 ${remaining} 項，先從這些了解`;
+  return `目前聚焦 ${remaining} 項`;
+}
+
+/**
+ * 回答後的溫和回饋：比較作答前後的「目前聚焦」數量。
+ * 跳過不會當成「否」；數字沒變也如實說明，不假裝縮小。
+ */
+export function narrowingNote(before: number | null | undefined, after: number | null | undefined, skipped: boolean): string | null {
+  if (skipped) return '已跳過，不會當成「否」。';
+  const b = count(before);
+  const a = count(after);
+  if (b === null || a === null) return null;
+  if (a < b) return `目前聚焦：${b} 項 → ${a} 項`;
+  if (a === b) return '聚焦範圍沒有變，接著換個條件問。';
+  return null;
+}
+
+/** 依序分組且不重複：同一 id 只留在第一個出現的組。各組長度即顯示的數量。 */
+export function distinctGroups<T extends { id: string }>(groups: T[][]): T[][] {
+  const seen = new Set<string>();
+  return groups.map((list) =>
+    list.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    }),
+  );
+}
+
+/** 題目或選項上的選填說明欄位；只接受非空字串。 */
+export function optionalText(source: unknown, key: string): string {
+  if (!source || typeof source !== 'object') return '';
+  const v = (source as Record<string, unknown>)[key];
+  return typeof v === 'string' ? v.trim() : '';
+}
+
+/** 數字題的單位：題目有 unit 就用；年齡為「歲」；其餘為「數字」。 */
+export function numberUnit(question: { field: string }): string {
+  return optionalText(question, 'unit') || (question.field === 'age' ? '歲' : '數字');
 }

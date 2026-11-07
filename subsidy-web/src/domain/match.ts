@@ -3,6 +3,7 @@
 // 只有明確可判斷的條件才排除；寧可全部 possible，也不給虛假 likely。
 // 原文欄位皆可能為 null，一律經 text() 安全處理。
 
+import { adaptiveReviewFor } from './adaptive';
 import { isApplicantAgeRule, isTaipeiRegion } from './questions';
 import { reviewedChecks, reviewFor, taipeiToday } from './reviewed-rules';
 import type { AgeRule, Answers, MatchResult, PersonalNote, Subsidy } from './types';
@@ -87,7 +88,7 @@ export function evaluate(item: Subsidy, answers: Answers, today = taipeiToday())
     } else {
       const value = rule.field === 'age' ? `目前實歲 ${answers.age}` : rule.field === 'is_student'
         ? (answers.is_student ? '自述目前在學' : '自述目前未在學') : rule.field === 'region'
-        ? `自述戶籍 ${answers.region}` : `自述身分 ${answers.household_type}`;
+        ? `自述戶籍 ${answers.region}` : rule.field==='household_type' ? `自述身分 ${answers.household_type}` : `自述${rule.field}：${answers.extra?.[rule.field]}`;
       note(verdict ? 'reasons' : 'blocked_by', `${value}，${verdict ? '與必要條件單項相符' : '不符必要條件'}：${rule.label}；${evidence}（其他條件仍待機關核驗）`, rule.field, null);
     }
   }
@@ -132,6 +133,14 @@ export function evaluate(item: Subsidy, answers: Answers, today = taipeiToday())
   }
   for (const ex of arr(el.exclusions)) pending.push(`排除或例外：${quote(ex)}`);
 
+  const audit=adaptiveReviewFor(item);
+  if(audit) {
+    pending.push(`逐筆審閱：${audit.review_note}`);
+    pending.push(`替代途徑與主體：${audit.alternatives_note}`);
+    for(const condition of audit.manual_conditions) {
+      if(condition.path.startsWith('/application/required_documents')) pending.push(`文件條件待核：${condition.value}（${condition.reason}）`);
+    }
+  }
   const status = item.source_meta?.verification_status;
   if (status === 'partial') warnings.push('資料原有狀態為「部分查核」，請以官方公告為準。');
   else if (status !== 'verified') warnings.push('資料原有狀態為「未查核」，請以官方公告為準。');

@@ -1,7 +1,9 @@
 // 題庫：固定模板，題目是否出現由資料中存在的條件決定；不使用 AI 生成。
 // 後端 /api/questions 可用時採用其題目，前端依選定候選資源的 resource_ids 篩題。
 
+import { validExtraValue } from './answer-fields';
 import { apiBase, type FetchLike } from './catalog';
+import { adaptiveReviewFor, ADAPTIVE_VERSION, questionTemplates, TEMPLATE_VERSION } from './adaptive';
 import { reviewFor, REVIEW_VERSION } from './reviewed-rules';
 import type { Answers, Question, QuestionBank, QuestionOption, Subsidy, Target } from './types';
 
@@ -27,56 +29,17 @@ function regionOptions(regions: string[]): QuestionOption[] {
 
 /** 本機固定模板題庫，與契約穩定欄位一致：age、region、is_student、household_type。 */
 export function buildLocalQuestions(items: Subsidy[]): Question[] {
-  // Hash each record once per bank build, not once per field.
   const reviewed = new Map(items.map(item => [item.id, reviewFor(item)]));
-  const ids = (field: string) => items.filter(item => reviewed.get(item.id)?.requirements.some(r => r.field === field)).map(item => item.id).sort();
-  const all: Question[] = [
-    {
-      id: 'q-region',
-      field: 'region',
-      kind: 'single',
-      title: '戶籍設在哪裡？',
-      description: '請選戶籍地，不是目前居住地。依就學、就業或居住地適用的條件，結果會另外標示待確認。',
-      options: regionOptions([...reviewed.values()].flatMap(row => row?.requirements.filter(r => r.field === 'region').flatMap(r => r.values ?? []) ?? [])),
-      resource_ids: ids('region'),
-    },
-    {
-      id: 'q-age',
-      field: 'age',
-      kind: 'number',
-      title: '目前幾歲（實歲）？',
-      description: '填目前已滿的實歲，不是今年將滿或虛歲。年度出生年與日期邊界不確定時保留待確認。',
-      min: 0,
-      max: MAX_AGE,
-      resource_ids: ids('age'),
-    },
-    {
-      id: 'q-student',
-      field: 'is_student',
-      kind: 'boolean',
-      title: '目前是在學學生嗎？',
-      options: [
-        { label: '是', value: true },
-        { label: '否', value: false },
-      ],
-      resource_ids: ids('is_student'),
-    },
-    {
-      id: 'q-household',
-      field: 'household_type',
-      kind: 'single',
-      title: '是否已取得低收入戶或中低收入戶資格？',
-      description: '依目前有效的政府核定證明回答。生活困難不等於已核定；不確定可略過。',
-      options: [
-        { label: '低收入戶', value: 'low_income' },
-        { label: '中低收入戶', value: 'mid_low_income' },
-        { label: '一般（未核定）', value: 'general' },
-      ],
-      resource_ids: ids('household_type'),
-    },
-  ];
-  const order = ['age', 'region', 'is_student', 'household_type'];
-  return all.filter(q => q.resource_ids.length > 0).sort((a,b) => order.indexOf(a.field)-order.indexOf(b.field));
+  const adaptive = new Map(items.map(item => [item.id, adaptiveReviewFor(item)]));
+  return questionTemplates.map(template => {
+    const field = template.field;
+    const gateIds = items.filter(item => reviewed.get(item.id)?.requirements.some(r=>r.field===field)).map(i=>i.id);
+    const ids = items.filter(item => ['need_area','explore_context','expense_priority'].includes(field) ? !!adaptive.get(item.id) : adaptive.get(item.id)?.facets.some(f=>f.field===field)).map(i=>i.id);
+    const purpose = gateIds.length ? 'qualification' as const : 'discovery' as const;
+    let options = template.options;
+    if(field === 'region') options = regionOptions([...reviewed.values()].flatMap(row=>row?.requirements.filter(r=>r.field==='region').flatMap(r=>r.values??[])??[]));
+    return {...template, purpose, options, resource_ids:[...new Set([...gateIds,...ids])].sort()};
+  }).filter(q=>q.resource_ids.length>0);
 }
 
 const KINDS = new Set(['single', 'boolean', 'number']);
@@ -105,6 +68,13 @@ export function sanitizeQuestions(value: unknown): Question[] {
       );
     }
     if ((q.kind === 'single' || q.kind === 'boolean') && (!options || options.length === 0)) continue;
+    let depends:Question['depends_on'];
+    if(q.depends_on!==undefined) {
+      if(!q.depends_on||typeof q.depends_on!=='object'||Array.isArray(q.depends_on)) continue;
+      const entries=Object.entries(q.depends_on);
+      if(entries.some(([,values])=>!Array.isArray(values)||!values.length||values.some(v=>typeof v!=='string'&&typeof v!=='boolean'))) continue;
+      depends=Object.fromEntries(entries) as Question['depends_on'];
+    }
     out.push({
       id: q.id,
       field: q.field,
@@ -115,6 +85,10 @@ export function sanitizeQuestions(value: unknown): Question[] {
       min: typeof q.min === 'number' ? q.min : undefined,
       max: typeof q.max === 'number' ? q.max : undefined,
       resource_ids: q.resource_ids as string[],
+      purpose: q.purpose === 'qualification' ? 'qualification' : 'discovery',
+      burden: typeof q.burden === 'number' ? q.burden : 1,
+      situations: Array.isArray(q.situations) && q.situations.every(v=>typeof v==='string') ? q.situations : undefined,
+      depends_on: depends,
     });
   }
   return out;
@@ -138,7 +112,7 @@ export async function loadQuestions(
       const questions = sanitizeQuestions(body);
       const expected = buildLocalQuestions(items);
       const supports = (qs: Question[]) => qs.map(q => `${q.field}:${[...q.resource_ids].sort().join(',')}`).sort().join('|');
-      if (questions.length > 0 && typeof body.version === 'string' && body.version.includes(REVIEW_VERSION) && supports(questions) === supports(expected)) {
+      if (questions.length > 0 && typeof body.version === 'string' && body.version.includes(REVIEW_VERSION) && body.version.includes(ADAPTIVE_VERSION) && body.version.includes(TEMPLATE_VERSION) && supports(questions) === supports(expected)) {
         return { version: typeof body.version === 'string' ? body.version : 'api', questions, origin: 'api' };
       }
     }
@@ -147,7 +121,7 @@ export async function loadQuestions(
   } finally {
     if (timer) clearTimeout(timer);
   }
-  return { version: `local-template-2/${REVIEW_VERSION}`, questions: buildLocalQuestions(items), origin: 'local' };
+  return { version: `local-template-3/${REVIEW_VERSION}/${ADAPTIVE_VERSION}/${TEMPLATE_VERSION}`, questions: buildLocalQuestions(items), origin: 'local' };
 }
 
 /** 依候選資源篩題：只問會影響目前候選的問題。 */
@@ -210,8 +184,10 @@ export function setAnswer(answers: Answers, question: Question, value: string | 
     else delete next.household_type;
   } else if (clear) {
     delete next.extra![field];
+  } else if(validExtraValue(field,value)) {
+    next.extra![field] = value;
   } else {
-    next.extra![field] = value as string | number | boolean;
+    delete next.extra![field];
   }
   if (next.extra && Object.keys(next.extra).length === 0) delete next.extra;
   return next;
