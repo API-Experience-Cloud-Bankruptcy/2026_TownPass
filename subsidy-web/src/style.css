@@ -1375,6 +1375,7 @@ li.wheel__item + li.wheel__item {
 
 @media (prefers-reduced-motion: reduce) {
   .msg, .reply, .bubble__extra, .msg__after { animation: none; }
+  .bubble-more > summary::after { transition: none; }
   .caret, .logo--ring .logo__ink { animation: none; }
 }
 @media (forced-colors: active) {

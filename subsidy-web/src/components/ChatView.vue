@@ -4,6 +4,7 @@
 // 對話紀錄由狀態推導：點自己過去的回答即可回到那一步修改。
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import LogoMark from './LogoMark.vue';
+import { vSmoothDetails } from '../chat/smooth-details';
 import { followBottom, forgetTyped, isTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, MAX_AGE, titleFor } from '../domain/questions';
 import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
@@ -888,7 +889,7 @@ async function onInput() {
 
             <BotMessage v-if="isTyped(resultsKey) && sections.length" :key="sectionsKey" :msg-key="sectionsKey" :lines="[{ text: '另外還有這些，點開可以看：' }]" wide>
               <div class="bubble-groups">
-                <details v-for="s in sections" :key="s.key" class="bubble-more" :open="s.key === 'ineligible' ? state.showIneligible : undefined"
+                <details v-for="s in sections" :key="s.key" v-smooth-details class="bubble-more" :open="s.key === 'ineligible' ? state.showIneligible : undefined"
                   @toggle="s.key === 'ineligible' && (state.showIneligible = ($event.target as HTMLDetailsElement).open)">
                   <summary>{{ s.title }}（{{ s.list.length }}）</summary>
                   <p class="bubble-more__note">{{ s.note }}</p>
