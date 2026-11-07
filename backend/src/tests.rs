@@ -953,6 +953,33 @@ async fn elder_mid_low_income_repro_has_no_likely_identity_gaps_or_closed_items(
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
+#[tokio::test]
+async fn undeclared_identity_items_rank_after_general_items() {
+    let st = state();
+    let p = Profile {
+        age: Some(78.0),
+        region: Some("臺北市".into()),
+        household_type: Some("mid_low_income".into()),
+        applicant_types: vec!["長者".into()],
+        ..Default::default()
+    };
+    let matched = matcher::run_match_at(&st.entries, &p, "2026-11-07");
+    let limited: Vec<bool> = matched
+        .iter()
+        .map(|(_, r)| warns(r, "可能限定身分"))
+        .collect();
+    let first_limited = limited.iter().position(|&x| x).unwrap();
+    assert!(limited[first_limited..].iter().all(|&x| x));
+    let pos = |id: &str| {
+        matched
+            .iter()
+            .position(|(e, _)| e.subsidy.id == id)
+            .unwrap()
+    };
+    assert!(pos("CT-0034") >= first_limited);
+    assert!(pos("CT-0099") >= first_limited);
+}
+
 #[test]
 fn identity_limited_items_warn_until_the_identity_is_declared() {
     let today = "2026-11-07";
