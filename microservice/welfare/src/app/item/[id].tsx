@@ -68,7 +68,7 @@ export default function ItemDetail() {
         <T weight="700" heading={2}>
           要帶什麼
         </T>
-        <Bullets items={item.documents} mark="□" />
+        {item.documents.length > 0 ? <Bullets items={item.documents} mark="□" /> : <T muted>未列出，出發前請先打電話確認</T>}
       </Card>
 
       <Card>

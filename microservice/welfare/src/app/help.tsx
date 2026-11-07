@@ -1,11 +1,11 @@
-import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { Btn, Card, Screen, T } from '@/components/ui-kit';
+import { Btn, Card, Screen, styles as kit, T } from '@/components/ui-kit';
 import { useApp } from '@/lib/app-state';
 import { chosenItems } from '@/lib/chosen';
 import { describeProfile } from '@/lib/describe';
+import { go } from '@/lib/nav';
 import { call } from '@/lib/townpass';
 
 type Helper = 'family' | 'chief' | 'social' | 'hotline';
@@ -128,9 +128,9 @@ export default function Help() {
                 </Pressable>
                 <View style={s.row}>
                   {canShare ? (
-                    <Btn label="分享" variant="primary" disabled={!consent} onPress={share} style={s.flex1} />
+                    <Btn label="分享" variant="primary" disabled={!consent} onPress={share} style={kit.rowBtn} />
                   ) : null}
-                  <Btn label="複製文字" variant={canShare ? 'secondary' : 'primary'} disabled={!consent} onPress={copy} style={s.flex1} />
+                  <Btn label="複製文字" variant={canShare ? 'secondary' : 'primary'} disabled={!consent} onPress={copy} style={kit.rowBtn} />
                 </View>
                 {notice ? (
                   <T role="status" color={colors.accent} weight="600">
@@ -140,7 +140,7 @@ export default function Help() {
               </>
             ) : null}
           </Card>
-          {items.length === 0 ? <Btn label="先查查看可以申請什麼" onPress={() => router.push('/')} /> : null}
+          {items.length === 0 ? <Btn label="先查查看可以申請什麼" onPress={() => go('/')} /> : null}
         </>
       ) : null}
     </Screen>

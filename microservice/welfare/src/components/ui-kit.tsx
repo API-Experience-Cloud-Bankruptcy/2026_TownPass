@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp, type FontLevel } from '@/lib/app-state';
+import { go, goBack } from '@/lib/nav';
 import { inTownPass } from '@/lib/townpass';
 
 export const MAX_WIDTH = 640;
@@ -154,12 +155,20 @@ export function Screen({
   /** Pinned action shown above the help bar, e.g. 下一步. */
   footerAction?: ReactNode;
 }) {
-  const { colors } = useApp();
+  const { colors, loaded } = useApp();
   const insets = useSafeAreaInsets();
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Town Pass shows the service name in its own top bar. Read after mount so the static HTML matches the first render.
   const [hostBar, setHostBar] = useState(false);
   useEffect(() => setHostBar(inTownPass()), []);
+  if (!loaded) {
+    // Answers are restored after mount; showing the page before that flashes wrong results.
+    return (
+      <View style={[styles.root, styles.loading, { backgroundColor: colors.bg }]} role="status" aria-label="載入中">
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <View
@@ -170,7 +179,7 @@ export function Screen({
             <Pressable
               role="button"
               aria-label="回上一頁"
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+              onPress={goBack}
               style={styles.headerBtn}>
               <T weight="600" color={colors.accent}>
                 ‹ 返回
@@ -223,7 +232,7 @@ function HelpBar({ bottomInset }: { bottomInset: number }) {
       nativeID="help-bar"
       style={[styles.helpBar, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: bottomInset + 8 }]}>
       <View style={styles.columnFlat}>
-        <Btn label="請人幫我" variant="primary" onPress={() => router.push('/help')} />
+        <Btn label="請人幫我" variant="primary" onPress={() => go('/help')} />
       </View>
     </View>
   );
@@ -310,6 +319,9 @@ export function Section({ title, children, aside }: { title: string; children: R
 
 export const styles = StyleSheet.create({
   root: { flex: 1, minHeight: '100%' as unknown as number },
+  loading: { alignItems: 'center', justifyContent: 'center' },
+  /** Buttons sharing a row: sized by their label and wrapped onto their own line when the text no longer fits. */
+  rowBtn: { flexGrow: 1, flexShrink: 1, flexBasis: 'auto' },
   header: { borderBottomWidth: 0, paddingHorizontal: 8, paddingBottom: 4 },
   headerInner: {
     flexDirection: 'row',

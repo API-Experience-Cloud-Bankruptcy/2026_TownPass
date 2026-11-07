@@ -1,10 +1,10 @@
-import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { Btn, Card, T } from '@/components/ui-kit';
 import type { WelfareItem } from '@/data/welfare-schema';
 import { useApp } from '@/lib/app-state';
 import type { MatchResult } from '@/lib/match';
+import { go } from '@/lib/nav';
 import { dialNumber, phoneLabel } from '@/lib/phone';
 import { call, openLink } from '@/lib/townpass';
 
@@ -62,7 +62,7 @@ export function ItemCard({ result }: { result: MatchResult }) {
             {result.status === 'match' ? '很可能符合' : '再確認就知道'}
           </T>
         </View>
-        <T size="small" muted style={s.flex1} numberOfLines={1}>
+        <T size="small" muted style={s.flex1}>
           {item.agency}
         </T>
       </View>
@@ -112,7 +112,7 @@ export function ItemCard({ result }: { result: MatchResult }) {
           onPress={() => toggleChosen(item.id)}
           style={s.flex1}
         />
-        <Btn label="詳細說明" variant="ghost" role="link" onPress={() => router.push(`/item/${item.id}`)} />
+        <Btn label="詳細說明" variant="ghost" role="link" onPress={() => go(`/item/${item.id}`)} />
       </View>
     </Card>
   );

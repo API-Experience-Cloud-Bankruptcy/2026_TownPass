@@ -31,7 +31,7 @@ Outside Town Pass (`typeof flutterObject === 'undefined'`), the page falls back 
 | `userinfo` | none | account object, or `[]` | Prefill birth year in the questionnaire | Ask the user |
 | `phone_call` | phone number string | `true`/`false` | 「請人幫我」 → call 1999 or a helper | `tel:` link |
 | `location` | none | position object, or `[]` | Nearby service points | `navigator.geolocation` |
-| `open_link` | URL string | none on success, `false` on `null` | Open an online application page | `window.open` |
+| `open_link` | URL string | none on success, `false` on invalid data | Open an online application page | `window.open` |
 | `launch_map` | map URL string | `true`/`false` | Directions to a counter | Open the map URL |
 
 ### `userinfo`
@@ -168,9 +168,9 @@ Reply:
 | `data` | Meaning |
 |---|---|
 | `true` | The device can dial; the dialer opens right after the reply |
-| `false` | The device cannot dial (for example a tablet without telephony) |
+| `false` | The device cannot dial (for example a tablet without telephony), or `data` is invalid |
 
-Errors: `data: null` replies `false` and then the handler throws, so nothing else happens. Always send a non-empty string.
+Errors: `data` that is not a non-empty string (`null`, a number, an object) or does not form a valid `tel://` URI replies `false` and dials nothing.
 
 ### `open_link`
 
@@ -190,9 +190,21 @@ Errors:
 
 | `data` | Result |
 |---|---|
-| `null` | Reply `{ "name": "open_link", "data": false }` |
+| `null` or not a string | Reply `{ "name": "open_link", "data": false }` |
 | `""` or an unparsable URL | Nothing opens, no reply |
-| Not a string | The handler throws, no reply |
+
+### `launch_map`
+
+Send a map URL string; the App opens it with the system handler when the device can.
+
+```js
+flutterObject.postMessage(JSON.stringify({ name: 'launch_map', data: 'https://www.google.com/maps/dir/?api=1&destination=25.0375,121.5637' }))
+```
+
+| `data` in the reply | Meaning |
+|---|---|
+| `true` | The URL can be opened; it opens right after the reply |
+| `false` | The device cannot open the URL, or `data` is not a string or not a parsable URI |
 
 ## New handlers
 
