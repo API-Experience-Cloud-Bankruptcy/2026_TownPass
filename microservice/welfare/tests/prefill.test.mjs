@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { markAnswered, prefill } from '../src/lib/prefill.ts';
+import { firstUnanswered, markAnswered, prefill } from '../src/lib/prefill.ts';
 
 const QUESTIONS = [
   { id: 'age', kind: 'birthYear', title: '出生年' },
@@ -37,6 +37,19 @@ test('late Town Pass reply fills the shown question only while untouched', () =>
   // Touched (person already ticked 身心障礙 locally): the shown question is left alone.
   assert.deepEqual(prefill(EMPTY, KNOWN, QUESTIONS, ['ids']).profile, { identities: [], birthYear: 1950 });
   assert.deepEqual(prefill(EMPTY, KNOWN, QUESTIONS, ['age']).profile, { identities: ['indigenous'] });
+});
+
+test('firstUnanswered finds skipped and unreached questions', () => {
+  const both = markAnswered(markAnswered(EMPTY, 'age'), 'ids');
+  // Both skipped: age left empty, identities marked unknown.
+  assert.equal(firstUnanswered(QUESTIONS, { ...both, unknownIdentities: ['indigenous', 'disabled'] }), 0);
+  // Age answered, identities skipped.
+  const ageSet = { ...both, profile: { identities: [], birthYear: 1950 } };
+  assert.equal(firstUnanswered(QUESTIONS, { ...ageSet, unknownIdentities: ['indigenous', 'disabled'] }), 1);
+  // Age answered, identities never reached.
+  assert.equal(firstUnanswered(QUESTIONS, { ...ageSet, answered: ['age'] }), 1);
+  // Everything answered, 「以上都沒有」 included.
+  assert.equal(firstUnanswered(QUESTIONS, ageSet), -1);
 });
 
 test('markAnswered records each question once', () => {

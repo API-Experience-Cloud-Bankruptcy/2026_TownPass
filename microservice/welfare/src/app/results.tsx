@@ -6,9 +6,10 @@ import { NearbyPlaces } from '@/components/nearby-places';
 import { Btn, Card, Screen, Section, styles as kit, T } from '@/components/ui-kit';
 import { CATEGORY_LABEL, itemsInCategories, WELFARE_ITEMS } from '@/data';
 import { useApp } from '@/lib/app-state';
-import { describeProfile, resultsSpeech } from '@/lib/describe';
+import { describeProfile } from '@/lib/describe';
 import { matchAll } from '@/lib/match';
 import { go } from '@/lib/nav';
+import { resultsSpeech, resultsTitle } from '@/lib/results-text';
 import { canSpeak, speak, stopSpeaking } from '@/lib/speech';
 
 export default function Results() {
@@ -55,8 +56,11 @@ export default function Results() {
       }>
       <View style={s.top}>
         <T size="title" heading={1}>
-          {total > 0 ? `找到 ${total} 項你可能可以申請的福利` : '目前沒有找到符合的福利'}
+          {resultsTitle(groups.match, groups.maybe)}
         </T>
+        {groups.match.length === 0 && groups.maybe.length > 0 ? (
+          <Btn label="繼續回答" variant="primary" onPress={() => go('/quiz?resume=1')} />
+        ) : null}
         {categories.length > 0 ? (
           <T muted>查的類別：{categories.map((c) => CATEGORY_LABEL[c]).join('、')}</T>
         ) : null}
