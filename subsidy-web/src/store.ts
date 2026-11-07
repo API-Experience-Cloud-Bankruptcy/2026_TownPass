@@ -27,7 +27,7 @@ import { filterCatalog, SITUATIONS } from './domain/situations';
 import type { Answers, LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
 import { validFactValue, type CandidateFact } from './chat/interpretation';
 import { ActionPlanSync, savedPlan } from './domain/action-plan';
-import { resetTyped } from './chat/typing';
+import { forgetTyped, resetTyped } from './chat/typing';
 
 export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help' | 'browse';
 
@@ -275,7 +275,8 @@ export function requestTarget(target: Target): void {
     pendingSwitch.value = target;
     return;
   }
-  if (state.session.target !== target) resetPerson(target);
+  // 在招呼這一步選對象：對話接著往下長，招呼語不重打。
+  if (state.session.target !== target) resetPerson(target, state.view === 'home');
   go('needs');
 }
 
@@ -293,20 +294,26 @@ export function confirmPending(): void {
   pendingDestination.value = 'home';
   if (pending === 'clear') clearAllData();
   else if (pending) {
-    resetPerson(pending);
+    resetPerson(pending, destination !== 'home' && state.view === 'home');
     if (destination !== 'home') go(destination);
     state.notice = '已換人並清除前一位的查詢答案；自己的行動單已保留。';
   }
 }
 
-/** 換人只清除查詢，自己的行動單獨立保留。 */
-export function resetPerson(target: Target | null): void {
+/**
+ * 換人只清除查詢，自己的行動單獨立保留。
+ * keepGreeting：在招呼那一步直接選對象時，沿用同一段對話（不重新掛載、招呼語不重播），只清掉之後的訊息。
+ */
+export function resetPerson(target: Target | null, keepGreeting = false): void {
   if (state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
   for (const id of Object.keys(otherStepDone)) delete otherStepDone[id];
   pendingResume.value = false;
   lastChatView = 'home';
-  conversationEpoch.value += 1;
-  resetTyped();
+  if (keepGreeting) forgetTyped((key) => key === 'greet');
+  else {
+    conversationEpoch.value += 1;
+    resetTyped();
+  }
   const version = state.session.catalogVersion;
   const rulesVersion = state.session.rulesVersion;
   const engineVersion=state.session.engineVersion;
