@@ -1,7 +1,7 @@
 # 申請表欄位（form_fields）對接指南
 
 適用對象：subsidy-web（前端）、Flutter 殼（Dart）、後端維護者。
-狀態：資料已產出；`clean-ver` 已整合 PDF 路由與資源詳情的「申請表與填寫」入口。僅明確確認的本人資料可填入，未涵蓋實機分享或逐份表單位置驗收。
+狀態：資料已產出；`clean-ver` 已整合 PDF 路由與資源詳情的「申請表與填寫」入口。按「一鍵填好申請表」即以城市通本人資料填入（僅限替本人申請），未涵蓋實機分享或逐份表單位置驗收。
 
 ## 0. 結論
 
@@ -20,7 +20,7 @@
 | 收緊預填 | `backend/tools/form_fields/audit_prefill.py` | 只保留申請人本人的預填，簽名一律不預填 |
 | 服務 | 後端 `include_str!` 內嵌 JSON，或 `SUBSIDY_DATA` 環境變數覆寫 | 資料變更需重建後端 |
 | 前端 | subsidy-web 快照 + `/api/catalog` | 讀取 `application.form_fields` |
-| 填寫 | subsidy-web（建議）| 讀 PDF、依 `box` 畫字、使用者確認後產生 bytes |
+| 填寫 | subsidy-web（建議）| 讀 PDF、依 `box` 畫字、使用者按下一鍵填寫後產生 bytes |
 | 分享 | `sharePdf()`（`src/townpass/index.ts`）→ Dart `share_pdf` | 呼叫系統分享面板 |
 
 ## 2. 資料結構
@@ -104,7 +104,7 @@
 2. `prefill_key` 對應個人資料：
    - `name` → 姓名；`national_id` → 身分證字號；`phone` → 電話（`variant: home` 為住家）；`mobile` → 手機；`address` → 地址；`gender` → 性別。
    - 若有 `preprinted_prefix`，寫入前先去掉前綴。
-3. **值必須來自使用者自己輸入或確認的資料**，app 不得從其他人的資料或快照猜測。寫入前要顯示預覽，讓使用者逐項確認。資料中的 `subject` 是啟發式判斷，不能取代使用者確認。
+3. **值必須來自使用者本人的城市通帳號資料**，且只在使用者按下「一鍵填好申請表」時讀取；app 不得從其他人的資料或快照猜測。資料中的 `subject` 是啟發式判斷，只填 `applicant` 欄位。
 4. `signature_policy.requires_handwritten === true` 的文件：即使印刷姓名欄看似可填，資料端也已擋下；app 應提示「此表需親筆簽名」，不要代填。
 5. 附件（`attachments`）與主表單同樣適用本節規則，並讓使用者選擇要產生哪幾份。
 6. 性別只有 6 筆、且以文字欄為主。若表單是「□男 □女」勾選，目前不會預填，應由使用者勾選。
@@ -263,16 +263,15 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 | 檔案 | 作用 |
 |---|---|
 | `src/domain/form-fields.ts` | 讀 `application.form_fields`（逐欄驗證，壞資料丟棄）、`formAvailability(item)` 判斷這筆資源能不能填、`fetchFormPdf` 取回空白 PDF |
-| `src/domain/form-profile.ts` | 本人資料：城市通 `Account` → 待確認草稿、格式驗證、`confirmProfile`（只留下已勾選確認且格式通過的值） |
+| `src/domain/form-profile.ts` | 本人資料：城市通 `Account` → 草稿、格式驗證、`profileFromAccount`（一鍵填寫用，只留下格式通過的值） |
 | `src/domain/form-fill.ts` | 填寫引擎：`planFill`（純函式，決定填什麼）、`fillForm`（pdf-lib 畫字，含旋轉頁、CropBox、縮字、關閉字形替換） |
 | `src/domain/form-fill-client.ts` | 串起「取 PDF + 載字型 + 填寫 + 包成 File」：`createFilledForm` |
-| `src/components/FormProfileConfirm.vue` | 本人資料確認 UI（帶入城市通資料、逐項確認） |
-| `src/components/FormFillPanel.vue` | 一筆資源的完整填表面板（選表單 → 確認 → 填寫 → 核對 → 下載／分享） |
+| `src/components/FormFillPanel.vue` | 一筆資源的完整填表面板（選表單 → 一鍵填好申請表 → 下載／分享） |
 | `src/domain/__tests__/form-fill.test.ts`、`form-components.test.ts` | 規則、真實資料、真實 PDF、元件渲染的測試 |
 
 ### 12.2 掛載
 
-`DetailView.vue` 已提供「申請表與填寫」展開入口，按需載入組件及 PDF 函式庫；關閉、切換資源或查詢對象後會清除面板與本人資料。編輯或取消任何確認會立即撤銷舊確認、舊 PDF 與尚未完成的產生結果，必須重新確認。
+`DetailView.vue` 已提供「申請表與填寫」展開入口，按需載入組件及 PDF 函式庫；關閉、切換資源或查詢對象後會清除面板與本人資料。換表單、換資源或換對象會立即作廢舊 PDF 與尚未完成的產生結果。
 
 ```vue
 <!-- DetailView.vue，建議放在「想申請的話」之後 -->
@@ -289,8 +288,8 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 ### 12.3 隱私規則（已寫進程式與測試，改動前請先討論）
 
 - **只有替本人申請**（`target === 'self'`）才會帶入或填寫任何個人資料。`planFill` 對 `other`／`null` 一律不填，元件也不顯示帶入按鈕。
-- **城市通 userinfo 只用於填表**，不進資格判斷。`session.ts` 開頭「不讀取 TownPass userinfo 作為任何人的資格條件」仍然成立：`FormProfileConfirm` 只在使用者按下「從城市通帶入我的資料」時才呼叫 `getUserInfo()`，且資料不流向 `answers`、`results` 或任何資格邏輯。
-- **逐項確認**：帶入的值只是草稿。每項要使用者自己勾「確認這是我本人的…」才會填；修改內容會自動取消該項確認。
+- **城市通 userinfo 只用於填表**，不進資格判斷。`session.ts` 開頭「不讀取 TownPass userinfo 作為任何人的資格條件」仍然成立：`FormFillPanel` 只在使用者按下「一鍵填好申請表」時才呼叫 `getUserInfo()`，且資料不流向 `answers`、`results` 或任何資格邏輯。
+- **一鍵填寫**：不再逐項確認；城市通資料中格式通過的項目直接填入，格式不符的略過。性別不從身分證推測，因此不會自動填。
 - **只存在記憶體**：不寫 sessionStorage／localStorage、不送後端、不放進網址或 log。換資源、換人、換表單時，已填好的檔案會被丟棄並釋放 object URL。
 - **簽名欄、代理人、受款人、家庭成員、主體不明的欄位永遠不填**；寫明親簽的表單會顯示提醒，並且簽名旁的印刷姓名欄也不填。
 - 性別不從身分證字號推測（城市通沒有性別欄位），由使用者自己選。

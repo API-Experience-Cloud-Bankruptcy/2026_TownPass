@@ -1,12 +1,12 @@
 // 申請人「本人」資料：只供填申請表，不參與任何資格判斷。
-// 來源是城市通 userinfo（使用者按下才讀取），每一項都要使用者逐項確認才會被填寫。
+// 來源是城市通 userinfo（使用者按下「一鍵填好申請表」才讀取），格式通過的項目直接填入。
 // 只存在記憶體；不寫入 sessionStorage／localStorage，不送後端。
 
 import type { Account } from '../townpass';
 
 export type ProfileKey = 'name' | 'nationalId' | 'gender' | 'mobile' | 'homePhone' | 'registeredAddress' | 'contactAddress';
 export type ProfileValues = Partial<Record<ProfileKey, string>>;
-/** 只含使用者已逐項確認、且格式通過的值。填寫引擎只接受這個型別。 */
+/** 只含格式通過、已正規化的值。填寫引擎只接受這個型別。 */
 export type ConfirmedProfile = Readonly<ProfileValues>;
 
 export interface ProfileFieldSpec { key: ProfileKey; label: string; hint: string; inputmode?: 'text' | 'tel'; options?: { value: string; label: string }[] }
@@ -71,4 +71,10 @@ export function confirmProfile(values: ProfileValues, confirmed: Partial<Record<
     out[spec.key] = spec.key === 'nationalId' ? raw.toUpperCase() : spec.key === 'mobile' ? normalizeMobile(raw) : raw;
   }
   return Object.freeze(out);
+}
+
+/** 一鍵填寫：城市通帳號資料中格式通過的項目全部採用。 */
+export function profileFromAccount(account: Account | null | undefined): ConfirmedProfile {
+  const draft = draftFromAccount(account);
+  return confirmProfile(draft, Object.fromEntries(Object.keys(draft).map((k) => [k, true])));
 }

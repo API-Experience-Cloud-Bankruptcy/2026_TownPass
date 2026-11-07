@@ -1,30 +1,36 @@
 <script setup lang="ts">
-// 一筆資源的「填寫申請表」面板：選表單 → 確認本人資料 → 預覽已填 PDF → 下載／分享。
+// 一筆資源的「填寫申請表」面板：選表單 → 一鍵帶入城市通資料並產生 PDF → 下載／分享。
 // 由資源詳情按需載入，關閉面板即釋放本人資料與 PDF。
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { createFilledForm, type FilledForm } from '../domain/form-fill-client';
 import { formAvailability, formPdfUrl } from '../domain/form-fields';
-import type { ConfirmedProfile } from '../domain/form-profile';
+import { profileFromAccount } from '../domain/form-profile';
 import { sharePdfFile } from '../domain/pdf-file';
 import type { Subsidy, Target } from '../domain/types';
-import { isInTownPass } from '../townpass';
+import { getUserInfo, isInTownPass, type Account } from '../townpass';
 import ExternalLink from './ExternalLink.vue';
-import FormProfileConfirm from './FormProfileConfirm.vue';
 
-const props = defineProps<{ item: Subsidy; target: Target | null }>();
+const props = withDefaults(defineProps<{
+  item: Subsidy;
+  target: Target | null;
+  /** 測試或呼叫端可替換；預設走城市通橋接。 */
+  loadAccount?: () => Promise<Account | null>;
+}>(), { loadAccount: getUserInfo });
 
 const availability = computed(() => formAvailability(props.item));
 const forms = computed(() => (availability.value.kind === 'fillable' ? availability.value.forms : []));
 const selectedId = ref('');
 const form = computed(() => forms.value.find((f) => f.id === selectedId.value) ?? forms.value[0] ?? null);
-const profile = ref<ConfirmedProfile | null>(null);
 const busy = ref(false);
 const sharing = ref(false);
 const status = ref('');
 const result = ref<FilledForm | null>(null);
 const pdfUrl = ref('');
-const blankUrl = computed(() => (form.value?.entry.localFile ? formPdfUrl(form.value.entry.localFile) : null));
-const canFill = computed(() => props.target === 'self' && !!profile.value && Object.keys(profile.value).length > 0);
+// 轉成完整網址：App 內要交給原生開新頁，相對路徑在那裡無法解析。
+const blankUrl = computed(() => {
+  const path = form.value?.entry.localFile ? formPdfUrl(form.value.entry.localFile) : null;
+  return path ? new URL(path, typeof location === 'undefined' ? 'http://localhost/' : location.href).href : null;
+});
 let revision = 0;
 let mounted = true;
 
@@ -43,24 +49,27 @@ function release() {
   result.value = null;
 }
 // 換表單、換資源、換人或資料變動：舊的已填檔不可留著被分享。
-watch([selectedId, profile], () => { revision++; release(); status.value = ''; }, { flush: 'sync' });
+watch(selectedId, () => { revision++; release(); status.value = ''; }, { flush: 'sync' });
 watch([() => props.item, () => props.target], () => {
-  revision++; release(); status.value = ''; selectedId.value = ''; profile.value = null;
+  revision++; release(); status.value = ''; selectedId.value = '';
 }, { deep: true, flush: 'sync' });
 onBeforeUnmount(() => { mounted = false; revision++; release(); });
 
 async function generate() {
-  if (busy.value || !form.value || !profile.value || !canFill.value) return;
+  if (busy.value || !form.value || props.target !== 'self') return;
   const current = revision;
   busy.value = true;
-  status.value = '正在填寫表單，第一次需載入中文字型。';
+  status.value = '正在讀取城市通資料並填寫，第一次需載入中文字型。';
   try {
-    const out = await createFilledForm(form.value, profile.value, props.target);
+    const profile = profileFromAccount(await props.loadAccount());
+    if (!mounted || current !== revision) return;
+    if (!Object.keys(profile).length) { status.value = '城市通沒有可帶入的資料（可能尚未登入），請開啟空白表單自行填寫。'; return; }
+    const out = await createFilledForm(form.value, profile, props.target);
     if (!mounted || current !== revision) return;
     release();
     result.value = out;
     pdfUrl.value = URL.createObjectURL(out.file);
-    status.value = '已填好。請先開啟 PDF 逐欄核對，再下載或分享。';
+    status.value = isInTownPass() ? '已用你的城市通資料填好，可以下載或分享。' : '目前不在城市通內，填入的是模擬資料。';
   } catch (e) {
     if (mounted && current === revision) status.value = e instanceof Error && e.message ? `填寫失敗：${e.message}` : '填寫失敗，請重新嘗試。';
   } finally { busy.value = false; }
@@ -97,20 +106,18 @@ async function share() {
         <p v-else class="muted">{{ form.label }}</p>
         <p v-if="form.entry.requiresHandwritten" class="alert">這份表單要求本人親筆簽名；本服務不會代簽。填好後請列印，並由本人親自簽名。<span v-if="form.entry.handwrittenEvidence[0]" class="muted selectable">原文：{{ form.entry.handwrittenEvidence[0] }}</span></p>
         <p v-if="form.entry.fields.some(f => f.blocked_reason === 'position_unverified')" class="alert">這份表單的姓名欄位置尚待確認，會保留空白，請自行手寫。</p>
-        <p class="muted">本服務只幫你把已確認的本人資料填進格子，其餘欄位、勾選和簽名請自行完成。填好的檔案不是核准或送件證明；請以官方最新版表單為準。</p>
-        <a v-if="blankUrl" :href="blankUrl" target="_blank" rel="noopener" class="btn btn--text">開啟空白表單<span class="sr-only">（新視窗）</span></a>
+        <p class="muted">按下按鈕會用你的城市通帳號資料（姓名、身分證、手機、地址）填進格子並產生 PDF；資料只在這台裝置上處理，不會上傳。其餘欄位、勾選和簽名請自行完成。填好的檔案不是核准或送件證明；請以官方最新版表單為準。</p>
+        <ExternalLink v-if="blankUrl" :url="blankUrl" label="開啟空白表單" />
       </div>
-
-      <FormProfileConfirm :key="`${item.id}:${target}`" :target="target" @confirmed="profile = $event" @cleared="profile = null" />
 
       <div v-if="target === 'self'" class="actions card" :aria-busy="busy">
-        <button type="button" class="btn btn--primary btn--block" :disabled="busy || !canFill" @click="generate">{{ busy ? '正在填寫…' : result ? '重新填寫' : '填入已確認的資料' }}</button>
-        <p v-if="!canFill" class="muted">先在上方確認至少一項本人資料。</p>
+        <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="generate">{{ busy ? '正在填寫…' : result ? '重新產生' : '一鍵填好申請表' }}</button>
       </div>
+      <p v-else class="alert">目前不是替自己申請，不會自動填入任何個人資料。請改用「本人」，或把空白表單列印後手寫。</p>
       <p class="status-text note" role="status" aria-live="polite">{{ status }}</p>
 
       <section v-if="result" class="actions card" aria-labelledby="form-fill-result-h">
-        <h3 id="form-fill-result-h" class="sub-title">請核對已填結果</h3>
+        <h3 id="form-fill-result-h" class="sub-title">已填好</h3>
         <ul>
           <li>已填入 {{ result.summary.drawn }} 欄。</li>
           <li v-if="result.summary.signatures">{{ result.summary.signatures }} 處簽名／蓋章欄未填，請本人簽署。</li>
@@ -120,7 +127,7 @@ async function share() {
             「{{ s.field.label || '未命名欄位' }}」{{ s.reason === 'too_wide' ? '內容太長放不進格子，請手寫。' : '表單已印好的地址前綴與你的地址不同，請手寫。' }}
           </li>
         </ul>
-        <p class="muted">欄位位置由程式推算，個別表單可能有偏差，列印前請放大逐欄確認。</p>
+        <p class="muted">欄位位置由程式推算，個別表單可能有偏差，列印前建議開啟 PDF 看一下。</p>
         <div class="share__grid">
           <button v-if="isInTownPass()" type="button" class="btn btn--primary" :disabled="sharing" @click="share">{{ sharing ? '等待手機分享…' : '儲存／分享 PDF' }}</button>
           <a :href="pdfUrl" :download="result.file.name" class="btn" :class="{ 'btn--primary': !isInTownPass() }">下載 PDF</a>
@@ -136,7 +143,7 @@ async function share() {
 
     <div v-else-if="availability.kind === 'external'" class="actions card">
       <p>{{ EXTERNAL_TEXT[availability.status] ?? '本服務不能自動填寫這份表單。' }}</p>
-      <ExternalLink v-if="availability.url" :url="availability.url" label="前往官方表單或入口" tag="官方" />
+      <ExternalLink v-if="availability.url" :url="availability.url" label="前往官方表單或入口" />
       <p v-if="availability.reason" class="muted selectable">{{ availability.reason }}</p>
     </div>
     <div v-else class="actions card">

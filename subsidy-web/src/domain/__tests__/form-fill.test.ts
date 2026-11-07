@@ -2,7 +2,7 @@ import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it, vi } from 'vitest';
 import { fetchFormPdf, formAvailability, formPdfUrl, type FormEntry, type FormField } from '../form-fields';
 import { fillForm, isAutoFillable, manualSummary, planFill } from '../form-fill';
-import { confirmProfile, draftFromAccount, normalizeMobile, validateProfileValue } from '../form-profile';
+import { confirmProfile, draftFromAccount, normalizeMobile, profileFromAccount, validateProfileValue } from '../form-profile';
 import { realItem, realItems } from './real-data';
 
 // 專案沒有 Node 型別：用變數當模組名動態載入 node:fs，避免型別錯誤，也不放寬 Vite 的檔案存取限制。
@@ -37,6 +37,11 @@ describe('本人資料確認', () => {
     expect(draft).toEqual({ name: '金大森', nationalId: 'A223456789', mobile: '0912345678', registeredAddress: '臺北市信義區市府路1號', contactAddress: '臺北市大安區和平東路二段2號' });
     expect(draft.gender).toBeUndefined();
     expect(draftFromAccount(null)).toEqual({});
+  });
+  it('一鍵填寫：城市通資料格式通過的項目直接採用，格式錯的略過', () => {
+    const p = profileFromAccount({ realName: '金大森', idNo: 'a223456789', phoneNo: '123', residentAddress: '臺北市信義區市府路1號', addresses: [] } as never);
+    expect(p).toEqual({ name: '金大森', nationalId: 'A223456789', registeredAddress: '臺北市信義區市府路1號' });
+    expect(profileFromAccount(null)).toEqual({});
   });
   it('格式驗證', () => {
     expect(validateProfileValue('nationalId', 'A12345678')).not.toBe('');
