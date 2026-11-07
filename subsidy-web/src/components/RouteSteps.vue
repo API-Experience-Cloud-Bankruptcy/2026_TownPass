@@ -1,9 +1,10 @@
 <script setup lang="ts">
+// 詳情頁的辦理方式：唯讀。實際一步一步勾選在本人行動單（PlanItemView）。
 import { computed } from 'vue';
-import { buildRoute, SOURCE_KIND_LABEL } from '../domain/route';
+import { buildRoute } from '../domain/route';
 import type { Subsidy } from '../domain/types';
-import { currentStepIndex, progressText, sourceExcerpt } from '../presentation';
-import { detailAnswers, inPlan, openHelp, otherStepDone, state, toggleStep } from '../store';
+import { sourceExcerpt } from '../presentation';
+import { detailAnswers } from '../store';
 import ExternalLink from './ExternalLink.vue';
 
 /** hideDeadline：詳情頁已在「要先注意」列出期限時不重複。 */
@@ -13,67 +14,26 @@ const documentGroups = computed(() => [
   { label: '地區或判斷依據待確認', documents: route.value.pendingDocuments },
   { label: '其他縣市的規定', documents: route.value.otherDocuments },
 ].filter((group) => group.documents.length));
-const done = computed(() => new Set((state.detailTarget === 'other' ? otherStepDone : state.personalPlan.stepDone)[props.item.id] ?? []));
-const canCheck = computed(() => state.detailTarget === 'other' || inPlan(props.item.id));
 const total = computed(() => route.value.steps.length);
-const current = computed(() => currentStepIndex(total.value, done.value));
-const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.has(i)).length);
 </script>
 
 <template>
-  <section class="next card" :aria-labelledby="`next-h-${item.id}`">
-    <h2 :id="`next-h-${item.id}`" class="sr-only">辦理步驟</h2>
-    <template v-if="total && current >= 0">
-      <p class="next__head">
-        <span class="dot dot--on" aria-hidden="true">{{ current + 1 }}</span>
-        <span>下一步・{{ progressText(doneCount, total) }}</span>
-      </p>
-      <p class="next__text">{{ sourceExcerpt(route.steps[current] ?? '') }}</p>
-      <details v-if="sourceExcerpt(route.steps[current] ?? '') !== route.steps[current]" class="more">
-        <summary>這一步的完整原文</summary>
-        <div class="more__body"><p class="selectable">{{ route.steps[current] }}</p></div>
-      </details>
-      <p v-if="sourceExcerpt(route.steps[current] ?? '') !== route.steps[current]" class="muted">以上為原文節錄，完整要求請展開確認。</p>
-      <div class="actions">
-        <button v-if="canCheck" type="button" class="btn btn--block" @click="toggleStep(item.id, current)">這步準備好了</button>
-        <button type="button" class="btn btn--text" @click="openHelp(item.id, route.steps[current])">這一步做不到</button>
-      </div>
-      <p class="muted">勾選只記錄準備，不會送件</p>
-    </template>
-    <template v-else-if="total">
-      <p class="next__head"><span class="dot dot--done" aria-hidden="true">✓</span><span>{{ progressText(doneCount, total) }}</span></p>
-      <p>請照官方方式送件，並留下收件證明。這裡的勾選不代表已受理。</p>
-    </template>
-    <template v-else>
-      <p class="next__text">原文沒有列出辦理步驟，請先問承辦窗口</p>
-      <button type="button" class="btn btn--text" @click="openHelp(item.id)">不知道怎麼問</button>
-    </template>
-    <p v-if="route.deadline && !hideDeadline" class="note">期限：{{ route.deadline }}</p>
-  </section>
-
   <div class="more-group card card--list">
-    <details v-if="total" class="more">
-      <summary>全部步驟（{{ total }}）</summary>
+    <details class="more">
+      <summary>辦理步驟（{{ total || '原文未列' }}）</summary>
       <div class="more__body">
-        <p class="muted">勾選只記錄你的準備，不代表送件</p>
-        <ol class="steps">
+        <p v-if="!total">原文沒有列出辦理步驟，請先問承辦窗口。</p>
+        <ol v-else class="steps steps--numbered">
           <li v-for="(step, i) in route.steps" :key="i">
-            <label class="check">
-              <input type="checkbox" :checked="done.has(i)" :disabled="!canCheck" @change="toggleStep(item.id, i)" />
-              <span class="check__body">
-                <span>{{ i + 1 }}. {{ sourceExcerpt(step) }}</span>
-              </span>
-            </label>
+            <p>{{ i + 1 }}. {{ sourceExcerpt(step) }}</p>
             <details v-if="sourceExcerpt(step) !== step" class="more">
               <summary>第 {{ i + 1 }} 步完整原文</summary>
               <div class="more__body"><p class="selectable">{{ step }}</p></div>
             </details>
-            <button v-if="i !== current" type="button" class="btn btn--text" @click="openHelp(item.id, step)">
-              做不到<span class="sr-only">：{{ step }}</span>
-            </button>
           </li>
         </ol>
-        <p v-if="!route.splitFromArrow" class="muted">原文沒有分步，整段列出</p>
+        <p v-if="total && !route.splitFromArrow" class="muted">原文沒有分步，整段列出</p>
+        <p v-if="route.deadline && !hideDeadline" class="note">期限：{{ route.deadline }}</p>
       </div>
     </details>
 
@@ -122,7 +82,7 @@ const doneCount = computed(() => route.value.steps.filter((_, i) => done.value.h
         </dl>
         <ul v-if="route.links.length" class="link-list">
           <li v-for="l in route.links" :key="l.kind">
-            <ExternalLink :url="l.url" :label="l.label" :tag="SOURCE_KIND_LABEL[l.sourceKind]" />
+            <ExternalLink :url="l.url" :label="l.label" />
           </li>
         </ul>
         <p v-if="route.rejectedUrls" class="muted">有 {{ route.rejectedUrls }} 個網址格式不安全，已略過</p>

@@ -579,11 +579,6 @@ legend {
   font-weight: var(--fw-medium);
   text-underline-offset: 3px;
 }
-.ext__meta {
-  font-size: var(--fs-small);
-  font-weight: var(--fw-regular);
-  color: var(--muted);
-}
 .ext__fallback {
   font-size: var(--fs-small);
 }
@@ -1562,4 +1557,248 @@ li.wheel__item + li.wheel__item {
 .pdf-preview { width: 100%; height: 65vh; min-height: 320px; border: 1px solid var(--line); }
 @media print {
   .checklist-view { display: none; }
+}
+
+/* 行動單列表：一張行動單一個方框 */
+.plan-cards {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.plan-cards > li {
+  margin: 0;
+}
+.plan-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--touch);
+  padding: var(--space-4) calc(var(--space-4) + 20px) var(--space-4) var(--space-4);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.plan-card:active {
+  background: var(--accent-soft);
+}
+.plan-card--doing {
+  border-color: var(--reply-line);
+}
+.plan-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.plan-card__title {
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.plan-card__badge,
+.task-head__badge {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--raised);
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+.plan-card--doing .plan-card__badge,
+.task-head__badge--doing {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.plan-card--done .plan-card__badge,
+.task-head__badge--done {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.plan-card--no-steps .plan-card__badge,
+.task-head__badge--no-steps {
+  background: var(--highlight-soft);
+  color: var(--on-highlight);
+}
+.task-head__badge {
+  justify-self: start;
+}
+.plan-card__next {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+  overflow-wrap: anywhere;
+}
+.plan-card--done .plan-card__title {
+  color: var(--text-2);
+}
+.plan-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+}
+.plan-card__flag {
+  color: var(--danger);
+}
+.plan-card__chev {
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: var(--fs-section);
+}
+.plan-empty {
+  text-align: center;
+}
+.plan-empty__title {
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+}
+
+/* 進度條：裝飾為主，數字另以文字呈現 */
+.progress {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  overflow: hidden;
+}
+.progress--lg {
+  height: 10px;
+}
+.progress__bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--dur) var(--ease);
+}
+
+/* 單張行動單 */
+.task-head__detail {
+  justify-content: space-between;
+}
+.task-steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+}
+.task-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--touch) minmax(0, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+  padding-bottom: var(--space-4);
+}
+/* 步驟之間的連接線 */
+.task-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: var(--touch);
+  bottom: 0;
+  left: calc(var(--touch) / 2 - 1px);
+  width: 2px;
+  background: var(--line-strong);
+}
+.task-step.is-done:not(:last-child)::before {
+  background: var(--accent);
+}
+.task-step__mark {
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.task-step.is-current .task-step__mark {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.task-step.is-done .task-step__mark {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.task-step__body {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-top: 12px;
+}
+.task-step__text {
+  overflow-wrap: anywhere;
+}
+.task-step__text:focus {
+  outline: none;
+}
+.task-step__text:focus-visible {
+  outline: 3px solid var(--focus);
+}
+.task-step.is-current .task-step__text {
+  font-size: var(--fs-section);
+  font-weight: var(--fw-medium);
+  line-height: 1.5;
+}
+.task-step.is-done .task-step__text {
+  color: var(--muted);
+}
+.task-step__now {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+}
+.task-step__actions {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+.task-step__actions .btn--block {
+  justify-self: stretch;
+}
+.more--inline > summary {
+  min-height: var(--touch);
+  font-size: var(--fs-small);
+}
+.task-done {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+.task-done__title {
+  font-weight: var(--fw-bold);
+  color: var(--accent);
+}
+.task-remove {
+  justify-self: center;
+  color: var(--danger);
+}
+.steps--numbered p {
+  margin: 0;
 }

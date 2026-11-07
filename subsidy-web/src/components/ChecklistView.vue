@@ -4,7 +4,7 @@ import { buildChecklist } from '../domain/checklist';
 import { mergeDocuments } from '../domain/documents';
 import { copyText, type PlanInput } from '../domain/export';
 import { sharePdfFile } from '../domain/pdf-file';
-import { conditionLines, otherStepDone, pickConditions, results, state } from '../store';
+import { conditionLines, pickConditions, results, state } from '../store';
 import type { Subsidy } from '../domain/types';
 import { isInTownPass } from '../townpass';
 
@@ -17,7 +17,7 @@ const generatedAt = new Date();
 const input = computed<PlanInput>(() => ({
   meta: { catalogVersion: state.catalog?.version ?? '未載入', sourceLabel: state.catalog?.sourceLabel ?? '未載入', generatedAt },
   target: 'other', items: planItems.value, results: results.value,
-  conditions: pickConditions(included.value), docChecks: docChecks.value, stepDone: { [props.item.id]: otherStepDone[props.item.id] ?? [] }, documentAnswers: state.session.answers,
+  conditions: pickConditions(included.value), docChecks: docChecks.value, stepDone: {}, documentAnswers: state.session.answers,
 }));
 const checklist = computed(() => buildChecklist(input.value));
 const merged = computed(() => mergeDocuments(planItems.value, state.session.answers));

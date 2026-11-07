@@ -263,6 +263,8 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 行動單持久化：`domain/action-plan.ts` 透過 `/api/personal-action-plan` 讀寫 SQLite 的 `personal_action_plans`，本人行動單狀態為 `state.personalPlan`，與查詢 `state.session` 分開，舊 `/api/action-plan` 及資料表保留相容，僅保存資源與準備進度，不傳資格答案／聊天原句。後端須明確啟用 `DEMO_MODE=1`；App、瀏覽器與 DB 共用 `assets/mock_data/account.json` 的虛擬測試者，非正式台北通登入。資料欄位與限制見 `../docs/townpass-profile.md`。保存狀態以後端回覆為準，revision 衝突不得靜默覆寫。`../scripts/install_macos_service.py --demo` 將 DB 放在 release 以外的持久目錄。
 
+行動單畫面：`PlanView.vue` 只列方框，一張行動單＝一筆補助，依進行中／還沒開始／待問窗口／已完成排序，底部可匯出全部。點進去是 `PlanItemView.vue`（view `planItem`、`state.planItemId`）：各自的辦理步驟（逐步完成、可取消、焦點移到下一步）、該筆文件勾選、去哪裡辦、申請表、單張匯出與移除；「看補助詳細內容」才開 `DetailView`，兩頁互相返回不疊層。進度計算在 `domain/plan-progress.ts`。詳情頁的步驟是唯讀；步驟進度只記在本人行動單，移除行動單會一併清除該筆步驟進度。
+
 頂部品牌／分頁與底部對話輸入列不參與內容捲動；對話在 `.chat__log` 捲動，一般頁在 `.app-main` 捲動。返回找資源時提供續接選擇，初始招呼頁除外；開新對話保留行動單，換人只清除查詢；清除全部才清除本人行動單。
 
 UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊查詢答案，保留獨立的本人行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。

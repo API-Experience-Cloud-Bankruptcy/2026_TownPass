@@ -7,6 +7,7 @@ import {
   startQuestions, state, tab,
   pendingResume, continueConversation, newConversation, conversationEpoch,
   openDetail, togglePlan, toggleStep, planResults, detailAnswers, clearAllData,
+  openPlanItem, removeFromPlan, resetSteps,
 } from '../store';
 
 beforeEach(() => {
@@ -47,6 +48,40 @@ describe('逐頁找資源', () => {
     expect(state.personalPlan.planIds).toEqual(['housing']);
     expect(state.personalPlan.stepDone).toEqual({ housing: [0] });
     expect(planResults.value.get('housing')).toBeDefined();
+  });
+  it('本人還沒加入行動單就打勾步驟：自動加入並記下進度', () => {
+    tab('browse'); openDetail('housing');
+    expect(state.detailTarget).toBe('self');
+    toggleStep('housing', 0);
+    expect(state.personalPlan.planIds).toEqual(['housing']);
+    expect(state.personalPlan.stepDone).toEqual({ housing: [0] });
+  });
+  it('行動單列表進到單張行動單，詳情與行動單互相返回不疊層', () => {
+    state.personalPlan.planIds = ['housing', 'study'];
+    tab('plan'); openPlanItem('housing');
+    expect(state.view).toBe('planItem'); expect(state.planItemId).toBe('housing');
+    toggleStep('housing', 0); toggleStep('housing', 1);
+    expect(state.personalPlan.stepDone).toEqual({ housing: [0, 1] });
+    openDetail('housing'); expect(state.view).toBe('detail'); expect(state.detailTarget).toBe('self');
+    openPlanItem('housing'); expect(state.view).toBe('planItem'); expect(state.history).toEqual(['plan']);
+    back(); expect(state.view).toBe('plan');
+  });
+  it('沒有返回紀錄時從單張行動單返回列表；未加入的不能打開', () => {
+    openPlanItem('housing'); expect(state.view).toBe('home');
+    state.personalPlan.planIds = ['housing'];
+    state.view = 'planItem'; state.planItemId = 'housing'; state.history = [];
+    back(); expect(state.view).toBe('plan');
+  });
+  it('移除行動單清掉該張進度並回到列表；全部改回未完成只影響這張', () => {
+    state.personalPlan.planIds = ['housing', 'study'];
+    state.personalPlan.stepDone = { housing: [0], study: [0, 1] };
+    tab('plan'); openPlanItem('study'); resetSteps('study');
+    expect(state.personalPlan.stepDone).toEqual({ housing: [0] });
+    openPlanItem('housing');
+    removeFromPlan('housing');
+    expect(state.view).toBe('plan'); expect(state.personalPlan.planIds).toEqual(['study']);
+    expect(state.personalPlan.stepDone).toEqual({});
+    togglePlan('housing'); expect(state.personalPlan.stepDone.housing).toBeUndefined();
   });
   it('行動單詳情以本人資料顯示；清除全部才移除本人行動單', () => {
     state.personalPlan = { ...emptySession('self'), planIds: ['housing'], answers: { age: 30 }, stepDone: { housing: [0] } };

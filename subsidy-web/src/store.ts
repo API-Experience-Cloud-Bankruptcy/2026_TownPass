@@ -29,12 +29,16 @@ import { validFactValue, type CandidateFact } from './chat/interpretation';
 import { ActionPlanSync, savedPlan } from './domain/action-plan';
 import { forgetTyped, resetTyped } from './chat/typing';
 
-export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help' | 'browse';
+export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'planItem' | 'help' | 'browse';
+/** 本人行動單的頁面：列表與單張行動單。 */
+export const PLAN_VIEWS: View[] = ['plan', 'planItem'];
 
 interface State {
   view: View;
   history: View[];
   detailId: string | null;
+  /** 正在看的單張行動單（補助 id） */
+  planItemId: string | null;
   catalog: LoadedCatalog | null;
   bank: QuestionBank | null;
   loading: boolean;
@@ -58,6 +62,7 @@ export const state = reactive<State>({
   view: 'home',
   history: [],
   detailId: null,
+  planItemId: null,
   catalog: null,
   bank: null,
   loading: true,
@@ -125,9 +130,8 @@ export const questions = computed<Question[]>(() => state.questionPool === null 
 
 export const results = computed(() => evaluateAll(catalogItems.value, state.session.answers));
 export const planResults = computed(() => evaluateAll(catalogItems.value, state.personalPlan.answers));
-export const detailAnswers = computed(() => state.detailTarget === 'other' ? state.session.answers : state.session.target === 'self' && state.history[state.history.length - 1] !== 'plan' ? state.session.answers : state.personalPlan.answers);
+export const detailAnswers = computed(() => state.detailTarget === 'other' ? state.session.answers : state.session.target === 'self' && !PLAN_VIEWS.includes(state.history[state.history.length - 1]) ? state.session.answers : state.personalPlan.answers);
 export const detailResults = computed(() => evaluateAll(catalogItems.value, detailAnswers.value));
-export const otherStepDone = reactive<Record<string, number[]>>({});
 /** 查詢對象回答的戶籍，用於篩選只適用特定縣市的文件。 */
 export const answeredRegion = computed(() => state.session.answers.region);
 
@@ -234,12 +238,12 @@ export function back(): void {
     state.qIndex -= 1;
     return;
   }
-  state.view = state.history.pop() ?? 'home';
+  state.view = state.history.pop() ?? (state.view === 'planItem' ? 'plan' : 'home');
 }
 
 /** 直接切換主要分頁，清掉返回紀錄。 */
 export function tab(view: View): void {
-  if (view === 'plan' && state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
+  if (PLAN_VIEWS.includes(view) && state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
   if (view === 'home' && !CHAT_VIEWS.includes(state.view) && lastChatView !== 'home') {
     pendingResume.value = true;
     return;
@@ -306,7 +310,6 @@ export function confirmPending(): void {
  */
 export function resetPerson(target: Target | null, keepGreeting = false): void {
   if (state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
-  for (const id of Object.keys(otherStepDone)) delete otherStepDone[id];
   pendingResume.value = false;
   lastChatView = 'home';
   if (keepGreeting) forgetTyped((key) => key === 'greet');
@@ -488,6 +491,8 @@ export function answer(question: Question, value: string | number | boolean | un
 }
 
 export function openDetail(id: string): void {
+  // 從行動單回到同一筆詳情：直接返回，不疊一層。
+  if (state.view === 'planItem' && state.history[state.history.length - 1] === 'detail' && state.detailId === id) { back(); return; }
   state.detailTarget = CHAT_VIEWS.includes(state.view) && state.session.target === 'other' ? 'other' : 'self';
   state.detailId = id;
   go('detail');
@@ -501,7 +506,38 @@ export function togglePlan(id: string): void {
   if (state.view === 'detail' && state.detailTarget === 'other') return;
   const ids = state.personalPlan.planIds;
   if (!ids.includes(id) && state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
-  state.personalPlan.planIds = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+  if (ids.includes(id)) {
+    state.personalPlan.planIds = ids.filter((x) => x !== id);
+    // 移除就清掉這張的步驟進度，之後重新加入從頭開始。
+    state.personalPlan.stepDone = withoutKey(state.personalPlan.stepDone, id);
+  } else state.personalPlan.planIds = [...ids, id];
+}
+
+function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T> {
+  return Object.fromEntries(Object.entries(record).filter(([k]) => k !== key));
+}
+
+/** 打開單張行動單；從同一筆的行動單進到詳情再回來時直接返回。 */
+export function openPlanItem(id: string): void {
+  if (!inPlan(id)) return;
+  if (state.view === 'detail' && state.history[state.history.length - 1] === 'planItem' && state.planItemId === id) { back(); return; }
+  state.planItemId = id;
+  go('planItem');
+}
+
+/** 從單張行動單移除後回到列表。 */
+export function removeFromPlan(id: string): void {
+  if (inPlan(id)) togglePlan(id);
+  if (state.view === 'planItem' && state.planItemId === id) {
+    state.history = [];
+    state.view = 'plan';
+    state.planItemId = null;
+  }
+}
+
+/** 這張行動單的步驟全部改回未完成。 */
+export function resetSteps(id: string): void {
+  state.personalPlan.stepDone = withoutKey(state.personalPlan.stepDone, id);
 }
 
 export function toggleDoc(key: string): void {
@@ -511,16 +547,18 @@ export function toggleDoc(key: string): void {
   state.personalPlan.docChecks = checks;
 }
 
+/** 步驟進度只記在本人行動單；替他人查詢的詳情不記錄。還沒加入時一併加入，進度才有地方保存。 */
 export function toggleStep(id: string, index: number): void {
-  if (state.detailTarget === 'self' && !inPlan(id)) return;
-  const progress = state.detailTarget === 'other' ? otherStepDone : state.personalPlan.stepDone;
-  const done = new Set(progress[id] ?? []);
+  if (state.view === 'detail' && state.detailTarget === 'other') return;
+  if (!inPlan(id)) togglePlan(id);
+  if (!inPlan(id)) return;
+  const done = new Set(state.personalPlan.stepDone[id] ?? []);
   if (done.has(index)) done.delete(index);
   else done.add(index);
-  progress[id] = [...done].sort((a, b) => a - b);
+  state.personalPlan.stepDone = { ...state.personalPlan.stepDone, [id]: [...done].sort((a, b) => a - b) };
 }
 
 export function openHelp(itemId: string | null, stepText?: string): void {
-  state.helpContext = { itemId, stepText, target: state.view === 'detail' ? state.detailTarget : state.view === 'plan' ? 'self' : state.session.target ?? 'self' };
+  state.helpContext = { itemId, stepText, target: state.view === 'detail' ? state.detailTarget : PLAN_VIEWS.includes(state.view) ? 'self' : state.session.target ?? 'self' };
   go('help');
 }

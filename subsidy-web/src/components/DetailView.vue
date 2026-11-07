@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { text } from '../domain/match';
-import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE } from '../domain/route';
-import { benefitLabel, itemFlags, sourceExcerpt, statusPlain } from '../presentation';
-import { detailAnswers, detailResults, inPlan, itemsById, state, togglePlan } from '../store';
+import { buildRoute, SOURCE_ROLE } from '../domain/route';
+import { planProgress } from '../domain/plan-progress';
+import { benefitLabel, itemFlags, progressText, sourceExcerpt, statusPlain } from '../presentation';
+import { detailAnswers, detailResults, inPlan, itemsById, openPlanItem, state, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import RouteSteps from './RouteSteps.vue';
 
@@ -27,12 +28,18 @@ const statusText = computed(() => {
   return s && !flags.value.some((f) => f.includes(s)) ? s : '';
 });
 const added = computed(() => (item.value ? inPlan(item.value.id) : false));
+const planStepText = computed(() => {
+  if (!item.value) return '';
+  const p = planProgress(item.value, state.personalPlan.answers, state.personalPlan.stepDone, state.personalPlan.docChecks);
+  return p.total ? progressText(p.doneCount, p.total) : '原文沒有列出步驟';
+});
+function addToPlan() {
+  if (!item.value) return;
+  togglePlan(item.value.id);
+  openPlanItem(item.value.id);
+}
 /** 申請方法連結：先找申請入口，沒有才用說明頁。 */
 const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'apply') ?? route.value?.links.find((l) => l.kind === 'program') ?? null);
-
-function kindOf(type: string) {
-  return SOURCE_KIND_LABEL[type === 'official' || type === 'third_party' || type === 'other' ? type : 'unknown'];
-}
 </script>
 
 <template>
@@ -71,12 +78,17 @@ function kindOf(type: string) {
       <h2 id="d-start-h" class="section-title">想申請的話</h2>
       <div class="actions">
         <button v-if="state.detailTarget === 'other'" type="button" class="btn btn--primary btn--block" :aria-expanded="pdfOpen" aria-controls="detail-pdf" @click="pdfOpen = !pdfOpen">{{ pdfOpen ? '關閉 PDF 預覽' : '匯出申請準備 PDF' }}</button>
-        <button v-else-if="!added" type="button" class="btn btn--primary btn--block" @click="togglePlan(item.id)">加入行動單，開始準備</button>
-        <p v-else class="inline-actions">
-          <span class="row__mark">已在行動單</span>
-          <button type="button" class="btn btn--text" @click="togglePlan(item.id)">移除<span class="sr-only">：{{ item.name }}</span></button>
-        </p>
-        <ExternalLink v-if="applyLink" :url="applyLink.url" :label="`看申請方法：${applyLink.label}`" :tag="SOURCE_KIND_LABEL[applyLink.sourceKind]" />
+        <button v-else-if="!added" type="button" class="btn btn--primary btn--block" @click="addToPlan">加入行動單，開始準備</button>
+        <template v-else>
+          <button type="button" class="btn btn--primary btn--block btn--tall" @click="openPlanItem(item.id)">
+            <span class="btn__stack">
+              <span>打開行動單，照步驟準備</span>
+              <span class="btn__sub">{{ planStepText }}</span>
+            </span>
+          </button>
+          <button type="button" class="btn btn--text" @click="togglePlan(item.id)">從行動單移除<span class="sr-only">：{{ item.name }}</span></button>
+        </template>
+        <ExternalLink v-if="applyLink" :url="applyLink.url" :label="`看申請方法：${applyLink.label}`" />
       </div>
     </section>
 
@@ -121,7 +133,7 @@ function kindOf(type: string) {
             <p v-if="text(item.source_meta?.notes)" class="muted">備註：{{ text(item.source_meta?.notes) }}</p>
             <ul class="link-list">
               <li v-for="s in route.sources" :key="s.url + s.role">
-                <ExternalLink :url="s.url" :label="SOURCE_ROLE[s.role] ?? (s.role || '來源')" :tag="kindOf(s.type)" />
+                <ExternalLink :url="s.url" :label="SOURCE_ROLE[s.role] ?? (s.role || '來源')" />
                 <span v-if="s.sourceDate" class="muted">來源日期：{{ s.sourceDate }}</span>
               </li>
             </ul>

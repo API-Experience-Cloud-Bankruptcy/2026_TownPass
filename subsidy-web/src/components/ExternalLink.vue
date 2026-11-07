@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { hostOf, safeUrl } from '../domain/url';
+import { safeUrl } from '../domain/url';
 import { isInTownPass, openLink } from '../townpass';
 
-const props = defineProps<{ url: string | null | undefined; label: string; tag: string }>();
+const props = defineProps<{ url: string | null | undefined; label: string }>();
 const safe = computed(() => safeUrl(props.url));
 const failed = ref(false);
 
@@ -24,10 +24,7 @@ function onClick(event: MouseEvent) {
   <span v-if="safe" class="ext">
     <a class="ext__link" :href="safe" target="_blank" rel="noopener noreferrer" @click="onClick">
       <span>{{ label }}</span>
-      <span class="ext__meta">
-        {{ tag }}・{{ hostOf(safe) }}
-        <span class="sr-only">（開啟外部網站）</span>
-      </span>
+      <span class="sr-only">（開啟外部網站）</span>
     </a>
     <span v-if="failed" class="ext__fallback" role="status">
       無法在 App 內開啟，請複製網址：<span class="selectable">{{ safe }}</span>

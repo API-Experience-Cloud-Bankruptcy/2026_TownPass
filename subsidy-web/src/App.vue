@@ -8,6 +8,7 @@ import HelpView from './components/HelpView.vue';
 import LogoMark from './components/LogoMark.vue';
 import { dismissSplash, SPLASH_MAX_WAIT_MS } from './brand/splash';
 import BrowseView from './components/BrowseView.vue';
+import PlanItemView from './components/PlanItemView.vue';
 import PlanView from './components/PlanView.vue';
 import { modelAdapter, type ModelStatus } from './domain/model';
 import {
@@ -21,6 +22,7 @@ import {
   newConversation,
   planSync,
   planItems,
+  PLAN_VIEWS,
   questions,
   requestNewPerson,
   state,
@@ -66,7 +68,7 @@ const isChat = computed(() => CHAT_VIEWS.includes(state.view));
 // 換頁或換題時把焦點移到新的標題或最新一則提問，讓讀屏與鍵盤使用者知道位置。
 // 對話頁捲到最下面；一般頁捲回頂端。動態題目可能在同一個 qIndex 換成別題，所以也看題目 id。
 watch(
-  () => [state.view, state.detailId, state.qIndex, state.view === 'questions' ? questions.value[state.qIndex]?.id : null],
+  () => [state.view, state.detailId, state.planItemId, state.qIndex, state.view === 'questions' ? questions.value[state.qIndex]?.id : null],
   async () => {
     settingsOpen.value = false;
     await nextTick();
@@ -83,9 +85,20 @@ watch(
 
 const navItems: { view: View; label: string; match: View[] }[] = [
   { view: 'home', label: '找資源', match: ['home', 'needs', 'search', 'questions', 'results', 'detail'] },
-  { view: 'plan', label: '行動單', match: ['plan'] },
+  { view: 'plan', label: '行動單', match: ['plan', 'planItem'] },
   { view: 'browse', label: '補助總覽', match: ['browse'] },
 ];
+
+// 詳情頁依來源標示目前分頁：從總覽來算補助總覽、從行動單來算行動單。
+const activeView = computed<View>(() => {
+  if (state.view !== 'detail') return state.view;
+  const from = state.history[state.history.length - 1];
+  return from === 'browse' ? 'browse' : from && PLAN_VIEWS.includes(from) ? 'plan' : 'detail';
+});
+const backLabel = computed(() => {
+  const from = state.history[state.history.length - 1];
+  return from === 'browse' ? '回到補助總覽' : from === 'planItem' ? '回到行動單' : from === 'plan' ? '回到行動單列表' : from === 'detail' ? '回到補助內容' : state.view === 'planItem' ? '行動單列表' : '返回上一頁';
+});
 
 const targetLabel = computed(() =>
   state.session.target === 'self' ? '幫自己找' : state.session.target === 'other' ? '幫別人找' : '尚未選擇',
@@ -152,7 +165,7 @@ const dialogTitle = computed(() =>
         :key="n.view"
         type="button"
         class="tabs__item"
-        :aria-current="n.match.includes(state.view === 'detail' && state.history[state.history.length - 1] === 'browse' ? 'browse' : state.view) ? 'page' : undefined"
+        :aria-current="n.match.includes(activeView) ? 'page' : undefined"
         @click="tab(n.view)"
       >
         {{ n.label }}<span v-if="n.view === 'plan' && planItems.length" class="tabs__count">{{ planItems.length }}<span class="sr-only"> 項</span></span>
@@ -160,7 +173,7 @@ const dialogTitle = computed(() =>
     </nav>
   </header>
 
-  <main id="main" class="app-main" :class="{ 'app-main--chat': isChat, 'app-main--page': state.view === 'detail' || state.view === 'plan' }">
+  <main id="main" class="app-main" :class="{ 'app-main--chat': isChat, 'app-main--page': state.view === 'detail' || PLAN_VIEWS.includes(state.view) }">
     <p v-if="state.loadError" class="status-line status-line--error" role="alert">
       {{ state.loadError }}
       <button type="button" class="btn btn--text" @click="init">重試</button>
@@ -175,18 +188,19 @@ const dialogTitle = computed(() =>
       <button v-else type="button" class="btn btn--text" @click="planSync.retry()">重試保存</button>
     </p>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已保存的資料，官方網站仍需連線</p>
-    <p v-if="state.view === 'plan' && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在保存行動單…' : '正在讀取已保存的行動單…' }}</p>
+    <p v-if="PLAN_VIEWS.includes(state.view) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在保存行動單…' : '正在讀取已保存的行動單…' }}</p>
 
-    <div v-if="state.view === 'detail'" class="topbar no-print">
+    <div v-if="state.view === 'detail' || state.view === 'planItem'" class="topbar no-print">
       <button type="button" class="btn btn--text back-chat" @click="back">
         <span aria-hidden="true">‹</span>
         <span class="avatar avatar--sm" aria-hidden="true"><LogoMark /></span>
-        {{ state.history[state.history.length - 1] === 'browse' ? '回到補助總覽' : '返回上一頁' }}
+        {{ backLabel }}
       </button>
     </div>
     <KeepAlive :max="1"><ChatView v-if="isChat" :key="conversationEpoch" /></KeepAlive>
     <DetailView v-if="state.view === 'detail'" :key="state.detailId ?? ''" />
     <PlanView v-if="state.view === 'plan'" />
+    <PlanItemView v-if="state.view === 'planItem'" :key="state.planItemId ?? ''" />
     <KeepAlive><BrowseView v-if="state.view === 'browse'" /></KeepAlive>
     <HelpView v-if="state.view === 'help'" />
   </main>
