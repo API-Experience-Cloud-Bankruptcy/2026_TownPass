@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "artifact": "eval_v2_holdout.jsonl",
+  "sha256": "2b45bda483c15ef9a448e9d986a84589e107c52911a21e3f705843b081795144",
+  "total": 56,
+  "task_counts": {
+    "general": 32,
+    "interpret": 24
+  },
+  "category_counts": {
+    "general": {
+      "reading": 7,
+      "arithmetic": 7,
+      "logic": 6,
+      "insufficient": 6,
+      "instruction": 6
+    },
+    "interpret": {
+      "region": 4,
+      "proxy": 4,
+      "negation": 4,
+      "multiple": 3,
+      "correction": 3,
+      "unknown": 3,
+      "injection": 3
+    }
+  },
+  "general_answer_counts": {
+    "A": 8,
+    "B": 8,
+    "C": 8,
+    "D": 8
+  },
+  "review": {
+    "author_review": "獨立 AI 代理逐題推導與確認題目自足、四選項互斥且唯一答案；32 題逐題推導均完成。24 題逐題按明示需求、否定、受助者歸屬、資訊未知與更正語義檢查。",
+    "general_answer_derivations": {
+      "v2_holdout_g01": "公告明示下午才可借書。",
+      "v2_holdout_g02": "第一子句直接指定藍盒位置。",
+      "v2_holdout_g03": "最後步行抵達為明示結果。",
+      "v2_holdout_g04": "三步順序第二項為放茶葉。",
+      "v2_holdout_g05": "否定雨傘後明示手電筒。",
+      "v2_holdout_g06": "丁未參加為直接敘述。",
+      "v2_holdout_g07": "公告唯一指定西門。",
+      "v2_holdout_g08": "6×4−5=19。",
+      "v2_holdout_g09": "84−27−18=39。",
+      "v2_holdout_g10": "150÷5=30。",
+      "v2_holdout_g11": "25分鐘至10時再10分鐘。",
+      "v2_holdout_g12": "12÷4=3。",
+      "v2_holdout_g13": "17−6=11。",
+      "v2_holdout_g14": "100−25×3=25。",
+      "v2_holdout_g15": "全稱條件與前件推出上鎖。",
+      "v2_holdout_g16": "嚴格順序甲乙丙。",
+      "v2_holdout_g17": "全稱否定直接適用指定圓片。",
+      "v2_holdout_g18": "明示規則15+4=19。",
+      "v2_holdout_g19": "二選一排除白球。",
+      "v2_holdout_g20": "進場必要條件為持票。",
+      "v2_holdout_g21": "未提供毛色。",
+      "v2_holdout_g22": "相對大小無法決定絕對重量。",
+      "v2_holdout_g23": "沒有基準日期。",
+      "v2_holdout_g24": "行為與住處不提供年齡。",
+      "v2_holdout_g25": "肯定後件不能逆推雨況。",
+      "v2_holdout_g26": "B箱數量未知。",
+      "v2_holdout_g27": "川在第二、第四字各出現一次。",
+      "v2_holdout_g28": "最後一項為藍。",
+      "v2_holdout_g29": "三字選項唯一。",
+      "v2_holdout_g30": "輸入不含雨字走否則分支。",
+      "v2_holdout_g31": "去重保留初次出現順序。",
+      "v2_holdout_g32": "括號外首尾各一個木。"
+    },
+    "automated_checks": [
+      "56 unique ids and unique user prompts",
+      "32 general plus 24 interpret",
+      "General answer letters evenly distributed: eight each",
+      "Interpret exact four-key schema and allowed situations/fields",
+      "Candidate value types and household enum checked",
+      "Every evidence fragment is verbatim substring of input",
+      "JSONL round-trip parsing and canonical SHA256 verified",
+      "All rows have exactly id/task/category/prompt/expected keys and system/user message roles",
+      "Every general item has exactly four distinctly labeled, distinct options"
+    ],
+    "isolation": {
+      "read_sources": [
+        "training/prepare_needs.py: SYSTEM and schema only; initial targeted search incidentally showed some first-round examples, no test extraction or copying",
+        "subsidy-web/src/domain/model.ts",
+        "subsidy-web/AGENTS.md",
+        "docs/welfare-service-product-plan.md"
+      ],
+      "second_round_training_data_read": false,
+      "prior_test_copied": false,
+      "holdout_content_shared_with_training_author": false
+    },
+    "annotation_conventions": [
+      "正式介面為四欄；委派中的五欄視為筆誤，未新增欄位。",
+      "明確唯一的受助申請人可使用該人的明示欄位；申請人未確定則不套用協助者或家人欄位。",
+      "明確更正撤回前述內容，採用更正；未解決矛盾不選任一值。",
+      "否定低收入戶不推出一般戶；未明示法定資格不由經濟困難推定。",
+      "需求標籤與 evidence 視為集合比較；evidence/uncertain 接受語意相等且有根據的不同措辭。",
+      "未知欄位不必逐一列出；uncertain 聚焦題目明示不確定、矛盾或無法判定事項。"
+    ],
+    "limitations": [
+      "獨立 AI 代理合成小型保留集；不是實世界驗收、不是完整一般能力基準。",
+      "尚未對模型推論；無法單憑資料集建立證明微調不降智。",
+      "保留集必須與原版、第一輪及第二輪模型使用相同推論與評分條件成對比較；不得用於梯度訓練或反覆調參後仍宣稱未見測試。",
+      "未讀第二輪訓練資料以維持隔離，因此未直接比對訓練集近似重複；整合端可用唯讀程式比較，勿向訓練作者揭露題目答案。",
+      "未使用時事、真實個資、補助金額或期限；不評定正式福利資格。"
+    ]
+  }
+}
