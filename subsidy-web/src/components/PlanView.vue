@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { mergeDocuments } from '../domain/documents';
 import { buildPlanText, DISCLAIMER } from '../domain/export';
 import { buildRoute } from '../domain/route';
@@ -8,6 +8,13 @@ import ShareBox from './ShareBox.vue';
 
 const merged = computed(() => mergeDocuments(planItems.value));
 const included = ref<string[]>([]);
+const stage = ref<'resources' | 'documents' | 'export'>('resources');
+const stageHeading = ref<HTMLElement | null>(null);
+async function setStage(next: typeof stage.value) {
+  stage.value = next;
+  await nextTick();
+  stageHeading.value?.focus();
+}
 const includedValid = computed(() => pickConditions(included.value));
 
 const planText = computed(() =>
@@ -46,8 +53,8 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
     </div>
 
     <template v-else>
-      <section class="card no-print" aria-labelledby="plan-items-h">
-        <h2 id="plan-items-h" class="section-title">已選資源（{{ planItems.length }} 項）</h2>
+      <section v-if="stage === 'resources'" class="card no-print" aria-labelledby="plan-items-h">
+        <h2 id="plan-items-h" ref="stageHeading" tabindex="-1" class="section-title">已選資源（{{ planItems.length }} 項）</h2>
         <ul class="plan-list">
           <li v-for="item in planItems" :key="item.id" class="plan-item">
             <p class="plan-item__name">{{ item.name }}</p>
@@ -64,10 +71,13 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
             </div>
           </li>
         </ul>
+        <button type="button" class="btn btn--primary btn--block" @click="setStage('documents')">下一步：準備文件</button>
+        <button type="button" class="btn btn--ghost btn--block" @click="setStage('export')">匯出行動單</button>
       </section>
 
-      <section class="card no-print" aria-labelledby="docs-h">
-        <h2 id="docs-h" class="section-title">文件準備清單</h2>
+      <section v-else-if="stage === 'documents'" class="card no-print" aria-labelledby="docs-h">
+        <button type="button" class="btn btn--ghost" @click="setStage('resources')">返回已選資源</button>
+        <h2 id="docs-h" ref="stageHeading" tabindex="-1" class="section-title">文件準備清單</h2>
         <p class="muted">
           只有名稱與條件完全相同的文件才合併；勾選只代表你準備好了。已準備 {{ preparedDocs }}／{{ merged.documents.length }}。
         </p>
@@ -89,9 +99,12 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
         <p v-for="m in merged.incomplete" :key="m.id" class="warn">
           「{{ m.name }}」文件清單尚未補齊，不代表免附文件。
         </p>
+        <button type="button" class="btn btn--primary btn--block" @click="setStage('export')">下一步：匯出行動單</button>
       </section>
 
-      <div class="no-print">
+      <div v-else class="no-print">
+        <button type="button" class="btn btn--ghost" @click="setStage('documents')">返回準備文件</button>
+        <h2 ref="stageHeading" tabindex="-1" class="sr-only">匯出行動單</h2>
         <ShareBox
           v-model:included="included"
           title="福利行動單"

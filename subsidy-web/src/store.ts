@@ -19,10 +19,10 @@ import {
   type Prefs,
   type SessionState,
 } from './domain/session';
-import { filterCatalog } from './domain/situations';
+import { filterCatalog, SITUATIONS } from './domain/situations';
 import type { LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
 
-export type View = 'home' | 'questions' | 'results' | 'detail' | 'plan' | 'help';
+export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help';
 
 interface State {
   view: View;
@@ -135,6 +135,10 @@ export function go(view: View): void {
 }
 
 export function back(): void {
+  if (state.view === 'questions' && state.qIndex > 0) {
+    state.qIndex -= 1;
+    return;
+  }
   state.view = state.history.pop() ?? 'home';
 }
 
@@ -150,26 +154,35 @@ export function needsSwitchConfirm(target: Target): boolean {
 
 /** 等待使用者確認的換人或清除動作。 */
 export const pendingSwitch = ref<Target | 'clear' | null>(null);
+const pendingDestination = ref<View>('home');
 
 /** 選擇查詢對象；已有資料且對象不同時，先要求確認。 */
 export function requestTarget(target: Target): void {
-  if (state.session.target === target) return;
-  if (needsSwitchConfirm(target)) pendingSwitch.value = target;
-  else state.session.target = target;
+  if (needsSwitchConfirm(target)) {
+    pendingDestination.value = 'needs';
+    pendingSwitch.value = target;
+    return;
+  }
+  if (state.session.target !== target) resetPerson(target);
+  go('needs');
 }
 
 /** 「換人」：保留同一對象類型但清除資料，也需確認。 */
 export function requestNewPerson(): void {
+  pendingDestination.value = 'home';
   if (hasPersonalData(state.session)) pendingSwitch.value = state.session.target ?? 'clear';
   else resetPerson(state.session.target);
 }
 
 export function confirmPending(): void {
   const pending = pendingSwitch.value;
+  const destination = pendingDestination.value;
   pendingSwitch.value = null;
+  pendingDestination.value = 'home';
   if (pending === 'clear') clearAllData();
   else if (pending) {
     resetPerson(pending);
+    if (destination !== 'home') go(destination);
     state.notice = '已換人並清除前一位的答案、行動單與進度。';
   }
 }
@@ -180,6 +193,8 @@ export function resetPerson(target: Target | null): void {
   state.session = target ? switchPerson(target) : emptySession();
   state.session.catalogVersion = version;
   state.qIndex = 0;
+  lastAnswerAt = -Infinity;
+  state.showIneligible = false;
   state.detailId = null;
   state.helpContext = { itemId: null };
   state.history = [];
@@ -194,8 +209,40 @@ export function clearAllData(): void {
 
 export function startQuestions(): void {
   state.qIndex = 0;
+  lastAnswerAt = -Infinity;
   if (questions.value.length > 0) go('questions');
   else go('results');
+}
+
+/** 分類與搜尋分開使用，換需求時不留下另一種篩選。 */
+export function selectNeed(id: string): void {
+  if (!SITUATIONS.some((s) => s.id === id) || !state.session.target || state.loading) return;
+  state.session.situation = id;
+  state.session.query = '';
+  startQuestions();
+}
+
+export function searchResources(query: string): void {
+  if (!state.session.target || state.loading || !query.trim()) return;
+  state.session.situation = null;
+  state.session.query = query.trim().slice(0, 100);
+  startQuestions();
+}
+
+let lastAnswerAt = -Infinity;
+/** 鎖住同一次連點，且拒絕已離開的題目事件。 */
+export function answerAndAdvance(
+  questionId: string,
+  value: string | number | boolean | undefined,
+  now = Date.now(),
+): boolean {
+  const question = questions.value[state.qIndex];
+  if (state.view !== 'questions' || !question || question.id !== questionId || now - lastAnswerAt < 450) return false;
+  lastAnswerAt = now;
+  answer(question, value);
+  if (state.qIndex >= questions.value.length - 1) go('results');
+  else state.qIndex += 1;
+  return true;
 }
 
 export function answer(question: Question, value: string | number | boolean | undefined): void {

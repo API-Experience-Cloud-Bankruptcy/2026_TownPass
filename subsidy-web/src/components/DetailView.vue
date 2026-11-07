@@ -9,6 +9,9 @@ import RouteSteps from './RouteSteps.vue';
 const item = computed(() => (state.detailId ? itemsById.value.get(state.detailId) : undefined));
 const result = computed(() => (item.value ? results.value.get(item.value.id) : undefined));
 const route = computed(() => (item.value ? buildRoute(item.value) : null));
+const benefit = computed(() => text(item.value?.benefit?.raw));
+const benefitPreview = computed(() => benefit.value.length > 100 ? `${benefit.value.slice(0, 100)}…` : benefit.value);
+const urgentWarnings = computed(() => result.value?.warnings.filter((w) => /期限.*可能已過/.test(w)) ?? []);
 const added = computed(() => (item.value ? inPlan(item.value.id) : false));
 
 function kindOf(type: string) {
@@ -26,17 +29,24 @@ function kindOf(type: string) {
         <span class="tag tag--plain">{{ STATUS_LABEL[route.status] ?? '資料狀態未註明' }}</span>
       </p>
 
+      <p class="muted">初篩僅供準備參考，資格仍由機關審核。</p>
+      <ul v-if="result?.blocked_by.length" class="warn"><li v-for="r in result.blocked_by" :key="r">{{ r }}</li></ul>
+      <p v-for="warning in urgentWarnings" :key="warning" class="warn">{{ warning }}</p>
       <section class="card" aria-labelledby="benefit-h">
         <h2 id="benefit-h" class="section-title">能提供什麼</h2>
-        <p>{{ text(item.benefit?.raw) || '原文未提供內容說明' }}</p>
-        <p v-if="text(item.eligibility?.raw_summary)"><strong>對象：</strong>{{ text(item.eligibility?.raw_summary) }}</p>
-        <p v-if="text(item.eligibility?.taipei_applicability)" class="muted">
-          適用說明：{{ text(item.eligibility?.taipei_applicability) }}
-        </p>
+        <p>{{ benefitPreview || '原文未提供內容說明' }}</p>
+        <details v-if="benefit.length > 100">
+          <summary>完整補助內容（原文）</summary>
+          <p>{{ benefit }}</p>
+        </details>
       </section>
 
-      <section class="card" aria-labelledby="fit-h">
-        <h2 id="fit-h" class="section-title">初篩說明</h2>
+      <RouteSteps :item="item" />
+
+      <details class="card" aria-labelledby="fit-h">
+        <summary id="fit-h">資格、初篩與完整提醒</summary>
+        <p v-if="text(item.eligibility?.raw_summary)"><strong>適用對象原文：</strong>{{ text(item.eligibility?.raw_summary) }}</p>
+        <p v-if="text(item.eligibility?.taipei_applicability)">{{ text(item.eligibility?.taipei_applicability) }}</p>
         <p class="muted">本服務不比較所得，也不代替機關審核。</p>
         <template v-if="result?.blocked_by.length">
           <h3 class="sub-title">目前不符</h3>
@@ -54,15 +64,14 @@ function kindOf(type: string) {
           <h3 class="sub-title">提醒</h3>
           <ul><li v-for="r in result.warnings" :key="r">{{ r }}</li></ul>
         </template>
-      </section>
+      </details>
 
-      <RouteSteps :item="item" />
-
-      <section class="card" aria-labelledby="src-h">
-        <h2 id="src-h" class="section-title">資料來源</h2>
+      <details class="card" aria-labelledby="src-h">
+        <summary id="src-h">資料來源與查核說明</summary>
         <p class="muted">
           查核日期 {{ route.checkedDate || '未註明' }}；{{ STATUS_LABEL[route.status] ?? '狀態未註明' }}（資料原有標記，本服務未重新查核）。
         </p>
+        <p v-if="text(item.source_meta?.verification_note)" class="muted">{{ text(item.source_meta?.verification_note) }}</p>
         <p v-if="text(item.source_meta?.notes)" class="muted">備註：{{ text(item.source_meta?.notes) }}</p>
         <ul class="link-list">
           <li v-for="s in route.sources" :key="s.url + s.role">
@@ -70,7 +79,7 @@ function kindOf(type: string) {
             <span v-if="s.sourceDate" class="muted">來源日期：{{ s.sourceDate }}</span>
           </li>
         </ul>
-      </section>
+      </details>
 
       <div class="sticky-cta">
         <button

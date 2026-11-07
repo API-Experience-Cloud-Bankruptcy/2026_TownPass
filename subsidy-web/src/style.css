@@ -120,9 +120,6 @@ ul, ol {
 
 /* 版頭與導覽 */
 .app-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 8px 16px 0;
@@ -503,10 +500,7 @@ legend {
 }
 .result__benefit {
   color: var(--text-muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+
 }
 .result__tags {
   display: flex;
@@ -666,6 +660,111 @@ legend {
 .sticky-cta__count {
   font-weight: 600;
   text-align: center;
+}
+
+/* 一頁一個選擇，內文放大時自然換行。 */
+.app-main > *, .view > *, .btn-row > *, .facts > div > * {
+  min-width: 0;
+}
+button, input, summary {
+  overflow-wrap: anywhere;
+}
+.page-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.btn--back {
+  border-color: transparent;
+  padding-left: 0;
+  justify-content: flex-start;
+}
+.intake-view {
+  gap: 20px;
+  padding-block: 8px 24px;
+}
+.eyebrow {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.person-choices, .question-page {
+  display: grid;
+  gap: 12px;
+}
+.person-choice, .need-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-color: var(--border);
+}
+.person-choice {
+  min-height: 112px;
+  padding: 24px;
+  font-size: 1.5rem;
+  background: var(--surface-soft);
+}
+.choice__arrow {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.need-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.need-choice {
+  min-height: 84px;
+}
+.choice:disabled {
+  color: var(--text-muted);
+  border-style: dashed;
+  cursor: wait;
+}
+.btn--option {
+  min-height: 64px;
+  padding: 14px 16px;
+}
+.btn[aria-pressed='true'] .choice__arrow {
+  color: inherit;
+}
+.disclosure, .data-status {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.disclosure > summary, .data-status > summary {
+  min-height: 48px;
+  padding-block: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.disclosure[open], .data-status[open] {
+  padding-bottom: 12px;
+}
+.disclosure > :not(summary) + * {
+  margin-top: 8px;
+}
+.data-status {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.results-heading {
+  display: grid;
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
 }
 
 /* 對話框 */

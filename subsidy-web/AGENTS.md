@@ -4,7 +4,7 @@
 
 - 競賽：2026 臺北秋季程式設計節・城市通微服務大黑客松（主辦：臺北市政府資訊局）
 - 本資料夾：`subsidy-web/`，城市通「服務 › 熱門 › 補助專區」開啟的微服務網頁
-- 分支：`Felix-0901/uiux`（從 `clean-ver` 分出，`clean-ver` 是乾淨的上游 TownPass）
+- 目前整合分支：`clean-ver`（已整合福利通前後端與 UI 規劃）
 - 使用說明見同資料夾 `README.md`；這份是技術背景、規則與陷阱
 
 ## 1. 競賽規則（會影響技術選擇）
@@ -91,7 +91,10 @@ subsidy-web/
 ├─ vite.config.ts        dev server 5173（strictPort）、vitest 設定
 ├─ firebase.json         Firebase Hosting：public=dist，SPA rewrite
 └─ src/
-   ├─ main.ts / App.vue  目前是雙向溝通測試頁（使用者卡片＋各能力按鈕）
+   ├─ main.ts / App.vue  福利通逐頁流程與三入口導覽
+   ├─ store.ts           對象、需求、題目、行動單與導覽狀態
+   ├─ components/       查詢、問答、詳情、辦理路線、行動單及求助頁
+   ├─ domain/           資料讀取、保守規則、固定題庫與完整輸出
    ├─ style.css          城市通色票 CSS 變數 --tp-*
    └─ townpass/          與 App 溝通的封裝（第 5 節）
       ├─ bridge.ts       底層：isInTownPass、send、request、parseMessage
@@ -250,20 +253,11 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 ## 12. 目前進度與待辦
 
-已完成：
+已完成福利通前後端核心流程：217 筆完整資料 API、固定題庫、本機保守初篩、逐頁選對象與需求、辦理路線、文件準備、求助及行動單輸出。詳細範圍及驗證見 `README.md` 與 `../docs/welfare-implementation-contract.md`。
 
-- 熱門區塊按鈕加上左右 16px 間距（`trending_service_widget.dart`）。
-- 熱門新增「補助專區」入口與 `icon_subsidy.svg`，網址由 `SUBSIDY_URL` 指定。
-- 本網站骨架與 `src/townpass/` 雙向溝通封裝（9 個單元測試）；`App.vue` 是測試頁，在一般瀏覽器與 App 內都能操作。
-- App 允許開發時以 http 連區網。
+UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊答案與行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。
 
-待辦：
-
-- 確認在實機 App 內開啟補助專區時，「已連上城市通」且各能力有回覆。
-- 決定補助專區的實際功能，把 `App.vue` 測試頁換成正式頁面（可拆 `src/pages/`、加 vue-router）。
-- 找補助相關開放資料（data.taipei 社會局資料集），每項註明來源與查核日期。
-- 部署到 Firebase Hosting 取得 HTTPS 網址，改用正式網址建置 App。
-- repo 補上 AGPL-3.0 授權聲明、資料來源清單、第三方套件清單。
+待驗收：手機 WebView 的檔案交付、分享、讀屏及完整離線；模型尚為可替換接口，未接入。安裝 App 不等於全部手機流程已通過；未部署正式公開服務。
 
 ## 參考資源
 
