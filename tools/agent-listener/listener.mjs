@@ -171,8 +171,13 @@ function commitLeftovers(issue, wt) {
   const written = existsSync(msgFile) ? readFileSync(msgFile, 'utf8').trim() : ''
   if (existsSync(msgFile)) rmSync(msgFile)
   // Dependency manifests changed outside a deliberate commit are usually trial installs; never sweep them in.
-  const manifests = git(['diff', '--name-only'], { cwd: wt.dir }).split('\n').filter((f) => /(^|\/)(package\.json|package-lock\.json|pnpm-lock\.yaml|pubspec\.yaml|pubspec\.lock)$/.test(f))
-  if (manifests.length) { git(['checkout', '--', ...manifests], { cwd: wt.dir }); log('discarded uncommitted manifest changes', manifests.join(', ')) }
+  const manifests = git(['diff', '--name-only', 'HEAD'], { cwd: wt.dir }).split('\n').filter((f) => /(^|\/)(package\.json|package-lock\.json|pnpm-lock\.yaml|pubspec\.yaml|pubspec\.lock)$/.test(f))
+  for (const f of manifests) {
+    // Staged or unstaged: restore tracked files from HEAD; drop manifests HEAD never had.
+    if (git(['ls-tree', '--name-only', 'HEAD', '--', f], { cwd: wt.dir })) git(['checkout', 'HEAD', '--', f], { cwd: wt.dir })
+    else { git(['rm', '-q', '-f', '--cached', '--ignore-unmatch', f], { cwd: wt.dir }); rmSync(join(wt.dir, f), { force: true }) }
+  }
+  if (manifests.length) log('discarded uncommitted manifest changes', manifests.join(', '))
   if (!git(['status', '--porcelain'], { cwd: wt.dir })) return
   const message = written || `Chore: 完成 #${issue.number} ${issue.title}`.slice(0, 72)
   git(['add', '-A'], { cwd: wt.dir })
