@@ -59,7 +59,13 @@ export interface Eligibility {
   [key: string]: unknown;
 }
 
+export type DocumentRegionBasis = 'registered' | 'residence' | 'application' | 'unknown';
+
 export interface RequiredDocument {
+  /** 地方文件範圍及比對依據；不從戶籍推定居住／受理地。 */
+  regions?: string[];
+  region_basis?: DocumentRegionBasis;
+  region_evidence?: string;
   name: string;
   condition: string | null;
   notes: string | null;

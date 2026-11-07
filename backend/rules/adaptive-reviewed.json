@@ -35189,7 +35189,27 @@
       "current_policy_verified": false,
       "proposed_requirements": [],
       "qualification_decisions": [],
-      "elder_review_note": "設籍實居、居住日數、家戶收入財產、公費安置等另審；同領榮民就養時另有較低額度，不把最高額套全體。 本次僅審閱本地原文與現有盤點，未重新查核現行政策。"
+      "elder_review_note": "設籍實居、居住日數、家戶收入財產、公費安置等另審；同領榮民就養時另有較低額度，不把最高額套全體。 本次僅審閱本地原文與現有盤點，未重新查核現行政策。",
+      "ranking_preferences": [
+        {
+          "field": "household_type",
+          "values": [
+            "low_income",
+            "mid_low_income"
+          ],
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "設籍臺北市、65歲以上的中低收入長者"
+            },
+            {
+              "path": "/eligibility/income/0/raw",
+              "value": "家庭總收入平均分配全家人口，每人每月金額符合規定（115年度為39,960元）"
+            }
+          ],
+          "reason": "已知低收或中低收入身分時，將生活津貼列為優先核對方向。老人生活津貼另有收入財產審查，不以已取得低收／中低收入戶證明作必要資格；一般身分或未回答仍保留。"
+        }
+      ]
     },
     {
       "id": "CT-0105",

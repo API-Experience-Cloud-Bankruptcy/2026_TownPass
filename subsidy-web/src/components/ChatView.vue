@@ -11,7 +11,7 @@ import { matchCurrentChoice, normalizeInput, routeInput, suggestSearchQueries } 
 import { filterCatalog, SITUATIONS } from '../domain/situations';
 import { adaptiveReviewFor } from '../domain/adaptive';
 import type { Question, Subsidy } from '../domain/types';
-import { distinctGroups, insightLine, narrowingNote, numberUnit, optionalText, rangeLine } from '../presentation';
+import { distinctGroups, numberUnit, optionalText } from '../presentation';
 import {
   answerAndAdvance,
   back,
@@ -54,7 +54,7 @@ const past = (step: 'home' | 'needs') =>
 // ── 1. 打招呼與選對象 ──
 const greetKey = 'greet';
 const greetLines: Line[] = [
-  { text: '嗨，我是福利通。' },
+  { text: '嗨，我是福利連。' },
   { text: '回答幾個簡單問題，我幫你從補助、津貼、獎助與服務中，找出值得先看的幾項。' },
   { text: '這次要幫誰找？', tone: 'title' },
 ];
@@ -90,7 +90,6 @@ function answerText(q: Question): string {
 function qLines(q: Question, withMeta: boolean): Line[] {
   const purpose = optionalText(q, 'description');
   return [
-    { text: withMeta ? insightLine(questionInsight.value) : '', tone: 'caption' },
     { text: titleFor(q, target.value), tone: 'title' },
     { text: withMeta ? purpose : '', tone: 'muted' },
   ];
@@ -99,23 +98,17 @@ function qLines(q: Question, withMeta: boolean): Line[] {
 function editQuestion(q: Question) {
   const i = questions.value.findIndex((x) => x.id === q.id);
   if (i < 0) return;
+  rewind();
   if (view.value !== 'questions') go('questions');
   state.qIndex = i;
 }
 
-// 回答後的回饋（範圍變化）只跟著下一則訊息出現。
-const feedback = ref<{ text: string; before: string } | null>(null);
 async function submit(value: string | number | boolean | undefined, typedText?: string) {
   const q = current.value;
   if (!q) return false;
-  const before = questionInsight.value?.remainingCount;
   if (!answerAndAdvance(q.id, value)) return false;
   if (typedText) typedAnswers.value[q.id] = { value, text: typedText };
   else delete typedAnswers.value[q.id];
-  await nextTick();
-  const note = narrowingNote(before, questionInsight.value?.remainingCount, value === undefined);
-  const next = view.value === 'questions' ? `q:${current.value?.id}` : resultsKey.value;
-  feedback.value = note ? { text: note, before: next } : null;
   return true;
 }
 
@@ -125,10 +118,10 @@ watch(
   current,
   (q) => {
     if (q?.kind !== 'number') return;
-    const v = answerOf(state.session.answers, q.field);
     const min = q.min ?? 0;
     const max = q.max ?? MAX_AGE;
-    const start = typeof v === 'number' ? v : target.value === 'other' ? 65 : 35;
+    // 改答案時也從預設值開始，不預先停在舊答案。
+    const start = target.value === 'other' ? 65 : 35;
     wheelValue.value = Math.min(max, Math.max(min, start));
   },
   { immediate: true },
@@ -172,7 +165,6 @@ const resultLines = computed<Line[]>(() => [
         : '可以先看看這些資源：',
     tone: 'title',
   },
-  { text: answeredCount.value ? rangeLine(questionInsight.value) : '', tone: 'caption' },
   { text: answeredCount.value === 0 && !nothing.value ? '還沒有回答問題，下面依需求列出，不是依你的情況挑選。' : '', tone: 'muted' },
   { text: nothing.value ? '沒找到不代表沒有可以申請的福利。可以換個需求、改答案，或找人幫忙。' : '相關不等於符合資格，能不能領由承辦機關審核。', tone: 'muted' },
 ]);
@@ -277,12 +269,16 @@ watch(() => state.session, (_session, previous) => {
   if (previous.target === null && state.session.target !== null) return;
   turn.cancel(); turns.value = []; typedAnswers.value = {}; typedTarget.value = null; typedNeed.value = null; query.value = ''; proposal.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; fallbackCount.value = 0;
 }, { flush: 'sync' });
+/** 按「改答案／改對象／換需求」回到某一則：之後的訊息全部收掉，包含打字送出的訊息與進行中的理解。 */
+function rewind() {
+  turn.cancel(); interpreting.value = false; turns.value = []; query.value = ''; proposal.value = null; selectedFacts.value = []; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = [];
+}
 const statusText = computed(() => {
   const s = modelStatus.value;
   if (!s) return '正在確認裝置端模型…';
   if (s.state === 'unavailable') return s.reason;
   if (s.state === 'ready') return 'Gemma 4 E2B 已就緒，情況只在此裝置理解。';
-  if (s.state === 'downloading') return `正在下載模型${s.progress === undefined ? '…' : ` ${Math.round(s.progress * 100)}%`}`;
+  if (s.state === 'downloading') return `正在下載模型${s.progress === undefined ? '' : ` ${Math.round(s.progress * 100)}%`}`;
   if (s.state === 'downloaded') return '模型已下載，正在自動準備文字理解…';
   if (s.state === 'loading') return '正在載入模型，第一次可能需要較久。';
   if (s.state === 'error') return '模型未能啟動，可重試或直接使用選項。';
@@ -676,25 +672,26 @@ async function onInput() {
 
 <template>
   <div class="chat">
-    <h1 class="sr-only">福利通對話</h1>
+    <h1 class="sr-only">福利連對話</h1>
     <ConfirmDialog :open="downloadPrompt" title="下載裝置端文字理解模型？" confirm-label="同意下載並啟用" @confirm="acceptDownload" @cancel="dismissDownload">
       <p>下載約 2.6 GB 的 Gemma 4 E2B 後，就能用自己的話描述情況。文字會在手機上理解。</p>
       <p>建議使用 Wi-Fi 並保留足夠空間。下載完成會自動啟用，以後每次開啟補助專區也會自動載入。</p>
-      <p>取消仍可使用選項與名稱搜尋，稍後也能從模型狀態開始下載。</p>
+      <p>取消仍可使用選項與名稱搜尋，下次開啟補助專區會再詢問。</p>
     </ConfirmDialog>
-    <p v-if="preparing || modelStatus?.state === 'loading' || modelStatus?.state === 'downloading' || modelStatus?.state === 'ready'" class="chat__system" role="status">{{ statusText }}<template v-if="modelStatus?.state !== 'ready'"> 準備期間可以先使用選項。</template></p>
+    <p v-if="modelStatus?.state === 'downloading'" class="chat__system" role="status">{{ statusText }}，下載期間可以先使用選項。</p>
+    <p v-else-if="modelStatus?.state === 'error'" class="chat__system" role="status">{{ statusText }} <button type="button" class="btn" @click="prepareModel">重試</button></p>
     <section ref="log" class="chat__log" aria-label="對話紀錄">
-      <p class="chat__day" aria-hidden="true">答案只留在這個分頁，不會送出</p>
+      <p class="chat__day" aria-hidden="true">你的回答只存在這支手機，不會傳出去</p>
 
       <!-- 1. 打招呼與選對象 -->
       <BotMessage :msg-key="greetKey" :lines="greetLines" :active="view === 'home'">
         <template v-if="view === 'home'" #after>
           <div class="replies" role="group" aria-label="查詢對象">
-            <button type="button" class="reply" :aria-pressed="state.session.target === 'self'" @click="requestTarget('self')">
+            <button type="button" class="reply" aria-label="幫自己找" @click="requestTarget('self')">
               <span class="reply__label">幫自己找</span>
               <span class="reply__sub">依你的情況回答，存成線上行動單</span>
             </button>
-            <button type="button" class="reply" :aria-pressed="state.session.target === 'other'" @click="requestTarget('other')">
+            <button type="button" class="reply" aria-label="幫家人或別人找" @click="requestTarget('other')">
               <span class="reply__label">幫家人或別人找</span>
               <span class="reply__sub">依對方的情況回答，做成可列印的 A4 檢核表</span>
             </button>
@@ -703,7 +700,7 @@ async function onInput() {
       </BotMessage>
 
       <template v-if="past('home') && isTyped(greetKey)">
-        <UserMessage :text="typedTarget?.target === state.session.target ? typedTarget.text : targetLabel" edit-label="改對象" @edit="tab('home')" />
+        <UserMessage :text="typedTarget?.target === state.session.target ? typedTarget.text : targetLabel" edit-label="修改對象" @edit="rewind(); tab('home')" />
 
         <!-- 2. 選需求 -->
         <BotMessage :key="needKey" :msg-key="needKey" :lines="needLines" :active="view === 'needs' || view === 'search'">
@@ -721,7 +718,7 @@ async function onInput() {
                   type="button"
                   class="reply reply--chip"
                   :disabled="busy"
-                  :aria-pressed="state.session.situation === s.id && !state.session.query"
+                  :aria-label="s.label"
                   :aria-describedby="`need-${s.id}-hint`"
                   @click="selectNeed(s.id)"
                 >
@@ -735,12 +732,12 @@ async function onInput() {
         </BotMessage>
 
         <template v-if="past('needs') && isTyped(needKey)">
-          <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="換需求" @edit="go('needs')" />
+          <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="修改需求" @edit="rewind(); go('needs')" />
 
           <!-- 3. 問答紀錄 -->
           <template v-for="q in answered" :key="q.id">
             <BotMessage :msg-key="`q:${q.id}`" :lines="qLines(q, false)" />
-            <UserMessage :text="answerText(q)" edit-label="改答案" @edit="editQuestion(q)" />
+            <UserMessage :text="answerText(q)" edit-label="修改答案" @edit="editQuestion(q)" />
           </template>
 
           <template v-if="view === 'questions'">
@@ -751,7 +748,6 @@ async function onInput() {
           </template>
           <!-- 目前的題目：確認完成後接在使用者原句與回覆之後 -->
           <template v-if="view === 'questions'">
-            <p v-if="feedback && current && feedback.before === `q:${current.id}`" class="chat__system" role="status">{{ feedback.text }}</p>
 
             <BotMessage v-if="current && !proposal && !actionProposal && !recovery && !interpreting" :key="`q:${current.id}`" :msg-key="`q:${current.id}`" :lines="qLines(current, true)" active>
               <template v-if="current.kind === 'number'">
@@ -760,7 +756,7 @@ async function onInput() {
                   :min="current.min ?? 0"
                   :max="current.max ?? MAX_AGE"
                   :unit="numberUnit(current)"
-                  :label="titleFor(current, target)"
+                  :label="current.field === 'age' ? '年齡（實歲）' : titleFor(current, target)"
                 />
               </template>
 
@@ -777,7 +773,7 @@ async function onInput() {
                       :key="String(opt.value)"
                       type="button"
                       class="reply"
-                      :aria-pressed="answerOf(state.session.answers, current.field) === opt.value"
+                      :aria-label="opt.label"
                       @click="submit(opt.value)"
                     >
                       <span class="reply__label">{{ opt.label }}</span>
@@ -787,7 +783,6 @@ async function onInput() {
                   <div class="replies__row">
                     <button type="button" class="reply reply--quiet" @click="submit(undefined)">
                       <span class="reply__label">不知道，先跳過</span>
-                      <span class="reply__sub">不會當成「否」</span>
                     </button>
                     <button type="button" class="reply reply--quiet" @click="go('results')">
                       <span class="reply__label">先看目前結果</span>
@@ -826,7 +821,6 @@ async function onInput() {
 
           <!-- 4. 結果 -->
           <template v-if="view === 'results'">
-            <p v-if="feedback && feedback.before === resultsKey" class="chat__system" role="status">{{ feedback.text }}</p>
 
             <BotMessage :key="resultsKey" :msg-key="resultsKey" :lines="resultLines" active wide>
               <ul v-if="recommended.length" class="cards" aria-label="建議先了解">
@@ -961,14 +955,6 @@ async function onInput() {
         <button v-for="choice in recoveryChoices" :key="choice.id" type="button" class="reply reply--chip" :disabled="busy" @click="recoverWith(choice.id)"><span class="reply__label">{{ choice.label }}</span></button>
       </div>
       <p v-if="interpreting" class="chat__system" role="status">正在裝置上理解你的說法… <button type="button" class="btn" @click="cancelInput">取消</button></p>
-      <details class="conversation-model no-print">
-        <summary>文字理解與模型狀態</summary>
-        <p role="status">{{ statusText }}</p>
-        <p>輸入目前選項可直接填答；疑似錯字、模糊答案與模型整理的內容會先確認。名稱或關鍵字會自動查找，完整情況由裝置端模型理解；補助仍由既有資料與規則篩選。</p>
-        <p v-if="modelStatus?.state === 'not_downloaded'">首次需下載約 2.6 GB 的模型，請先連網並保留儲存空間。</p>
-        <button v-if="modelStatus?.state !== 'unavailable' && modelStatus?.state !== 'ready'" type="button" class="btn" :disabled="preparing" @click="prepareModel">{{ preparing ? '準備模型中…' : modelStatus?.state === 'downloaded' ? '載入原版 Gemma' : '下載並載入原版 Gemma' }}</button>
-        <button type="button" class="btn" :disabled="preparing" @click="refreshModel">重新確認狀態</button>
-      </details>
     </section>
 
     <form class="composer no-print conversation-composer" @submit.prevent="onInput">
@@ -998,11 +984,9 @@ async function onInput() {
 .conversation-modes button[aria-pressed='true'] { background: var(--raised); color: var(--accent); font-weight: 600; }
 .conversation-proposal { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); overflow-wrap: anywhere; }
 .conversation-proposal h2 { margin: 0 0 .75rem; font-size: 1.125rem; }
-.conversation-proposal p, .conversation-model p { margin: .75rem 0; }
+.conversation-proposal p { margin: .75rem 0; }
 .conversation-proposal fieldset { min-width: 0; margin: 1rem 0; border: 0; padding: 0; }
 .conversation-choice { display: flex; align-items: center; gap: .75rem; min-height: 48px; padding: .5rem 0; }
 .conversation-choice input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; accent-color: var(--accent); }
 .conversation-choice small { display: block; margin-top: .3rem; color: var(--muted); font-size: .875rem; }
-.conversation-model { margin: 1rem 0; font-size: .875rem; }
-.conversation-model summary { display: flex; align-items: center; min-height: 48px; cursor: pointer; }
 </style>

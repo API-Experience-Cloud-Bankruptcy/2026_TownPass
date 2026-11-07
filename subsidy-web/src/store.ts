@@ -20,12 +20,12 @@ import {
   type SessionState,
 } from './domain/session';
 import { EXTRA_QUALIFICATION_FIELDS } from './domain/answer-fields';
-import { availability, discoveryScore, questionApplies, rankQuestions } from './domain/adaptive';
+import { availability, discoveryScore, identityRanking, questionApplies, rankQuestions } from './domain/adaptive';
 import { filterCatalog, SITUATIONS } from './domain/situations';
 import type { Answers, LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
 import { validFactValue, type CandidateFact } from './chat/interpretation';
 
-export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help';
+export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help' | 'browse';
 
 interface State {
   view: View;
@@ -101,13 +101,16 @@ export const questions = computed<Question[]>(() => state.questionPool === null 
 export const results = computed(() => evaluateAll(catalogItems.value, state.session.answers));
 
 const discoveryScores=computed(()=>new Map(candidates.value.map(item=>[item.id,discoveryScore(item,state.session.answers,state.session.situation)])));
+const identityRankings=computed(()=>new Map(candidates.value.map(item=>[item.id,identityRanking(item,state.session.answers)])));
 export const sortedCandidates = computed(() => sortByFit(candidates.value, results.value)
   .map((item,index)=>({item,index,score:discoveryScores.value.get(item.id)?.score??0}))
   .sort((a,b)=> {
     const fa=results.value.get(a.item.id)?.fit==='ineligible',fb=results.value.get(b.item.id)?.fit==='ineligible';
-    return fa!==fb?(fa?1:-1):b.score-a.score||a.index-b.index;
+    if (fa !== fb) return fa ? 1 : -1;
+    const ia=identityRankings.value.get(a.item.id)!,ib=identityRankings.value.get(b.item.id)!;
+    return ia.unconfirmed-ib.unconfirmed || ib.preferred-ia.preferred || b.score-a.score || a.index-b.index;
   }).map(x=>x.item));
-export const focusedCandidates = computed(()=>candidates.value.filter(item=>results.value.get(item.id)?.fit!=='ineligible'&&discoveryScores.value.get(item.id)?.conflicts===0&&discoveryScores.value.get(item.id)?.unmapped===0));
+export const focusedCandidates = computed(()=>sortedCandidates.value.filter(item=>results.value.get(item.id)?.fit!=='ineligible'&&discoveryScores.value.get(item.id)?.conflicts===0&&discoveryScores.value.get(item.id)?.unmapped===0));
 export const closedCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='closed'));
 export const uncertainCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='unknown'));
 export const recommendedCandidates = computed(()=> {

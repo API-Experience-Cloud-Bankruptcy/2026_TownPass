@@ -160,7 +160,7 @@ async function copy() { status.value = await copyText(fullText.value) ? '已複�
         <summary>完整檢核表文字</summary>
         <article class="checklist-paper selectable">
           <header class="checklist-paper__head">
-            <p class="muted">福利通 · 申辦準備用</p>
+            <p class="muted">福利連 · 申辦準備用</p>
             <h2 class="section-title">{{ checklist.title }}</h2>
             <p>{{ checklist.subtitle }}</p>
             <p v-for="line in checklist.metaLines" :key="line" class="muted">{{ line }}</p>

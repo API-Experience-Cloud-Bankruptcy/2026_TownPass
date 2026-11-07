@@ -67,16 +67,26 @@ export function trackPinned(): void {
   pinned = window.innerHeight + window.scrollY >= doc.scrollHeight - 160;
 }
 
-/** 新訊息或內容長高時平滑捲到底；force 用於換題（使用者剛按下選項）。 */
+/**
+ * 新訊息或內容長高時平滑往下捲；force 用於換題（使用者剛按下選項）。
+ * 最多捲到「這一輪的回覆」（目前題目、結果，即 #view-title 那則）頂端貼齊版頭：
+ * 訊息比畫面長時從開頭讀起、往下延伸，不會一路捲到訊息最底。
+ */
 export function followBottom(force = false): void {
   if (typeof window === 'undefined') return;
   if (force) pinned = true;
   if (!pinned) return;
   const doc = document.documentElement;
-  if (window.innerHeight + window.scrollY >= doc.scrollHeight - 1) return;
+  let target = doc.scrollHeight - window.innerHeight;
+  const anchor = document.getElementById('view-title')?.closest('.msg');
+  if (anchor) {
+    const header = document.querySelector('.app-header')?.getBoundingClientRect().bottom ?? 0;
+    target = Math.min(target, window.scrollY + anchor.getBoundingClientRect().top - header - 12);
+  }
+  if (target <= window.scrollY + 1) return;
   const smooth = !prefersReducedMotion();
   if (smooth) autoUntil = performance.now() + 600;
-  window.scrollTo?.({ top: doc.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  window.scrollTo?.({ top: target, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 /** 使用者手指或滾輪一動，就停止把捲動當成程式發起的。 */

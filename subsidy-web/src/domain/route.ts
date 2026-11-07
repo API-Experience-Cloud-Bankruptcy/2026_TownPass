@@ -1,8 +1,8 @@
-import { effectiveDocuments } from './documents';
+import { projectDocuments } from './documents';
 // JourneyBuilder：只用資料原文組合辦理路線，不自行發明窗口、電話或地址。
 
 import { text } from './match';
-import type { RequiredDocument, Subsidy } from './types';
+import type { Answers, RequiredDocument, Subsidy } from './types';
 import { safeUrl } from './url';
 
 export const METHOD_LABEL: Record<string, string> = {
@@ -43,6 +43,9 @@ export interface Route {
   channel: string;
   methods: string[];
   documents: RequiredDocument[];
+  pendingDocuments: RequiredDocument[];
+  otherDocuments: RequiredDocument[];
+  notices: string[];
   links: RouteLink[];
   sources: RouteSource[];
   rejectedUrls: number;
@@ -82,7 +85,7 @@ export function splitProcess(process: unknown): { steps: string[]; split: boolea
   return { steps, split: steps.length > 1 };
 }
 
-export function buildRoute(item: Subsidy): Route {
+export function buildRoute(item: Subsidy, answers: Answers = {}): Route {
   const app = item.application ?? ({} as Subsidy['application']);
   const { steps, split } = splitProcess(app.process_text);
   let rejected = 0;
@@ -121,11 +124,12 @@ export function buildRoute(item: Subsidy): Route {
   }
   const agency = text(app.agency) || text(item.provider?.name);
   const channel = text(app.channel_text);
-  const documents = (effectiveDocuments(item) ?? []).filter((d) => text(d?.name));
+  const projection = projectDocuments(item, answers);
+  const { documents } = projection;
   const missing: string[] = [];
   if (steps.length === 0) missing.push('辦理步驟原文未提供，請向窗口確認。');
   if (!channel) missing.push('受理窗口原文未提供，請以官方網站為準。');
-  if (documents.length === 0) missing.push('文件清單尚未補齊，不代表免附文件。');
+  if (documents.length === 0) missing.push('適用文件清單尚未確認，不代表免附文件。');
   // 資料沒有獨立的電話、地址欄位；不從原文推測是否已提供。
   missing.push('電話與地址請依受理窗口原文或來源網站確認。');
   if (links.length === 0) missing.push('原文未提供可用的官方網址。');
@@ -135,7 +139,7 @@ export function buildRoute(item: Subsidy): Route {
     agency,
     channel,
     methods: (app.methods ?? []).map((m) => METHOD_LABEL[m] ?? m),
-    documents,
+    ...projection,
     links,
     sources,
     rejectedUrls: rejected,

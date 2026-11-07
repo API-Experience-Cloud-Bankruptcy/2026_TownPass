@@ -5,6 +5,7 @@ import ChatView from './components/ChatView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import DetailView from './components/DetailView.vue';
 import HelpView from './components/HelpView.vue';
+import BrowseView from './components/BrowseView.vue';
 import PlanView from './components/PlanView.vue';
 import { modelAdapter, type ModelStatus } from './domain/model';
 import {
@@ -58,7 +59,7 @@ watch(
 const navItems: { view: View; label: string; match: View[] }[] = [
   { view: 'home', label: '找資源', match: ['home', 'needs', 'search', 'questions', 'results', 'detail'] },
   { view: 'plan', label: '行動單', match: ['plan'] },
-  { view: 'help', label: '找人幫忙', match: ['help'] },
+  { view: 'browse', label: '補助總覽', match: ['browse'] },
 ];
 
 const targetLabel = computed(() =>
@@ -78,7 +79,7 @@ const dialogTitle = computed(() =>
       <div class="brand">
         <span class="avatar avatar--lg" aria-hidden="true">福</span>
         <span class="brand__text">
-          <span class="brand__name">福利通</span>
+          <span class="brand__name">福利連</span>
           <span class="brand__sub">{{ state.session.target ? `${targetLabel}・非官方服務` : '非官方服務，資格以承辦機關為準' }}</span>
         </span>
       </div>
@@ -125,7 +126,7 @@ const dialogTitle = computed(() =>
         :key="n.view"
         type="button"
         class="tabs__item"
-        :aria-current="n.match.includes(state.view) ? 'page' : undefined"
+        :aria-current="n.match.includes(state.view === 'detail' && state.history[state.history.length - 1] === 'browse' ? 'browse' : state.view) ? 'page' : undefined"
         @click="tab(n.view)"
       >
         {{ n.view === 'plan' && state.session.target === 'other' ? '家人檢核表' : n.label }}<span v-if="n.view === 'plan' && planItems.length" class="tabs__count">{{ planItems.length }}<span class="sr-only"> 項</span></span>
@@ -148,13 +149,14 @@ const dialogTitle = computed(() =>
       <button type="button" class="btn btn--text back-chat" @click="back">
         <span aria-hidden="true">‹</span>
         <span class="avatar avatar--sm" aria-hidden="true">福</span>
-        回到對話
+        {{ state.history[state.history.length - 1] === 'browse' ? '回到補助總覽' : '返回上一頁' }}
       </button>
     </div>
     <ChatView v-if="isChat" />
     <DetailView v-else-if="state.view === 'detail'" :key="state.detailId ?? ''" />
     <PlanView v-else-if="state.view === 'plan'" />
-    <HelpView v-else-if="state.view === 'help'" />
+    <KeepAlive><BrowseView v-if="state.view === 'browse'" /></KeepAlive>
+    <HelpView v-if="state.view === 'help'" />
   </main>
 
   <ConfirmDialog

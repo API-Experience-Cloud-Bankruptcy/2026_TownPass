@@ -2,16 +2,17 @@
 import { computed } from 'vue';
 import { text } from '../domain/match';
 import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE } from '../domain/route';
-import { benefitLabel, itemFlags, statusPlain } from '../presentation';
+import { benefitLabel, itemFlags, sourceExcerpt, statusPlain } from '../presentation';
 import { inPlan, itemsById, results, state, tab, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import RouteSteps from './RouteSteps.vue';
 
 const item = computed(() => (state.detailId ? itemsById.value.get(state.detailId) : undefined));
 const result = computed(() => (item.value ? results.value.get(item.value.id) : undefined));
-const route = computed(() => (item.value ? buildRoute(item.value) : null));
+const route = computed(() => (item.value ? buildRoute(item.value, state.session.answers) : null));
 const sub = computed(() => (item.value ? [benefitLabel(item.value), text(item.value.provider?.name)].filter(Boolean).join('・') : ''));
 const benefit = computed(() => text(item.value?.benefit?.raw));
+const benefitPreview = computed(() => sourceExcerpt(benefit.value, 100));
 const summary = computed(() => text(item.value?.eligibility?.raw_summary));
 const flags = computed(() => (item.value ? itemFlags(item.value, result.value) : []));
 /** 受理情形原文；已在提醒列出時不重複。 */
@@ -37,7 +38,12 @@ function kindOf(type: string) {
 
     <section class="block card" aria-labelledby="d-benefit-h">
       <h2 id="d-benefit-h" class="section-title">能提供什麼</h2>
-      <p class="selectable">{{ benefit || '原文沒有提供內容說明，請看官方說明頁或問承辦窗口' }}</p>
+      <p class="selectable">{{ benefitPreview || '原文沒有提供內容說明，請看官方說明頁或問承辦窗口' }}</p>
+      <details v-if="benefitPreview !== benefit" class="more">
+        <summary>完整給付內容與條件（原文）</summary>
+        <div class="more__body"><p class="selectable">{{ benefit }}</p></div>
+      </details>
+      <p v-if="benefitPreview !== benefit" class="muted">以上為原文節錄，金額、適用項目與條件請展開確認。</p>
     </section>
 
     <section class="block card" aria-labelledby="d-limit-h">

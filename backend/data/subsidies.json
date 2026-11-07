@@ -35052,31 +35052,56 @@
           "name": "法定代理人身分證明文件（如身分證、健保卡、駕照等）",
           "required": true,
           "condition": null,
-          "notes": "台南市社會局頁列示；另可佐證兒童身份之證件（如健保卡）"
+          "notes": "台南市社會局頁列示；另可佐證兒童身份之證件（如健保卡）",
+          "regions": [
+            "臺南市"
+          ],
+          "region_basis": "registered",
+          "region_evidence": "資料備註：文件來源為台南市社會局地方說明，依戶籍地政府受理；各縣市作業細節可能不同。"
         },
         {
           "name": "可佐證兒童身份的證件（如健保卡）",
           "required": true,
           "condition": null,
-          "notes": "台南市社會局頁列示"
+          "notes": "台南市社會局頁列示",
+          "regions": [
+            "臺南市"
+          ],
+          "region_basis": "registered",
+          "region_evidence": "資料備註：文件來源為台南市社會局地方說明，依戶籍地政府受理；各縣市作業細節可能不同。"
         },
         {
           "name": "戶口名簿或戶籍謄本",
           "required": true,
           "condition": null,
-          "notes": "台南市社會局頁列示"
+          "notes": "台南市社會局頁列示",
+          "regions": [
+            "臺南市"
+          ],
+          "region_basis": "registered",
+          "region_evidence": "資料備註：文件來源為台南市社會局地方說明，依戶籍地政府受理；各縣市作業細節可能不同。"
         },
         {
           "name": "兒童及法定代理人印章",
           "required": true,
           "condition": null,
-          "notes": "台南市社會局頁列示"
+          "notes": "台南市社會局頁列示",
+          "regions": [
+            "臺南市"
+          ],
+          "region_basis": "registered",
+          "region_evidence": "資料備註：文件來源為台南市社會局地方說明，依戶籍地政府受理；各縣市作業細節可能不同。"
         },
         {
           "name": "郵局存簿及印章（印鑑章）",
           "required": false,
           "condition": "若要由郵局自動扣款",
-          "notes": "台南市社會局頁列示"
+          "notes": "台南市社會局頁列示",
+          "regions": [
+            "臺南市"
+          ],
+          "region_basis": "registered",
+          "region_evidence": "資料備註：文件來源為台南市社會局地方說明，依戶籍地政府受理；各縣市作業細節可能不同。"
         }
       ],
       "deadline": {
@@ -35848,49 +35873,89 @@
           "name": "新北市政府長期照顧服務申請書",
           "required": true,
           "condition": "向新北市申請時",
-          "notes": ""
+          "notes": "",
+          "regions": [
+            "新北市"
+          ],
+          "region_basis": "application",
+          "region_evidence": "向新北市申請時"
         },
         {
           "name": "長期照顧服務個人資料應用說明及知情同意書",
           "required": true,
           "condition": "向新北市申請時",
-          "notes": ""
+          "notes": "",
+          "regions": [
+            "新北市"
+          ],
+          "region_basis": "application",
+          "region_evidence": "向新北市申請時"
         },
         {
           "name": "被照顧者(個案)身障證明",
           "required": false,
           "condition": "新北市申請人選擇提供時",
-          "notes": "可於到府評估時再提供；新北頁列為選擇提供。"
+          "notes": "可於到府評估時再提供；新北頁列為選擇提供。",
+          "regions": [
+            "新北市"
+          ],
+          "region_basis": "application",
+          "region_evidence": "新北市申請人選擇提供時"
         },
         {
           "name": "被照顧者(個案)外勞聘僱證明",
           "required": false,
           "condition": "新北市申請人選擇提供時",
-          "notes": "可於到府評估時再提供；非全國必備。"
+          "notes": "可於到府評估時再提供；非全國必備。",
+          "regions": [
+            "新北市"
+          ],
+          "region_basis": "application",
+          "region_evidence": "新北市申請人選擇提供時"
         },
         {
           "name": "被照顧者(個案)相關疾病診斷證明",
           "required": false,
           "condition": "新北市申請人選擇提供時",
-          "notes": "可於到府評估時再提供。"
+          "notes": "可於到府評估時再提供。",
+          "regions": [
+            "新北市"
+          ],
+          "region_basis": "application",
+          "region_evidence": "新北市申請人選擇提供時"
         },
         {
           "name": "宜蘭縣長期照顧服務申請書",
           "required": true,
           "condition": "向宜蘭縣採下載填表後傳真申請時",
-          "notes": "官方表單標示115.8.4。"
+          "notes": "官方表單標示115.8.4。",
+          "regions": [
+            "宜蘭縣"
+          ],
+          "region_basis": "application",
+          "region_evidence": "向宜蘭縣採下載填表後傳真申請時"
         },
         {
           "name": "失智症診斷證明書",
           "required": true,
           "condition": "於宜蘭縣以失智症者資格申請時",
-          "notes": "由神經科或精神科專科醫師開立。"
+          "notes": "由神經科或精神科專科醫師開立。",
+          "regions": [
+            "宜蘭縣"
+          ],
+          "region_basis": "application",
+          "region_evidence": "於宜蘭縣以失智症者資格申請時"
         },
         {
           "name": "CDR 1分以上之檢查報告",
           "required": true,
           "condition": "於宜蘭縣以失智症者資格申請時",
-          "notes": "宜蘭頁要求失智症診斷證明書載有評估效期1年內CDR 1分以上之檢查報告。"
+          "notes": "宜蘭頁要求失智症診斷證明書載有評估效期1年內CDR 1分以上之檢查報告。",
+          "regions": [
+            "宜蘭縣"
+          ],
+          "region_basis": "application",
+          "region_evidence": "於宜蘭縣以失智症者資格申請時"
         }
       ],
       "deadline": {
@@ -38721,31 +38786,56 @@
           "name": "榮民國民身分證及榮民證（正反面）影本",
           "required": true,
           "condition": null,
-          "notes": "屏東縣榮民服務處就養安置頁面列示（地方處資料），全國適用性待確認"
+          "notes": "屏東縣榮民服務處就養安置頁面列示（地方處資料），全國適用性待確認",
+          "regions": [
+            "屏東縣"
+          ],
+          "region_basis": "unknown",
+          "region_evidence": "屏東縣榮民服務處地方頁所列，全國適用性與地區判斷依據待確認。"
         },
         {
           "name": "全家人口戶口名簿影本（含非同住直系血親）",
           "required": true,
           "condition": null,
-          "notes": "同上（屏東縣榮民服務處頁面）"
+          "notes": "同上（屏東縣榮民服務處頁面）",
+          "regions": [
+            "屏東縣"
+          ],
+          "region_basis": "unknown",
+          "region_evidence": "屏東縣榮民服務處地方頁所列，全國適用性與地區判斷依據待確認。"
         },
         {
           "name": "榮民手抄全戶戶籍謄本",
           "required": true,
           "condition": null,
-          "notes": "戶政事務所取得；同上（屏東縣榮民服務處頁面）"
+          "notes": "戶政事務所取得；同上（屏東縣榮民服務處頁面）",
+          "regions": [
+            "屏東縣"
+          ],
+          "region_basis": "unknown",
+          "region_evidence": "屏東縣榮民服務處地方頁所列，全國適用性與地區判斷依據待確認。"
         },
         {
           "name": "離婚協議書（或判決書）",
           "required": true,
           "condition": "榮民曾離婚者",
-          "notes": "同上（屏東縣榮民服務處頁面）"
+          "notes": "同上（屏東縣榮民服務處頁面）",
+          "regions": [
+            "屏東縣"
+          ],
+          "region_basis": "unknown",
+          "region_evidence": "屏東縣榮民服務處地方頁所列，全國適用性與地區判斷依據待確認。"
         },
         {
           "name": "榮民112年度綜合所得稅稅籍資料清單",
           "required": true,
           "condition": "依原文段落（未完整擷取）",
-          "notes": "同上（屏東縣榮民服務處頁面）；與上列全國頁「綜合所得稅籍資料清單」可能重複，待確認"
+          "notes": "同上（屏東縣榮民服務處頁面）；與上列全國頁「綜合所得稅籍資料清單」可能重複，待確認",
+          "regions": [
+            "屏東縣"
+          ],
+          "region_basis": "unknown",
+          "region_evidence": "屏東縣榮民服務處地方頁所列，全國適用性與地區判斷依據待確認。"
         }
       ],
       "deadline": {

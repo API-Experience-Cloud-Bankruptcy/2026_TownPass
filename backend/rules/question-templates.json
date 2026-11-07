@@ -1,5 +1,5 @@
 {
-  "version": "adaptive-questions-v1",
+  "version": "adaptive-questions-v2",
   "questions": [
     {
       "id": "q-need-area",
@@ -112,6 +112,42 @@
         {
           "label": "一般（未核定）",
           "value": "general"
+        }
+      ]
+    },
+    {
+      "id": "q-has-farmer-insurance",
+      "field": "has_farmer_insurance",
+      "kind": "boolean",
+      "title": "本人是否曾參加農保、具有農保投保年資？",
+      "description": "老農津貼會核對農保年資與持續加保情況；這題只確認有無年資，不代表已符合。若不確定可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "有農保投保年資",
+          "value": true
+        },
+        {
+          "label": "沒有農保投保年資",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "q-veteran-status",
+      "field": "veteran_status",
+      "kind": "boolean",
+      "title": "本人是否具有輔導條例第2條規定的退除役官兵身分？",
+      "description": "這是榮民就養給付的必要身分，和一般曾服兵役不同；不確定身分類別可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "具有上述退除役官兵身分",
+          "value": true
+        },
+        {
+          "label": "沒有上述身分",
+          "value": false
         }
       ]
     },

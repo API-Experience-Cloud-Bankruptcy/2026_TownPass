@@ -129,7 +129,7 @@ export async function createChecklistPdf(input: PlanInput): Promise<Uint8Array> 
   });
   pdf.setTitle(checklist.title);
   pdf.setSubject('申辦準備檢核表；不代表送件或核准');
-  pdf.setCreator('福利通');
+  pdf.setCreator('福利連');
   pdf.setCreationDate(input.meta.generatedAt);
   // 不把輸入、答案或完整結構寫進 metadata。
   pdf.catalog.set(PDFName.of('Lang'), PDFString.of('zh-Hant-TW'));

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 // 滾輪選擇器（年齡）。手指上下滑動，停下時吸附到中間那一格。
 // 鍵盤與讀屏：整個滾輪是 spinbutton，上下鍵 ±1、PageUp/PageDown ±10、Home/End 到頭尾。
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 import { prefersReducedMotion } from '../../chat/typing';
 
 const props = defineProps<{ min: number; max: number; unit: string; label: string }>();
 const model = defineModel<number>({ required: true });
 
+const inputId = useId();
 const list = ref<HTMLUListElement | null>(null);
 const values = computed(() => Array.from({ length: props.max - props.min + 1 }, (_, i) => props.min + i));
 let settle: ReturnType<typeof setTimeout> | undefined;
@@ -55,8 +56,15 @@ function onScroll() {
 }
 
 function set(value: number) {
-  model.value = clamp(value);
+  if (!Number.isFinite(value)) return;
+  model.value = clamp(Math.round(value));
   scrollToValue(model.value, true);
+}
+
+function onNumberChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (input.value !== '') set(Number(input.value));
+  input.value = String(model.value);
 }
 
 function onKey(e: KeyboardEvent) {
@@ -73,15 +81,21 @@ onMounted(async () => {
   scrollToValue(model.value, false);
 });
 onBeforeUnmount(() => clearTimeout(settle));
+watch(model, (value) => scrollToValue(value, false));
 watch(() => [props.min, props.max], () => scrollToValue(model.value, false));
 </script>
 
 <template>
+  <div class="wheel-input">
+    <label :for="inputId">{{ label }}</label>
+    <input :id="inputId" type="number" inputmode="numeric" :min="min" :max="max" step="1" :value="model"
+      @change="onNumberChange" />
+  </div>
   <div
     class="wheel"
     role="spinbutton"
     tabindex="0"
-    :aria-label="label"
+    :aria-label="`${label}滾輪`"
     :aria-valuenow="model"
     :aria-valuemin="min"
     :aria-valuemax="max"
@@ -100,3 +114,8 @@ watch(() => [props.min, props.max], () => scrollToValue(model.value, false));
     </ul>
   </div>
 </template>
+
+<style scoped>
+.wheel-input { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.wheel-input input { width: 6rem; min-height: 48px; padding: .5rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--bg); color: var(--text); font: inherit; }
+</style>

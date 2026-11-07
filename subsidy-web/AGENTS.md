@@ -97,7 +97,7 @@ subsidy-web/
    ├─ store.ts           對象、需求、題目、行動單與導覽狀態
    ├─ components/       ChatView（對話式：選對象→需求→問答→結果）、詳情、行動單、求助頁
    │  └─ chat/          BotMessage（打字效果）、UserMessage（點擊改答案）、WheelPicker（年齡滾輪）
-   ├─ chat/typing.ts    打字速度（字多加快但仍逐字，整則上限 3.5 秒）、已播放紀錄、自動捲到底
+   ├─ chat/typing.ts    打字速度（字多加快但仍逐字，整則上限 3.5 秒）、已播放紀錄、自動往下捲（長訊息停在開頭）
    ├─ domain/           資料讀取、保守規則、固定題庫與完整輸出
    ├─ tokens.css         設計 token：--tp-*（對照 Flutter）＋語意層（--accent、--fs-*…）
    ├─ style.css          元件樣式，只用語意 token

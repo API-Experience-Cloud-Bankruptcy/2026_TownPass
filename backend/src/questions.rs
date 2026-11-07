@@ -65,6 +65,8 @@ pub fn qualification_field(field: &str) -> bool {
                 | "is_renting"
                 | "owns_home"
                 | "disability_certificate"
+                | "has_farmer_insurance"
+                | "veteran_status"
         )
 }
 /// No free text or unbounded custom data is admitted into the personal profile.
@@ -135,6 +137,7 @@ pub fn build_questions(entries: &[Entry]) -> Vec<Question> {
                         || entry.adaptive.is_some_and(|row| {
                             matches!(field, "need_area" | "explore_context" | "expense_priority")
                                 || row.facets.iter().any(|facet| facet.field == field)
+                                || row.ranking_preferences.iter().any(|preference| preference.field == field)
                         })
                 })
                 .map(|entry| entry.subsidy.id.clone())
