@@ -44,6 +44,6 @@ Creates `role:*`, `status:*` and `contract` labels.
 
 ## Agent permissions
 
-- Claude Code runs with `--permission-mode acceptEdits` and only these tools: Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, and Bash for `git`, `npm`, `npx`, `node`, `pnpm`, `flutter`, `dart`, `fvm`; `git push` and `git remote` are denied.
+- Claude Code runs with `--permission-mode acceptEdits` and only these tools: Read, Edit, Write, Glob, Grep, WebFetch, WebSearch, and Bash for `git`, `npm`, `npx`, `node`, `pnpm`, `flutter`, `dart`, `fvm`, `cargo`; `git push` and `git remote` are denied.
 - Codex runs `codex exec --sandbox workspace-write` (writes limited to the worktree) with network access for package installs.
 - `--model <name>` at `init` selects a model.
