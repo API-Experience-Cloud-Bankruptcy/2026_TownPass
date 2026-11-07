@@ -14,11 +14,6 @@
   color-scheme: light;
 }
 
-/* 大字模式：整體放大 125%，所有 rem 字級一起變大 */
-:root.is-large {
-  font-size: 20px;
-}
-
 *,
 *::before,
 *::after {
@@ -133,10 +128,6 @@ li + li {
   line-height: 1.4;
   text-wrap: balance;
 }
-.app-header__row > .btn {
-  flex: none;
-  white-space: nowrap;
-}
 .tabs {
   --tab-index: 0;
   position: relative;
@@ -202,16 +193,153 @@ li + li {
   color: var(--accent);
 }
 
-.settings {
-  display: grid;
-  gap: 4px;
-  padding: 8px 0 16px;
-  border-top: 1px solid var(--line);
-  max-height: min(55dvh, 28rem);
-  overflow-y: auto;
+.app-header__row {
+  position: relative;
 }
-.settings__meta {
-  margin-top: 8px;
+.settings-anchor {
+  flex: none;
+  margin-right: -8px;
+}
+/* 右上角設定：48×48 觸控範圍的圖示鈕，開啟時齒輪轉半圈 */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.icon-btn:active,
+.icon-btn.is-open {
+  background: var(--brand-soft);
+}
+.icon-btn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.icon-btn__gear {
+  transition: transform 420ms var(--ease);
+}
+.icon-btn.is-open .icon-btn__gear {
+  transform: rotate(90deg);
+}
+
+/* 設定面板：從齒輪下方浮出（淡入＋輕微下滑＋放大），不推動底下內容 */
+.settings {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 0;
+  z-index: 20;
+  width: min(20rem, calc(100vw - 32px));
+  display: grid;
+  gap: var(--space-3);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  box-shadow: var(--shadow-popover);
+  transform-origin: calc(100% - 24px) 0;
+}
+.settings__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  color: var(--text);
+}
+.settings__value {
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.settings__slider {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+.settings__a {
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  color: var(--muted);
+}
+.settings__a--small { font-size: 0.875rem; }
+.settings__a--large { font-size: 1.375rem; }
+
+/* 左右拉桿：已選範圍填主色，圓鈕 28px（外加透明觸控範圍到 48px 高） */
+.range {
+  --range-fill: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 48px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to right, var(--accent-fill) var(--range-fill), var(--line) var(--range-fill));
+}
+.range::-moz-range-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+.range::-moz-range-progress {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-fill);
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-card);
+  transition: transform 160ms var(--ease);
+}
+.range::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-card);
+}
+.range:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+.range:focus-visible {
+  outline: none;
+}
+.range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--focus), var(--shadow-card);
+}
+
+.settings-pop-enter-active {
+  transition: opacity 220ms var(--ease), transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.settings-pop-leave-active {
+  transition: opacity 160ms var(--ease), transform 200ms var(--ease);
+}
+.settings-pop-enter-from,
+.settings-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
 }
 
 .app-main {

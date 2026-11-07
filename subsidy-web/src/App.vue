@@ -9,8 +9,7 @@ import { dismissSplash, SPLASH_MAX_WAIT_MS } from './brand/splash';
 import BrowseView from './components/BrowseView.vue';
 import PlanItemView from './components/PlanItemView.vue';
 import PlanView from './components/PlanView.vue';
-import Expand from './components/motion/Expand.vue';
-import { modelAdapter, type ModelStatus } from './domain/model';
+import { FONT_SCALE } from './domain/session';
 import {
   back,
   confirmPending,
@@ -24,23 +23,25 @@ import {
   planItems,
   PLAN_VIEWS,
   questions,
-  requestNewPerson,
   state,
   tab,
   type View,
 } from './store';
 
 const settingsOpen = ref(false);
-const modelStatus = ref<ModelStatus | null>(null);
-const modelStateLabel: Record<ModelStatus['state'], string> = {
-  unavailable: '目前無法使用',
-  not_downloaded: '尚未下載',
-  downloading: '下載中',
-  downloaded: '已下載，準備啟用',
-  loading: '啟用中',
-  ready: '可以使用',
-  error: '啟用失敗',
-};
+const settingsBtn = ref<HTMLButtonElement | null>(null);
+const settingsAnchor = ref<HTMLElement | null>(null);
+const fontScaleText = computed(() => (state.prefs.fontScale === FONT_SCALE.default ? '標準' : `${state.prefs.fontScale}%`));
+
+// 設定面板：點面板外或按 Esc 收起；Esc 時焦點回到設定鈕。
+function onOutsidePointer(event: PointerEvent) {
+  if (settingsOpen.value && !settingsAnchor.value?.contains(event.target as Node)) settingsOpen.value = false;
+}
+function onSettingsKey(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !settingsOpen.value) return;
+  settingsOpen.value = false;
+  settingsBtn.value?.focus();
+}
 
 // iOS 鍵盤可能只縮小 visualViewport；外框跟著可見高度，輸入框留在鍵盤上方。
 function syncViewport() {
@@ -54,21 +55,24 @@ onMounted(async () => {
   window.visualViewport?.addEventListener('resize', syncViewport);
   window.visualViewport?.addEventListener('scroll', syncViewport);
   window.addEventListener('resize', syncViewport);
+  document.addEventListener('pointerdown', onOutsidePointer);
+  document.addEventListener('keydown', onSettingsKey);
   // 開場畫面等資料載入完（最多等 SPLASH_MAX_WAIT_MS）才收起。
   const loaded = init();
   void Promise.race([loaded, new Promise((r) => setTimeout(r, SPLASH_MAX_WAIT_MS))]).then(dismissSplash);
-  modelStatus.value = await modelAdapter.status();
 });
 onBeforeUnmount(() => {
   window.visualViewport?.removeEventListener('resize', syncViewport);
   window.visualViewport?.removeEventListener('scroll', syncViewport);
   window.removeEventListener('resize', syncViewport);
+  document.removeEventListener('pointerdown', onOutsidePointer);
+  document.removeEventListener('keydown', onSettingsKey);
 });
 
 watchEffect(() => {
   const root = document.documentElement;
-  root.classList.toggle('is-large', state.prefs.largeText);
-  root.classList.toggle('is-contrast', state.prefs.highContrast);
+  // 全站字級都以 rem 計，改根字級即整體縮放。
+  root.style.fontSize = `${(16 * state.prefs.fontScale) / 100}px`;
 });
 
 const CHAT_VIEWS: View[] = ['home', 'needs', 'search', 'questions', 'results'];
@@ -224,45 +228,47 @@ const dialogTitle = computed(() =>
           </Transition>
         </span>
       </div>
-      <button
-        type="button"
-        class="btn btn--text"
-        :aria-expanded="settingsOpen"
-        aria-controls="settings-panel"
-        @click="settingsOpen = !settingsOpen"
-      >
-        {{ settingsOpen ? '關閉設定' : '設定' }}
-      </button>
-    </div>
-    <Expand>
-    <section v-show="settingsOpen" id="settings-panel" class="settings" aria-label="設定">
-      <label class="check">
-        <input v-model="state.prefs.largeText" type="checkbox" />
-        <span>放大字體</span>
-      </label>
-      <label class="check">
-        <input v-model="state.prefs.highContrast" type="checkbox" />
-        <span>高對比</span>
-      </label>
-      <div class="inline-actions">
-        <button type="button" class="btn btn--text" @click="requestNewPerson">換人查詢（清除前一位的答案）</button>
-        <button type="button" class="btn btn--text" @click="pendingSwitch = 'clear'">清除這次的資料</button>
+      <div ref="settingsAnchor" class="settings-anchor">
+        <button
+          ref="settingsBtn"
+          type="button"
+          class="icon-btn"
+          :class="{ 'is-open': settingsOpen }"
+          :aria-expanded="settingsOpen"
+          aria-controls="settings-panel"
+          :aria-label="settingsOpen ? '關閉設定' : '設定'"
+          @click="settingsOpen = !settingsOpen"
+        >
+          <svg class="icon-btn__gear" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.33 4.32c.43-1.76 2.91-1.76 3.34 0a1.72 1.72 0 0 0 2.57 1.07c1.54-.94 3.3.82 2.37 2.37a1.72 1.72 0 0 0 1.06 2.57c1.76.43 1.76 2.91 0 3.34a1.72 1.72 0 0 0-1.06 2.57c.93 1.54-.83 3.3-2.37 2.37a1.72 1.72 0 0 0-2.57 1.06c-.43 1.76-2.91 1.76-3.34 0a1.72 1.72 0 0 0-2.57-1.06c-1.54.93-3.3-.83-2.37-2.37a1.72 1.72 0 0 0-1.06-2.57c-1.76-.43-1.76-2.91 0-3.34a1.72 1.72 0 0 0 1.06-2.57c-.93-1.55.83-3.31 2.37-2.37 1 .6 2.29.07 2.57-1.07Z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+        <Transition name="settings-pop">
+          <section v-if="settingsOpen" id="settings-panel" class="settings" aria-labelledby="font-size-label">
+            <div class="settings__head">
+              <label id="font-size-label" for="font-size">字體大小</label>
+              <output for="font-size" class="settings__value">{{ fontScaleText }}</output>
+            </div>
+            <div class="settings__slider">
+              <span class="settings__a settings__a--small" aria-hidden="true">A</span>
+              <input
+                id="font-size"
+                v-model.number="state.prefs.fontScale"
+                type="range"
+                class="range"
+                :min="FONT_SCALE.min"
+                :max="FONT_SCALE.max"
+                :step="FONT_SCALE.step"
+                :aria-valuetext="fontScaleText"
+                :style="{ '--range-fill': `${((state.prefs.fontScale - FONT_SCALE.min) / (FONT_SCALE.max - FONT_SCALE.min)) * 100}%` }"
+              />
+              <span class="settings__a settings__a--large" aria-hidden="true">A</span>
+            </div>
+          </section>
+        </Transition>
       </div>
-      <p class="muted">對話與填答只留在本分頁；行動單項目、文件勾選與步驟進度會存入資料庫，關閉後可再開啟。</p>
-      <p v-if="planSync.state.profile" class="muted">虛擬測試者：{{ planSync.state.profile.realName }}（非真實台北通登入）</p>
-      <details class="more more--single settings__meta">
-        <summary>資料來源</summary>
-        <dl class="more__body facts">
-          <div><dt>資料</dt><dd>{{ state.catalog?.sourceLabel ?? '載入中' }}</dd></div>
-          <div><dt>版本</dt><dd>{{ state.catalog?.version ?? '載入中' }}</dd></div>
-          <div v-if="state.catalog?.fallbackReason"><dt>為什麼使用備份資料</dt><dd>{{ state.catalog.fallbackReason }}</dd></div>
-          <div><dt>題目</dt><dd>{{ state.bank ? (state.bank.origin === 'api' ? `線上題庫（${state.bank.version}）` : '本機題庫') : '載入中' }}</dd></div>
-          <div><dt>文字理解功能</dt><dd>{{ modelStatus?.state === 'unavailable' ? modelStatus.reason : modelStatus ? modelStateLabel[modelStatus.state] : '確認中' }}</dd></div>
-          <div><dt>說明</dt><dd>本服務非政府官方服務；查核標記沿用資料原有狀態。</dd></div>
-        </dl>
-      </details>
-    </section>
-    </Expand>
+    </div>
 
     <nav class="tabs" :class="{ 'tabs--none': activeTabIndex < 0 }" :style="{ '--tab-index': Math.max(activeTabIndex, 0) }" aria-label="主要功能">
       <button
@@ -334,6 +340,6 @@ const dialogTitle = computed(() =>
     @confirm="confirmPending"
     @cancel="pendingSwitch = null"
   >
-    <p>{{ pendingSwitch === 'clear' ? '會清除這次填答、自己的行動單和勾選進度。' : '會清除前一位的查詢答案，自己的行動單與準備進度會保留。' }}放大字體與高對比設定會保留。</p>
+    <p>{{ pendingSwitch === 'clear' ? '會清除這次填答、自己的行動單和勾選進度。' : '會清除前一位的查詢答案，自己的行動單與準備進度會保留。' }}字體大小設定會保留。</p>
   </ConfirmDialog>
 </template>

@@ -198,6 +198,7 @@
   --radius-pill: 999px;
   --shadow-card: var(--tp-shadow-card);
   --shadow-sheet: var(--tp-shadow-sheet);
+  --shadow-popover: 0 12px 32px rgb(17 38 41 / 14%), 0 2px 6px rgb(17 38 41 / 8%); /* 浮出面板（設定） */
   --touch: var(--tp-touch-min);
 
   /* 對話介面：底色取自入門指引簡報的 #F7FAFA（帶一點青的白） */
@@ -228,48 +229,4 @@
   --dur-page: 280ms;   /* 換頁進場；離場用 --dur-page-exit */
   --dur-page-exit: 140ms;
   --page-shift: 32px;  /* 換頁水平位移 */
-}
-
-/* 高對比模式：只覆寫語意層 */
-:root.is-contrast {
-  --text: #000000;
-  --text-2: #000000;
-  --muted: #1a1a1a;
-  --line: #000000;
-  --line-strong: #000000;
-  --line-input: #000000;
-  --accent: #003c47;
-  --accent-fill: #003c47;
-  --accent-press: #00262e;
-  --accent-shadow: none;
-  --accent-soft: #ffffff;
-  --brand: #003c47;
-  --brand-soft: #ffffff;
-  --brand-line: #000000;
-  --doing-mark: #000000;
-  --done-bg: #ffffff;
-  --done-line: #000000;
-  --done-ink: #000000;
-  --doing-bg: #ffffff;
-  --doing-line: #000000;
-  --doing-ink: #000000;
-  --waiting-bg: #ffffff;
-  --waiting-ink: #000000;
-  --progress: #003c47;
-  --progress-track: #ffffff;
-  --on-bubble-user: #ffffff;
-  --bubble-user-hint: rgb(255 255 255 / 18%);
-  --hero-bg: #ffffff;
-  --raised: #ffffff;
-  --surface-brand: #ffffff;
-  --surface-highlight: #ffffff;
-  --highlight-text: #000000;
-  --danger: #7a0000;
-  --warning: #6b2a00;
-  --focus: #b30000;
-  --shadow-card: none;
-  --chat-bg: #ffffff;
-  --bubble-user: #003c47;
-  --logo-ink: #003c47;
-  --reply-line: #000000;
 }

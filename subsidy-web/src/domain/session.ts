@@ -1,5 +1,5 @@
 // 本分頁的答案與對話狀態保存在 sessionStorage；行動單項目與進度另由 action-plan.ts 存後端。
-// 資格答案不送後端。顯示偏好（大字、高對比）不含個資，另存於 localStorage。
+// 資格答案不送後端。顯示偏好（字體大小）不含個資，另存於 localStorage。
 // 不讀取 TownPass userinfo（mock 帳號）作為任何人的資格條件。
 
 import { validExtraValue } from './answer-fields';
@@ -28,8 +28,17 @@ export interface SessionState {
 }
 
 export interface Prefs {
-  largeText: boolean;
-  highContrast: boolean;
+  /** 字體大小，百分比（100 = 標準 16px）。 */
+  fontScale: number;
+}
+
+export const FONT_SCALE = { min: 90, max: 150, step: 10, default: 100 } as const;
+
+/** 夾在可調範圍內並對齊刻度；非數字回到標準。 */
+export function clampFontScale(value: unknown): number {
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : FONT_SCALE.default;
+  const snapped = Math.round(n / FONT_SCALE.step) * FONT_SCALE.step;
+  return Math.min(FONT_SCALE.max, Math.max(FONT_SCALE.min, snapped));
 }
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -184,10 +193,12 @@ export function hasPersonalData(state: SessionState): boolean {
 export function loadPrefs(storage: StorageLike | null = prefsStorage()): Prefs {
   try {
     const raw = storage?.getItem(PREFS_KEY);
-    const p = raw ? (JSON.parse(raw) as Partial<Prefs>) : {};
-    return { largeText: p.largeText === true, highContrast: p.highContrast === true };
+    const p = raw ? (JSON.parse(raw) as Partial<Prefs> & { largeText?: unknown }) : {};
+    // 舊版只有「放大字體」開關（125%），沿用為對應的字級。
+    if (typeof p.fontScale !== 'number' && p.largeText === true) return { fontScale: 130 };
+    return { fontScale: clampFontScale(p.fontScale) };
   } catch {
-    return { largeText: false, highContrast: false };
+    return { fontScale: FONT_SCALE.default };
   }
 }
 

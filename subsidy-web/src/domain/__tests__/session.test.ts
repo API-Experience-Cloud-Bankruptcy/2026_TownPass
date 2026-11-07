@@ -24,7 +24,7 @@ describe('儲存位置', () => {
     expect(defaultStorage()).toBe(session);
     expect(prefsStorage()).toBe(local);
     saveSession({ ...emptySession('self'), answers: { age: 72 } });
-    savePrefs({ largeText: true, highContrast: false });
+    savePrefs({ fontScale: 120 });
     expect(session.map.has(SESSION_KEY)).toBe(true);
     expect(local.map.has(SESSION_KEY)).toBe(false);
     expect(local.map.has(PREFS_KEY)).toBe(true);
@@ -74,11 +74,22 @@ describe('本機保存', () => {
   it('舊版清理只移除答案 key，保留偏好', () => {
     const legacy = memory();
     legacy.setItem(SESSION_KEY, '{}');
-    savePrefs({ largeText: true, highContrast: false }, legacy);
+    savePrefs({ fontScale: 120 }, legacy);
     purgeLegacySession(legacy);
     expect(legacy.map.has(SESSION_KEY)).toBe(false);
     expect(legacy.map.has(PREFS_KEY)).toBe(true);
-    expect(loadPrefs(legacy).largeText).toBe(true);
+    expect(loadPrefs(legacy).fontScale).toBe(120);
+  });
+  it('字體大小：舊版放大開關轉成 130%，超出範圍或壞資料夾回可調範圍', () => {
+    const s = memory();
+    s.setItem(PREFS_KEY, JSON.stringify({ largeText: true, highContrast: true }));
+    expect(loadPrefs(s)).toEqual({ fontScale: 130 });
+    s.setItem(PREFS_KEY, JSON.stringify({ fontScale: 999 }));
+    expect(loadPrefs(s).fontScale).toBe(150);
+    s.setItem(PREFS_KEY, JSON.stringify({ fontScale: 112 }));
+    expect(loadPrefs(s).fontScale).toBe(110);
+    s.setItem(PREFS_KEY, '{bad');
+    expect(loadPrefs(s).fontScale).toBe(100);
   });
   it('損壞或超出範圍的資料被忽略', () => {
     const s = memory();
