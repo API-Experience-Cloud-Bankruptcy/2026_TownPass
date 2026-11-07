@@ -5,10 +5,11 @@
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 import LogoMark from './LogoMark.vue';
 import { vSmoothDetails } from '../chat/smooth-details';
-import { followBottom, forgetTyped, isTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
+import { followBottom, forgetTyped, isTyped, markTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, MAX_AGE, titleFor } from '../domain/questions';
 import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
-import { explicitSelfAge, factApplies, InterpretationTurn, type CandidateFact, type ChatChoice, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
+import { explicitSelfAge, InterpretationTurn, type CandidateFact, type ChatChoice, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
+import { FIELD_LABELS, matchFollowupChoice, planFollowups, type FollowupStep } from '../chat/followups';
 import { matchCurrentChoice, normalizeInput, routeInput, suggestSearchQueries } from '../chat/input-router';
 import { filterCatalog, SITUATIONS } from '../domain/situations';
 import { adaptiveReviewFor } from '../domain/adaptive';
@@ -223,7 +224,8 @@ const typedAnswers = ref<Record<string, { value: string | number | boolean | und
 const typedTarget = ref<{ target: string; text: string } | null>(null);
 const typedNeed = ref<{ situation: string | null; query: string; text: string } | null>(null);
 /** at：送出時所在的那一步（home、needs、q:題目 id、results），對話紀錄依此排在那一步的位置。 */
-const turns = ref<{ id: number; text: string; reply: string; hidden?: boolean; at: string }[]>([]);
+/** trail／outro：逐題追問完成後留在紀錄裡的問與答，以及最後的整理。 */
+const turns = ref<{ id: number; text: string; reply: string; hidden?: boolean; at: string; trail?: { key: string; q: string; a: string }[]; outro?: string }[]>([]);
 let turnId = 0;
 const interpreting = ref(false);
 const turn = new InterpretationTurn();
@@ -234,10 +236,9 @@ const lifecycleController = new AbortController();
 const downloadDismissedKey = 'townpass-model-download-dismissed';
 let prepareController: AbortController | null = null;
 let statusTimer: ReturnType<typeof setTimeout> | undefined;
-const proposal = ref<{ result: Extract<Interpretation, { kind: 'situation' }>; fingerprint: string; turnId: number; input: string } | null>(null);
-const selectedFacts = ref<number[]>([]);
-const selectedSituation = ref('');
-const selectedPerson = ref('');
+/** 一句話聽到好幾件事：逐題追問，answers／typed 是每題的選項與打字原文，全部答完才一次套用。 */
+const followup = ref<{ result: Extract<Interpretation, { kind: 'situation' }>; turnId: number; input: string; answers: Record<string, string>; typed: Record<string, string> } | null>(null);
+const followupHint = ref('');
 const clarification = ref<{ input: string; prompt: string; fingerprint: string } | null>(null);
 const recovery = ref<{ turnId: number; mode: 'current' | 'need' } | null>(null);
 type ProposedAction = { fingerprint: string; turnId: number; text: string } & (
@@ -290,10 +291,10 @@ const context = computed<InterpretationContext>(() => {
 });
 // 包含答案、題目、對象與資料版本；按鈕、返回、換人或資料重載都會使舊結果失效。
 const fingerprint = computed(() => JSON.stringify([context.value, state.session.answers, state.session.situation, state.session.query, state.session.catalogVersion, state.session.rulesVersion, state.session.engineVersion, pendingSwitch.value]));
-watch(fingerprint, () => { turn.cancel(); if (interpreting.value) { const latest = turns.value[turns.value.length - 1]; if (latest && !latest.reply) latest.reply = '流程已更新，已略過先前的理解。'; } interpreting.value = false; proposal.value = null; selectedFacts.value = []; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; }, { flush: 'sync' });
+watch(fingerprint, () => { turn.cancel(); if (interpreting.value) { const latest = turns.value[turns.value.length - 1]; if (latest && !latest.reply) latest.reply = '流程已更新，已略過先前的理解。'; } interpreting.value = false; followup.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; }, { flush: 'sync' });
 watch(() => state.session, (_session, previous) => {
   if (previous.target === null && state.session.target !== null) return;
-  turn.cancel(); turns.value = []; typedAnswers.value = {}; typedTarget.value = null; typedNeed.value = null; query.value = ''; proposal.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; fallbackCount.value = 0;
+  turn.cancel(); turns.value = []; typedAnswers.value = {}; typedTarget.value = null; typedNeed.value = null; query.value = ''; followup.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; fallbackCount.value = 0;
 }, { flush: 'sync' });
 /** 這一步在對話中的先後：打招呼 → 需求 → 依題目順序 → 結果；不在目前路線上的題目排最後。 */
 function stepRank(at: string): number {
@@ -332,7 +333,7 @@ watch(() => [currentStep(), turns.value.length], () => followBottom(true), { flu
  * 之後重新出現的訊息也要重新播放打字動畫，不能直接整段跳出。必須在改變流程狀態前呼叫。
  */
 function rewind(from: string) {
-  turn.cancel(); interpreting.value = false; query.value = ''; proposal.value = null; selectedFacts.value = []; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = [];
+  turn.cancel(); interpreting.value = false; query.value = ''; followup.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = [];
   const cut = stepRank(from);
   turns.value = turns.value.filter((t) => stepRank(t.at) < cut);
   if (cut <= 0) typedTarget.value = null;
@@ -344,7 +345,11 @@ function rewind(from: string) {
     if (2 + i >= cut) delete typedAnswers.value[q.id];
     if (2 + i <= cut) kept.add(`q:${q.id}`);
   });
-  for (const t of turns.value) kept.add(`turn:${t.id}:${t.reply}`);
+  for (const t of turns.value) {
+    kept.add(`turn:${t.id}:${t.reply}`);
+    for (const step of t.trail ?? []) kept.add(step.key);
+    if (t.outro) kept.add(`turn:${t.id}:outro:${t.outro}`);
+  }
   forgetTyped((key) => kept.has(key));
 }
 const statusText = computed(() => {
@@ -400,42 +405,104 @@ async function prepareModel() {
 onMounted(() => { void refreshModel(); });
 onBeforeUnmount(() => { lifecycleController.abort(); turn.cancel(); prepareController?.abort(); clearTimeout(statusTimer); });
 function cancelInput() {
-  const pendingId = proposal.value?.turnId ?? actionProposal.value?.turnId;
-  turn.cancel(); interpreting.value = false; proposal.value = null; actionProposal.value = null; searchSuggestions.value = []; recovery.value = null; clarification.value = null;
+  const pendingId = followup.value?.turnId ?? actionProposal.value?.turnId;
+  turn.cancel(); interpreting.value = false; followup.value = null; actionProposal.value = null; searchSuggestions.value = []; recovery.value = null; clarification.value = null;
   const latest = pendingId ? turns.value.find(t => t.id === pendingId) : turns.value[turns.value.length - 1];
   if (latest && (pendingId || !latest.reply)) latest.reply = '已取消理解，原本的答案與需求沒有改動。';
 }
-function factLabel(fact: CandidateFact): string {
+function factValue(fact: CandidateFact): string {
   const q = state.bank?.questions.find(q => q.field === fact.field);
-  const who = { self: '你', other: '對方', applicant: '目前查詢的人', unclear: '主體待確認' }[fact.subject];
-  const label: Record<FactField, string> = { age: '年齡', region: '戶籍', is_student: '在學身分', household_type: '已核定家戶身分' };
-  return `${fact.subjectLabel || who}・${label[fact.field]}：${q ? describeAnswer(q, fact.value) : String(fact.value)}`;
+  return `${FIELD_LABELS[fact.field]}：${q ? describeAnswer(q, fact.value) : String(fact.value)}`;
 }
-function chooseProposalTarget(value: 'self' | 'other') {
-  const p = proposal.value; if (!p || state.session.target) return;
-  requestTarget(value);
-  proposal.value = { ...p, fingerprint: fingerprint.value };
+const situationLabel = (id: string) => SITUATIONS.find(s => s.id === id)?.label ?? id;
+const followupPlan = computed(() => {
+  const f = followup.value; if (!f) return null;
+  return planFollowups({ result: f.result, target: state.session.target, currentSituation: state.session.situation, describe: factValue, situationLabel }, f.answers);
+});
+/** 選單暫停：逐題追問或確認意思時，上方原本的選項先收起，避免同時有兩組按鈕。 */
+const pausing = computed(() => !!followup.value || !!actionProposal.value);
+/** 每題的 key 帶著前面的答案：改了前面的答案，後面重新出現的題目會重新打字。 */
+function followupKey(step: FollowupStep): string {
+  const f = followup.value!; const steps = followupPlan.value!.steps;
+  const prior = steps.slice(0, steps.findIndex(s => s.id === step.id)).map(s => f.answers[s.id]).join('|');
+  return `fq:${f.turnId}:${step.id}:${prior}`;
 }
-const eligibleProposalFacts = computed(() => proposal.value?.result.facts.map((fact, index) => ({ fact, index, eligible: factApplies(fact, state.session.target) })) ?? []);
-const proposalPeople = computed(() => [...new Set(eligibleProposalFacts.value.filter(row => row.eligible).map(row => row.fact.subjectLabel))]);
-watch(selectedPerson, () => { selectedFacts.value = []; });
-const canConfirmProposal = computed(() => !!state.session.target && !!proposal.value && (!!selectedSituation.value || selectedFacts.value.length > 0));
-function confirmProposal() {
-  const p = proposal.value;
-  if (!p || p.fingerprint !== fingerprint.value || !canConfirmProposal.value || busy.value) return;
-  const facts = selectedFacts.value.map(i => p.result.facts[i]).filter((f): f is CandidateFact => !!f && factApplies(f, state.session.target) && f.subjectLabel === selectedPerson.value);
-  if (facts.length !== selectedFacts.value.length) return;
-  if (new Set(facts.map(f => f.field)).size !== facts.length) { const t = turns.value.find(t => t.id === p.turnId); if (t) t.reply = '同一欄位有不同說法，請只選一項；不確定可以先不採用。'; return; }
-  const situation = selectedSituation.value;
-  proposal.value = null;
-  // 先由既有切需求動作清理舊探索，再套用使用者確認的穩定事實。
+function followupAnswerText(step: FollowupStep): string {
+  const f = followup.value!;
+  return f.typed[step.id] ?? step.choices.find(c => c.id === f.answers[step.id])?.label ?? '';
+}
+function followupTrail(onlyAnswered: boolean) {
+  const f = followup.value!;
+  return (followupPlan.value?.steps ?? []).filter(s => !onlyAnswered || f.answers[s.id]).map(s => ({ key: followupKey(s), q: s.prompt, a: followupAnswerText(s) }));
+}
+function startFollowup(id: number, result: Extract<Interpretation, { kind: 'situation' }>, input: string) {
+  followup.value = { result, turnId: id, input, answers: {}, typed: {} };
+  followupHint.value = '';
+  const t = turns.value.find(t => t.id === id);
+  const asks = (state.session.target ? 0 : 1) + result.facts.length + (result.situationIds.length ? 1 : 0);
+  if (t) t.reply = asks > 1 ? '我聽到了幾件事，跟你一題一題確認；全部答完才會一起記下。' : '';
+  if (!followupPlan.value?.current) finishFollowup();
+}
+function answerFollowup(choiceId: string, typed?: string) {
+  const f = followup.value; const step = followupPlan.value?.current;
+  if (!f || !step || busy.value || !step.choices.some(c => c.id === choiceId)) return;
+  followupHint.value = '';
+  const typedMap = { ...f.typed };
+  if (typed) typedMap[step.id] = typed; else delete typedMap[step.id];
+  f.typed = typedMap;
+  f.answers = { ...f.answers, [step.id]: choiceId };
+  if (!followupPlan.value?.current) finishFollowup();
+}
+/** 點已回答的題目修改：那一題和之後的答案都清掉，從那題重新問。 */
+function editFollowup(step: FollowupStep) {
+  const f = followup.value; const steps = followupPlan.value?.steps; if (!f || !steps) return;
+  const later = new Set(steps.slice(steps.findIndex(s => s.id === step.id)).map(s => s.id));
+  f.answers = Object.fromEntries(Object.entries(f.answers).filter(([id]) => !later.has(id)));
+  f.typed = Object.fromEntries(Object.entries(f.typed).filter(([id]) => !later.has(id)));
+  followupHint.value = '';
+}
+/** 全部答完：對象 → 方向 → 條件依序一次套用，再把問答留在紀錄裡。 */
+function finishFollowup() {
+  const f = followup.value; const outcome = followupPlan.value?.outcome;
+  if (!f || !outcome) return;
+  const trail = followupTrail(false);
+  followup.value = null; followupHint.value = '';
+  const { target: chosen, facts, situation, skipped } = outcome;
+  if (chosen && !state.session.target) {
+    requestTarget(chosen);
+    // 選對象會重設播放紀錄；已經看過的往來與剛答完的問答不要再重打一次。
+    for (const t of turns.value) markTyped(`turn:${t.id}:${t.reply}`);
+    for (const step of trail) markTyped(step.key);
+  }
   if (situation) selectNeed(situation);
   const applied = facts.length ? applyConfirmedFacts(facts) : true;
-  const t = turns.value.find(t => t.id === p.turnId);
-  if (t) t.reply = applied ? facts.length ? `好的，已記下${facts.map(f => factLabel(f)).join('、')}。${!state.session.situation && !state.session.query ? '接著先了解你需要哪方面的幫忙。' : '接著繼續確認這個需求。'}` : `好，我們先從「${SITUATIONS.find(s => s.id === situation)?.label ?? '目前方向'}」找。` : '這些資料還不能直接採用，我們用目前題目繼續確認。';
-  if (applied) fallbackCount.value = 0;
-  if (applied) clarification.value = { input: p.input, prompt: nextPrompt('current'), fingerprint: fingerprint.value };
-  selectedFacts.value = [];
+  const parts = [!applied ? '這些資料還不能直接採用，我們用題目再確認一次。' : facts.length ? `好，已記下${facts.map(factValue).join('、')}。` : '好。'];
+  if (skipped.length) parts.push(`${skipped.join('；')}。`);
+  if (f.result.uncertainties.length) parts.push(`另外還要確認：${f.result.uncertainties.join('、')}。`);
+  parts.push(situation ? `接著從「${situationLabel(situation)}」開始找。`
+    : !state.session.situation && !state.session.query ? '接著說說需要哪方面的幫忙。'
+      : view.value === 'questions' ? '接著繼續目前的問題。' : '');
+  if (applied) parts.push('資格仍以承辦機關審核為準。');
+  const t = turns.value.find(t => t.id === f.turnId);
+  if (t) { t.trail = trail; t.outro = parts.join(''); }
+  fallbackCount.value = 0;
+  clarification.value = { input: f.input, prompt: nextPrompt('current'), fingerprint: fingerprint.value };
+}
+/** 「這些先不用」：已答的問答留在紀錄，什麼都不套用。 */
+function dropFollowup() {
+  const f = followup.value; if (!f) return;
+  const t = turns.value.find(t => t.id === f.turnId);
+  if (t) { t.trail = followupTrail(true); t.outro = '好，剛剛這些都先不採用，原本的答案與需求沒有改動。'; }
+  followup.value = null; followupHint.value = '';
+}
+function restateFollowup() {
+  const f = followup.value; if (!f) return;
+  const original = turns.value.find(t => t.id === f.turnId)?.text ?? '';
+  dropFollowup();
+  const t = turns.value.find(t => t.id === f.turnId);
+  if (t) t.outro = '好，請改一下輸入內容再送出，剛剛這些都不會套用。';
+  query.value = original;
+  void nextTick(() => document.getElementById('chat-search')?.focus());
 }
 async function applyAnswer(result: Extract<Interpretation, { kind: 'answer' }>, text: string): Promise<boolean> {
   if ('numberValue' in result) return submit(result.numberValue, text);
@@ -459,31 +526,6 @@ async function applyAnswer(result: Extract<Interpretation, { kind: 'answer' }>, 
   else if (id === 'plan') tab('plan');
   else return false;
   return true;
-}
-const simpleFact = computed(() => {
-  const p = proposal.value;
-  if (!p || p.result.facts.length !== 1 || p.result.situationIds.length || p.result.uncertainties.length) return null;
-  const fact = p.result.facts[0]!;
-  if (fact.subject === 'unclear' || (state.session.target && !factApplies(fact, state.session.target)) || (!state.session.target && fact.subject === 'applicant')) return null;
-  return fact;
-});
-const simpleCategory = computed(() => {
-  const result = proposal.value?.result;
-  return result && result.situationIds.length === 1 && !result.facts.length && !result.uncertainties.length ? result.situationIds[0]! : null;
-});
-function confirmSimpleFact() {
-  const fact = simpleFact.value; if (!fact) return;
-  if (!state.session.target) chooseProposalTarget(fact.subject === 'self' ? 'self' : 'other');
-  selectedPerson.value = fact.subjectLabel; selectedFacts.value = [0]; confirmProposal();
-}
-function confirmSimpleCategory() {
-  if (!simpleCategory.value) return;
-  selectedSituation.value = simpleCategory.value; confirmProposal();
-}
-function editProposal() {
-  const p = proposal.value; if (!p) return;
-  const original = p.input; cancelInput(); query.value = original;
-  void nextTick(() => document.getElementById('chat-search')?.focus());
 }
 function nextPrompt(mode: 'current' | 'need'): string {
   if (!state.session.target) return '這次要幫自己找，還是幫家人或別人找？';
@@ -511,14 +553,8 @@ async function recoverWith(id: string) {
   if (id === 'show-question') { recovery.value = null; return; }
   if (id === 'show-needs') { if (recovery.value) recovery.value.mode = 'need'; return; }
   if (id === 'discover') { cancelInput(); discoverWithKnownAnswers(); return; }
-  if (id.startsWith('need:')) {
-    const recoveryTurn = recovery.value?.turnId;
-    const t = turns.value.find(t => t.id === recoveryTurn);
-    const input = t?.text ?? SITUATIONS.find(s => s.id === id.slice(5))?.label ?? '';
-    recovery.value = null;
-    proposal.value = { result: { kind: 'situation', situationIds: [id.slice(5)], facts: [], details: [], uncertainties: [] }, fingerprint: fingerprint.value, turnId: recoveryTurn ?? ++turnId, input };
-    selectedSituation.value = ''; return;
-  }
+  // 按鈕本身就是明確選擇，不再多問一次「確定嗎」。
+  if (id.startsWith('need:')) { recovery.value = null; clarification.value = null; await applyAnswer({ kind: 'answer', choiceId: id, evidence: '' }, situationLabel(id.slice(5))); return; }
   const previous = clarification.value;
   const recoveryTurnId = recovery.value?.turnId;
   const initialTarget = state.session.target === null;
@@ -532,7 +568,7 @@ async function recoverWith(id: string) {
 }
 // 決策只對「目前看得到的提問」生效，不能回答被確認卡遮住的背景題。
 function activeInputContext(): InterpretationContext {
-  if (proposal.value || actionProposal.value) return { ...context.value, question: undefined, choices: [] };
+  if (followup.value || actionProposal.value) return { ...context.value, question: undefined, choices: [] };
   if (!recovery.value) return context.value;
   const choices = recoveryChoices.value;
   const useQuestion = recovery.value.mode === 'current' && view.value === 'questions';
@@ -542,13 +578,13 @@ function addInputTurn(text: string, reply = '') {
   const id = ++turnId; turns.value.push({ id, text, reply, at: currentStep() }); return id;
 }
 function offerChoices(id: number, text: string, choices: ChatChoice[], lead: string) {
-  recovery.value = null; proposal.value = null; searchSuggestions.value = [];
+  recovery.value = null; followup.value = null; searchSuggestions.value = [];
   actionProposal.value = { kind: 'choice', choices, text, turnId: id, fingerprint: fingerprint.value };
   const t = turns.value.find(t => t.id === id);
   if (t) t.reply = choices.length === 1 ? `${lead}你是指「${choices[0]!.label}」嗎？` : `${lead}請選你要表達的那一項。`;
 }
 function offerSearch(id: number, text: string, searchQuery: string) {
-  recovery.value = null; proposal.value = null; searchSuggestions.value = [];
+  recovery.value = null; followup.value = null; searchSuggestions.value = [];
   actionProposal.value = { kind: 'search', query: searchQuery, text, turnId: id, fingerprint: fingerprint.value };
   const t = turns.value.find(t => t.id === id);
   if (t) t.reply = !state.session.target ? `要找「${searchQuery}」，這次是幫自己還是別人找？` : `你是要改查「${searchQuery}」嗎？確認後會切換查找方向，已確認的基本資料與行動單會保留。`;
@@ -644,24 +680,15 @@ async function onInput() {
       if (plainConfirmation && exact.length === 1) { addInputTurn(text); await confirmAction(exact[0]!.id); return; }
     }
   }
-  if (proposal.value && !state.session.target && !isYes) {
-    const selected = matchCurrentChoice(text, { ...context.value, question: undefined, choices: [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }] });
-    if (selected?.kind === 'answer' && 'choiceId' in selected.answer) {
-      const value = selected.answer.choiceId === 'target:self' ? 'self' : 'other';
-      chooseProposalTarget(value); typedTarget.value = { target: value, text }; return;
-    }
-  }
-  if (proposal.value && isYes) {
-    const id = addInputTurn(text); const fact = simpleFact.value; const category = simpleCategory.value;
-    if (fact) { confirmSimpleFact(); const t = turns.value.find(t => t.id === id); if (t) t.reply = '好，我們接著往下聊。'; }
-    else if (category && state.session.target) { confirmSimpleCategory(); const t = turns.value.find(t => t.id === id); if (t) t.reply = '好，先從這個方向了解。'; }
-    else { const t = turns.value.find(t => t.id === id); if (t) t.reply = !state.session.target ? '請先選這次要幫誰找，才不會把資料套到不同人。' : '請先選同一位的資料與要處理的方向，再按確認；不會一次全部套用。'; }
+  // 逐題追問中：打字只用來回答目前這一題，不猜、不切到別的流程。
+  if (followup.value) {
+    const step = followupPlan.value?.current;
+    if (/^(取消|這些先不用|都先不用)$/u.test(normalized)) { dropFollowup(); return; }
+    const choiceId = step ? matchFollowupChoice(text, step) : null;
+    if (choiceId) { answerFollowup(choiceId, text); return; }
+    followupHint.value = `「${text.slice(0, 30)}」對不上這一題的選項。請點選項回答；想重新說明可以選「我重新說」。`;
     return;
   }
-  if (proposal.value && plainConfirmation && /^(不是|不對|我要修改|改一下)$/u.test(normalized)) {
-    editProposal(); addInputTurn(text, '好，請修改輸入內容，或補充哪裡不同。'); return;
-  }
-  if (proposal.value && isNo) { cancelInput(); addInputTurn(text, '好，維持原本的資料與進度。'); return; }
   const routingContext = activeInputContext();
   const route = routeInput(text, routingContext, state.catalog?.items ?? []);
   if (route.kind === 'empty') return;
@@ -673,8 +700,8 @@ async function onInput() {
     else addInputTurn(text, '已取消尚未確認的內容，原本資料仍保留。');
     return;
   }
-  const previous = proposal.value?.input ?? (clarification.value?.fingerprint === fingerprint.value ? clarification.value.input : '');
-  const previousPrompt = proposal.value ? turns.value.find(t => t.id === proposal.value?.turnId)?.reply : clarification.value?.prompt;
+  const previous = clarification.value?.fingerprint === fingerprint.value ? clarification.value.input : '';
+  const previousPrompt = clarification.value?.prompt;
   // 舊說法只用於明確補充／修正，不能讓換話題重複採用前人的條件。
   const isCorrection = /^(不是|不對|改成|更正|其實|應該是|剛剛|我是說|補充|另外|還有)/u.test(text);
   const inferenceInput = isCorrection && previous && previous.length + text.length + 24 <= 2000
@@ -682,6 +709,10 @@ async function onInput() {
   cancelInput();
   const id = addInputTurn(text);
   if (route.kind === 'clarify') { showRecovery(id, text, route.message); return; }
+  // 還沒選需求時，完整打出需求名稱就等於點那個按鈕，不必再問一次「你是指…嗎」。
+  const typedNeedLabel = route.kind === 'confirm_choice' && route.choices.length === 1 && route.choices[0]!.id.startsWith('need:')
+    && normalizeInput(route.choices[0]!.label) === normalized && view.value === 'needs' && !state.session.situation && !state.session.query;
+  if (typedNeedLabel) { await applyAnswer({ kind: 'answer', choiceId: route.choices[0]!.id, evidence: text }, text); const t = turns.value.find(t => t.id === id); if (t) t.hidden = true; return; }
   if (route.kind === 'confirm_choice') { offerChoices(id, text, route.choices, route.reason === 'typo' ? '這句可能有個錯字。' : ''); return; }
   if (route.kind === 'search') {
     const matches = state.catalog ? filterCatalog(state.catalog.items, null, route.query) : [];
@@ -733,9 +764,7 @@ async function onInput() {
       if (!result.situationIds.length && !result.facts.length) {
         showRecovery(id, text, result.details.length ? `我聽到你提到「${result.details.join('、')}」。` : '我還需要多了解一點。', 'need'); return;
       }
-      proposal.value = { result, fingerprint: snapshot, turnId: id, input: localFact ? text : inferenceInput };
-      selectedFacts.value = []; selectedSituation.value = ''; selectedPerson.value = '';
-      t.reply = result.facts.length === 1 && !result.situationIds.length ? `你提到${factLabel(result.facts[0]!)}，這樣理解對嗎？` : result.situationIds.length === 1 && !result.facts.length ? `你是想找「${SITUATIONS.find(s => s.id === result.situationIds[0])?.label}」這方面的幫忙嗎？` : '我聽到了幾項情況。先確認同一位的資料，再挑最想處理的方向。';
+      startFollowup(id, result, localFact ? text : inferenceInput);
     } else showRecovery(id, text, result.kind === 'off_topic' ? '我主要協助找補助與生活資源，我們回到你需要的幫忙。' : '我還沒理解完整，我們先確認一件事。');
   } catch (error) {
     if (snapshot === fingerprint.value) showRecovery(id, text, error instanceof ModelInputTooLongError ? error.message : '這次沒能整理完整，原本資料都保留。可以換個說法，或直接選下方選項。');
@@ -759,7 +788,7 @@ async function onInput() {
 
       <!-- 1. 打招呼與選對象 -->
       <BotMessage :msg-key="greetKey" :lines="greetLines" :active="view === 'home'">
-        <template v-if="view === 'home'" #after>
+        <template v-if="view === 'home' && !pausing" #after>
           <div class="replies" role="group" aria-label="查詢對象">
             <button type="button" class="reply" aria-label="幫自己找" @click="requestTarget('self')">
               <span class="reply__label">幫自己找</span>
@@ -779,7 +808,7 @@ async function onInput() {
 
         <!-- 2. 選需求 -->
         <BotMessage :key="needKey" :msg-key="needKey" :lines="needLines" :active="view === 'needs' || view === 'search'">
-          <template v-if="!past('needs')" #after>
+          <template v-if="!past('needs') && !pausing" #after>
             <p v-if="state.loading" class="chat__status" role="status">資料載入中…</p>
             <div class="replies" role="group" aria-label="需要的幫忙">
               <button type="button" class="reply reply--primary" :disabled="busy" @click="startExplore">
@@ -823,7 +852,7 @@ async function onInput() {
           <!-- 目前的題目：確認完成後接在使用者原句與回覆之後 -->
           <template v-if="view === 'questions'">
 
-            <BotMessage v-if="current && !proposal && !actionProposal && !recovery && !interpreting" :key="`q:${current.id}`" :msg-key="`q:${current.id}`" :lines="qLines(current, true)" active>
+            <BotMessage v-if="current && !pausing && !recovery && !interpreting" :key="`q:${current.id}`" :msg-key="`q:${current.id}`" :lines="qLines(current, true)" active>
               <template v-if="current.kind === 'number'">
                 <WheelPicker
                   v-model="wheelValue"
@@ -928,7 +957,7 @@ async function onInput() {
             </BotMessage>
 
             <BotMessage v-if="isTyped(resultsKey) && (!sections.length || isTyped(sectionsKey))" :key="nextKey" :msg-key="nextKey" :lines="nextLines">
-              <template #after>
+              <template v-if="!pausing" #after>
                 <div class="replies">
                   <button v-if="canRefine" type="button" class="reply reply--primary" @click="continueQuestions">
                     <span class="reply__label">{{ answeredCount ? '再回答幾題，繼續縮小' : '回答幾題，縮小範圍' }}</span>
@@ -949,75 +978,44 @@ async function onInput() {
         </template>
       </template>
       <TurnMessages :turns="tailTurns" />
-      <section v-if="actionProposal" class="conversation-proposal" aria-labelledby="action-proposal-title">
-        <h2 id="action-proposal-title">{{ actionProposal.kind === 'search' ? '確認查找方向' : '確認你的意思' }}</h2>
+      <!-- 確認意思：和其他選項一樣是對話裡的按鈕，問句就是上一則回覆 -->
+      <div v-if="actionProposal" class="replies conversation-recovery" role="group" aria-label="請確認你的意思">
         <template v-if="actionProposal.kind === 'search'">
-          <p>查找「{{ actionProposal.query }}」</p>
-          <div v-if="!state.session.target" class="replies__row">
-            <button type="button" class="btn" :disabled="busy || applyingInput" @click="chooseSearchTarget('self')">幫自己找</button>
-            <button type="button" class="btn" :disabled="busy || applyingInput" @click="chooseSearchTarget('other')">幫家人或別人找</button>
-          </div>
-          <button v-else type="button" class="btn btn--primary" :disabled="busy || applyingInput" @click="confirmAction()">對，查找這個名稱</button>
-        </template>
-        <div v-else-if="actionProposal.kind === 'choice'" class="replies" role="group" aria-label="請確認選項">
-          <button v-for="choice in actionProposal.choices" :key="choice.id" type="button" class="reply" :disabled="busy || applyingInput" @click="confirmAction(choice.id)"><span class="reply__label">{{ choice.label }}</span></button>
-        </div>
-        <button v-else type="button" class="btn btn--primary" :disabled="busy || applyingInput" @click="confirmAction()">對，是 {{ actionProposal.label }}</button>
-        <button type="button" class="btn" :disabled="applyingInput" @click="rejectAction">不是，維持原本進度</button>
-      </section>
-      <section v-if="proposal" class="conversation-proposal" aria-labelledby="proposal-title">
-        <h2 id="proposal-title">{{ simpleFact ? '確認這項資料' : simpleCategory ? '確認想找的方向' : '先確認我整理的內容' }}</h2>
-        <template v-if="simpleFact">
-          <p>{{ factLabel(simpleFact) }}</p>
-          <div class="replies__row">
-            <button type="button" class="btn btn--primary" :disabled="busy" @click="confirmSimpleFact">{{ !state.session.target ? simpleFact.subject === 'self' ? '對，幫我繼續找' : `對，幫${simpleFact.subjectLabel}找` : '對，記下來繼續' }}</button>
-            <button type="button" class="btn" @click="editProposal">不是，我改一下</button>
-            <button type="button" class="btn" @click="cancelInput">先不改</button>
-          </div>
-        </template>
-        <template v-else-if="simpleCategory">
           <template v-if="!state.session.target">
-            <p>好的，先告訴我這次是幫誰找？</p>
-            <div class="replies__row"><button type="button" class="btn" @click="chooseProposalTarget('self')">幫自己找</button><button type="button" class="btn" @click="chooseProposalTarget('other')">幫家人或別人找</button></div>
+            <button type="button" class="reply" :disabled="busy || applyingInput" @click="chooseSearchTarget('self')"><span class="reply__label">幫自己找</span></button>
+            <button type="button" class="reply" :disabled="busy || applyingInput" @click="chooseSearchTarget('other')"><span class="reply__label">幫家人或別人找</span></button>
           </template>
-          <div class="replies__row"><button type="button" class="btn btn--primary" :disabled="!state.session.target || busy" @click="confirmSimpleCategory">對，先找這方面</button><button type="button" class="btn" @click="editProposal">不是，我再說清楚</button><button type="button" class="btn" @click="cancelInput">先不改</button></div>
+          <button v-else type="button" class="reply reply--primary" :disabled="busy || applyingInput" @click="confirmAction()"><span class="reply__label">對，查找「{{ actionProposal.query }}」</span></button>
         </template>
-        <template v-else>
-        <p>一輪只查一位；請只勾選同一位的資料。沒有勾選的內容不會填入答案。</p>
-        <template v-if="!state.session.target">
-          <p>這次要幫誰找？選完再確認下面的內容。</p>
-          <div class="replies__row"><button type="button" class="btn" @click="chooseProposalTarget('self')">幫自己找</button><button type="button" class="btn" @click="chooseProposalTarget('other')">幫家人或別人找</button></div>
+        <template v-else-if="actionProposal.kind === 'choice'">
+          <button v-for="choice in actionProposal.choices" :key="choice.id" type="button" class="reply" :disabled="busy || applyingInput" @click="confirmAction(choice.id)"><span class="reply__label">{{ actionProposal.choices.length === 1 ? `對，是「${choice.label}」` : choice.label }}</span></button>
         </template>
-        <ul v-if="proposal.result.details.length"><li v-for="detail in proposal.result.details" :key="detail">你提到：「{{ detail }}」</li></ul>
-        <fieldset v-if="proposal.result.situationIds.length">
-          <legend>想先找哪方面？選擇後仍要按下確認。</legend>
-          <label v-for="id in proposal.result.situationIds" :key="id" class="conversation-choice"><input v-model="selectedSituation" type="radio" name="proposed-situation" :value="id" />{{ SITUATIONS.find(s => s.id === id)?.label }}</label>
-          <label class="conversation-choice"><input v-model="selectedSituation" type="radio" name="proposed-situation" value="" />先維持目前方向</label>
-        </fieldset>
-        <fieldset v-if="proposalPeople.length">
-          <legend>這次要採用哪一位的條件？</legend>
-          <label v-for="person in proposalPeople" :key="person" class="conversation-choice"><input v-model="selectedPerson" type="radio" name="proposed-person" :value="person" />{{ person }}</label>
-          <p v-if="proposalPeople.length > 1">每次只選一位。若不同稱呼是同一人，可以在輸入列補充，我會重新整理。</p>
-        </fieldset>
-        <fieldset v-if="eligibleProposalFacts.length">
-          <legend>可採用的條件（逐項確認，預設不採用）</legend>
-          <label v-for="row in eligibleProposalFacts" :key="row.index" class="conversation-choice">
-            <input v-model="selectedFacts" type="checkbox" :value="row.index" :disabled="!row.eligible || row.fact.subjectLabel !== selectedPerson" />
-            <span>{{ factLabel(row.fact) }}<small>原文：「{{ row.fact.evidence }}」</small><small v-if="!row.eligible">對象不符或不明，請先釐清，不會套用。</small></span>
-          </label>
-        </fieldset>
-        <div v-if="proposal.result.uncertainties.length"><p>還要確認：</p><ul><li v-for="item in proposal.result.uncertainties" :key="item">{{ item }}</li></ul></div>
-        <template v-if="proposal.result.facts.length && !eligibleProposalFacts.some(row => row.eligible) && state.session.target">
-          <p>這些資料不是目前查詢對象的條件。你要換一位查，還是繼續幫目前這位找？</p>
-          <button v-if="proposal.result.facts.some(f => f.subject === 'self') && state.session.target === 'other'" type="button" class="btn" @click="requestTarget('self')">這是我，改幫自己找</button>
-          <button v-if="proposal.result.facts.some(f => f.subject === 'other') && state.session.target === 'self'" type="button" class="btn" @click="requestTarget('other')">這是家人，改幫別人找</button>
-          <button type="button" class="btn" @click="editProposal">補充目前這位的情況</button>
+        <button v-else type="button" class="reply reply--primary" :disabled="busy || applyingInput" @click="confirmAction()"><span class="reply__label">對，是 {{ actionProposal.label }}</span></button>
+        <div class="replies__row">
+          <button type="button" class="reply reply--quiet" :disabled="applyingInput" @click="rejectAction"><span class="reply__label">不是，維持原本進度</span></button>
+        </div>
+      </div>
+      <!-- 逐題追問：一題一則訊息，答完才出現下一題；全部答完才一次套用 -->
+      <template v-if="followup && followupPlan">
+        <template v-for="step in followupPlan.steps" :key="followupKey(step)">
+          <BotMessage :msg-key="followupKey(step)" :lines="[{ text: step.prompt, tone: 'title' }, { text: step.note ?? '', tone: 'muted' }]">
+            <template v-if="step === followupPlan.current" #after>
+              <div class="replies" role="group" :aria-label="step.prompt">
+                <button v-for="(choice, i) in step.choices" :key="choice.id" type="button" class="reply" :class="{ 'reply--primary': i === 0 && !!step.yes }" :disabled="busy" @click="answerFollowup(choice.id)">
+                  <span class="reply__label">{{ choice.label }}</span>
+                </button>
+                <p v-if="followupHint" class="chat__tip" role="status">{{ followupHint }}</p>
+                <div class="replies__row">
+                  <button type="button" class="reply reply--quiet" @click="restateFollowup"><span class="reply__label">我重新說</span></button>
+                  <button type="button" class="reply reply--quiet" @click="dropFollowup"><span class="reply__label">這些先不用</span></button>
+                </div>
+              </div>
+            </template>
+          </BotMessage>
+          <UserMessage v-if="step !== followupPlan.current" :text="followupAnswerText(step)" edit-label="修改這一題" @edit="editFollowup(step)" />
         </template>
-        <p>生活困難不等於已核定低收入戶，居住地也不等於戶籍。資格仍依原文及承辦機關審核。</p>
-        <div class="replies__row"><button type="button" class="btn btn--primary" :disabled="!canConfirmProposal || busy" @click="confirmProposal">確認採用所選內容</button><button type="button" class="btn" @click="cancelInput">先不要，繼續原本流程</button></div>
-        </template>
-      </section>
-      <div v-if="searchSuggestions.length" class="replies" role="group" aria-label="可能想找的名稱">
+      </template>
+      <div v-if="searchSuggestions.length" class="replies conversation-recovery" role="group" aria-label="可能想找的名稱">
         <button v-for="suggestion in searchSuggestions" :key="suggestion" type="button" class="reply" @click="suggestSearch(suggestion)"><span class="reply__label">你是要找「{{ suggestion }}」嗎？</span></button>
       </div>
       <div v-if="recovery" class="replies conversation-recovery" role="group" aria-label="接著可以這樣做">
@@ -1056,12 +1054,7 @@ async function onInput() {
 .conversation-composer { flex-wrap: wrap; }
 .conversation-modes { display: flex; flex-basis: 100%; gap: .5rem; }
 .conversation-modes button { min-height: 48px; padding: .5rem .75rem; border: 0; border-radius: .5rem; background: transparent; color: var(--muted); font: inherit; }
+/* 打字後的確認／補救選項：和其他選項一樣對齊在福利連的泡泡下方（頭像寬＋間距） */
+.conversation-recovery { margin-left: calc(36px + var(--space-2)); }
 .conversation-modes button[aria-pressed='true'] { background: var(--raised); color: var(--accent); font-weight: 600; }
-.conversation-proposal { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); overflow-wrap: anywhere; }
-.conversation-proposal h2 { margin: 0 0 .75rem; font-size: 1.125rem; }
-.conversation-proposal p { margin: .75rem 0; }
-.conversation-proposal fieldset { min-width: 0; margin: 1rem 0; border: 0; padding: 0; }
-.conversation-choice { display: flex; align-items: center; gap: .75rem; min-height: 48px; padding: .5rem 0; }
-.conversation-choice input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; accent-color: var(--accent); }
-.conversation-choice small { display: block; margin-top: .3rem; color: var(--muted); font-size: .875rem; }
 </style>
