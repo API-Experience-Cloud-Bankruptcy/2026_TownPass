@@ -15,7 +15,7 @@ const input = computed<PlanInput>(() => ({
   conditions: pickConditions(included.value), docChecks: state.session.docChecks, stepDone: state.session.stepDone, documentAnswers: state.session.answers,
 }));
 const checklist = computed(() => buildChecklist(input.value));
-const merged = computed(() => mergeDocuments(planItems.value));
+const merged = computed(() => mergeDocuments(planItems.value, state.session.answers));
 const previewOpen = ref(false);
 const busy = ref(false);
 const sharing = ref(false);

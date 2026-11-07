@@ -112,7 +112,7 @@ describe('問答有用途且不混同主體或否定',()=>{
   });
   it('題庫只包含有效review必要條件、年齡先問；排除舊後端無用途題庫',async()=>{
     const bank=buildLocalQuestions(realItems);expect(bank.length).toBeGreaterThan(15);
-    for(const q of bank) for(const id of q.resource_ids) expect(['need_area','explore_context','expense_priority'].includes(q.field)||reviewFor(realItem(id))!.requirements.some(r=>r.field===q.field)||adaptiveReviewFor(realItem(id))!.facets.some(f=>f.field===q.field)).toBe(true);
+    for(const q of bank) for(const id of q.resource_ids) expect(['need_area','explore_context','expense_priority'].includes(q.field)||reviewFor(realItem(id))!.requirements.some(r=>r.field===q.field)||adaptiveReviewFor(realItem(id))!.facets.some(f=>f.field===q.field)||adaptiveReviewFor(realItem(id))!.ranking_preferences?.some(p=>p.field===q.field)).toBe(true);
     const age=bank.find(q=>q.field==='age')!;expect(titleFor(age,'self')).toContain('目前');expect(titleFor(age,'self')).not.toContain('今年');
     const result=await loadQuestions(realItems,{fetchImpl:async()=>new Response(JSON.stringify({version:'questions-v1/old',questions:bank}))});
     expect(result.origin).toBe('local');expect(result.version).toContain(REVIEW_VERSION);

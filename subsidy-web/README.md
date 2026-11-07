@@ -187,3 +187,7 @@ firebase deploy --only hosting
 | pdf / barcode / pdf_widget_wrapper（printing 相依） | Apache-2.0 |
 | bidi（printing 相依） | MIT |
 | qr（printing 相依） | BSD-3-Clause |
+
+### clean-ver 分支整合（2026-11-08）
+
+流程、對話、補助總覽及樣式以 `feat/chat-ui` 為準；整合排序／跳題、地域文件及正式 PDF 表單分支。身分沿用農保、榮民等獨立欄位，不新增互斥的單選身分。地方文件依戶籍、居住或受理地的原文依據分類，未確認及其他地區要求保留在另表，戶籍不能代替受理地。畫面、文字匯出及 PDF 使用同一份回答投影，個人填答仍需勾選才揭露。

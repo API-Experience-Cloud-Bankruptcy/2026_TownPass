@@ -4309,7 +4309,7 @@
     {
       "id": "CT-0038",
       "name": "兒童及少年未來教育與發展帳戶",
-      "source_fingerprint": "3a25df50d2ab9763",
+      "source_fingerprint": "0d16d34b14a0b59c",
       "age_review": "not_encoded",
       "review_note": "105年後出生及18歲領回款項係兒少受助者與用途，非開戶協助人。",
       "source_urls": [
@@ -4401,7 +4401,7 @@
     {
       "id": "CT-0047",
       "name": "長照2.0長照服務給付（照顧、交通接送、輔具、喘息）",
-      "source_fingerprint": "85c19e287c47c393",
+      "source_fingerprint": "ceae41524b557f17",
       "age_review": "deferred",
       "review_note": "失智、失能身障等替代途徑不受老人年齡條件限制。",
       "source_urls": [
@@ -4835,7 +4835,7 @@
     {
       "id": "CT-0099",
       "name": "榮民就養給付",
-      "source_fingerprint": "f81fcc193105c11e",
+      "source_fingerprint": "3614d9e846a6d6b1",
       "age_review": "deferred",
       "review_note": "建立原文明定的退除役官兵必要身分；身障經鑑定另可就養，不能因未滿61歲排除，其他就養條件仍待確認。",
       "source_urls": [

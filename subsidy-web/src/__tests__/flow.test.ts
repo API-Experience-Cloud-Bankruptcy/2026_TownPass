@@ -73,7 +73,8 @@ describe('逐頁找資源', () => {
     selectNeed('housing');
     expect(state.session.query).toBe('');
     expect(state.view).toBe('questions');
-    expect(questions.value.map(q => q.id).sort()).toEqual(['age', 'region']);
+    expect(questions.value.map(q => q.id).sort()).toEqual(['region']); // 主線沿用已確認年齡，不重問
+    expect(state.session.answers.age).toBe(60);
     back();
     expect(state.view).toBe('needs');
     go('search');
@@ -230,7 +231,7 @@ describe('使用者確認的語意候選條件', () => {
   });
   it('改基本條件後清掉隱藏的舊分支，但保留同人的無關基本條件', () => {
     requestTarget('self'); selectNeed('housing');
-    state.bank!.questions.push({ id: 'branch', field: 'education_level', kind: 'single', title: '學制', options: [{ label: '大學', value: 'college' }], resource_ids: ['housing'], situations: ['study'] });
+    state.bank!.questions.push({ id: 'branch', depends_on: { age: ['40'] }, field: 'education_level', kind: 'single', title: '學制', options: [{ label: '大學', value: 'college' }], resource_ids: ['housing'], situations: ['study'] });
     state.session.answers = { age: 40, region: '臺北市', extra: { education_level: 'college' } };
     state.session.seenQuestions = ['age', 'branch'];
     expect(applyConfirmedFacts([fact(65)])).toBe(true);

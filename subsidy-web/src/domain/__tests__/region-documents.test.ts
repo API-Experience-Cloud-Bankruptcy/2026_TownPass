@@ -9,7 +9,7 @@ describe('地方文件整合遵循對話主線的地區依據', () => {
   const plan = (application_region?: string): PlanInput => ({
     meta: { catalogVersion: 'test', sourceLabel: '測試', generatedAt: new Date('2026-11-08') },
     target: 'other', items: [item], results: new Map(), conditions: [], docChecks: {}, stepDone: {},
-    documentAnswers: { region: '臺北市', extra: { application_region } },
+    documentAnswers: { region: '臺北市', extra: application_region ? { application_region } : {} },
   });
   it('戶籍不能代替受理地，未回答受理地的文件保留待確認', () => {
     const merged = mergeDocuments([item], plan().documentAnswers);

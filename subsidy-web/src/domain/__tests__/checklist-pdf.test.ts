@@ -217,18 +217,18 @@ describe('A4 表單式 PDF', () => {
   }, 120000);
 });
 
-describe('PDF 文件表依戶籍篩選', () => {
+describe('PDF 文件表保留受理地待確認要求', () => {
   const ltc = (region?: string): PlanInput => ({ ...base(), items: [realItem('CT-0047')], region });
-  it('臺北市不印其他縣市文件；未回答時另表列出', async () => {
+  it('僅有戶籍不能刪除受理地文件；地方要求另表列出', async () => {
     await useLocalFont();
     const taipei = (await render(ltc('臺北市'))).pages.flat();
-    expect(containsInOrder(taipei, '新北市政府長期照顧服務申請書')).toBe(false);
-    expect(containsInOrder(taipei, '宜蘭縣長期照顧服務申請書')).toBe(false);
-    expect(taipei).not.toContain('其他縣市的規定');
+    expect(containsInOrder(taipei, '新北市政府長期照顧服務申請書')).toBe(true);
+    expect(containsInOrder(taipei, '宜蘭縣長期照顧服務申請書')).toBe(true);
+    expect(taipei).toContain('地方文件（地區或受理依據請確認）');
     const unanswered = await render(ltc());
     const lines = unanswered.pages.flat();
-    expect(lines).toContain('其他縣市的規定');
-    const titleAt = lines.indexOf('其他縣市的規定');
+    expect(lines).toContain('地方文件（地區或受理依據請確認）');
+    const titleAt = lines.indexOf('地方文件（地區或受理依據請確認）');
     for (const doc of unanswered.form.otherRegionDocuments) expect(containsInOrder(lines.slice(titleAt), doc.name)).toBe(true);
   }, 60000);
 });
