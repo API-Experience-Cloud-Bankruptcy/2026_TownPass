@@ -108,7 +108,7 @@ function runAgent(cfg, cwd, prompt) {
     if (cfg.agent === 'claude') {
       cmd = 'claude'
       args = ['-p', '--output-format', 'text', '--permission-mode', 'acceptEdits',
-        '--allowedTools', 'Read', 'Edit', 'Write', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'Bash(git:*)', 'Bash(npm:*)', 'Bash(npx:*)', 'Bash(node:*)', 'Bash(pnpm:*)', 'Bash(flutter:*)', 'Bash(dart:*)', 'Bash(fvm:*)',
+        '--allowedTools', 'Read', 'Edit', 'Write', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'Bash(git:*)', 'Bash(npm:*)', 'Bash(npx:*)', 'Bash(node:*)', 'Bash(pnpm:*)', 'Bash(flutter:*)', 'Bash(dart:*)', 'Bash(fvm:*)', 'Bash(cargo:*)',
         '--disallowedTools', 'Bash(git push:*)', 'Bash(git remote:*)']
       if (cfg.model) args.push('--model', cfg.model)
     } else {
