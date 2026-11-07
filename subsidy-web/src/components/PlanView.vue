@@ -7,6 +7,7 @@ import { conditionLines, pickConditions, openDetail, planItems, results, state, 
 import { progressText } from '../presentation';
 import ShareBox from './ShareBox.vue';
 import StepDots from './StepDots.vue';
+import ChecklistView from './ChecklistView.vue';
 
 const merged = computed(() => mergeDocuments(planItems.value));
 const included = ref<string[]>([]);
@@ -46,7 +47,8 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
 </script>
 
 <template>
-  <div class="view">
+  <ChecklistView v-if="state.session.target === 'other'" />
+  <div v-else class="view">
     <div class="view-head no-print">
       <h1 id="view-title" class="view-title" tabindex="-1">行動單</h1>
       <p class="muted">準備用的清單，不是核准或送件證明</p>

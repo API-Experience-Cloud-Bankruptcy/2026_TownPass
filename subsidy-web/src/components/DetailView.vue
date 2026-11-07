@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { text } from '../domain/match';
 import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE } from '../domain/route';
 import { benefitLabel, itemFlags, statusPlain } from '../presentation';
-import { inPlan, itemsById, results, state, togglePlan } from '../store';
+import { inPlan, itemsById, results, state, tab, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import RouteSteps from './RouteSteps.vue';
 
@@ -58,11 +58,13 @@ function kindOf(type: string) {
     <section class="block" aria-labelledby="d-start-h">
       <h2 id="d-start-h" class="section-title">想申請的話</h2>
       <div class="actions">
-        <button v-if="!added" type="button" class="btn btn--primary btn--block" @click="togglePlan(item.id)">加入行動單，開始準備</button>
+        <button v-if="!added" type="button" class="btn btn--primary btn--block" @click="togglePlan(item.id)">{{ state.session.target === 'other' ? '加入家人檢核表' : '加入行動單，開始準備' }}</button>
         <p v-else class="inline-actions">
-          <span class="row__mark">已在行動單</span>
+          <span class="row__mark">{{ state.session.target === 'other' ? '已加入家人檢核表' : '已在行動單' }}</span>
           <button type="button" class="btn btn--text" @click="togglePlan(item.id)">移除<span class="sr-only">：{{ item.name }}</span></button>
         </p>
+        <button v-if="added && state.session.target === 'other'" type="button" class="btn btn--primary btn--block" @click="tab('plan')">製作 A4 檢核表 PDF</button>
+        <p v-if="state.session.target === 'other'" class="muted">可再加入其他資源，一起整理成 PDF 交給家人。</p>
         <ExternalLink v-if="applyLink" :url="applyLink.url" :label="`看申請方法：${applyLink.label}`" :tag="SOURCE_KIND_LABEL[applyLink.sourceKind]" />
       </div>
     </section>

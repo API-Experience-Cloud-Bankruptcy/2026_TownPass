@@ -56,3 +56,42 @@ export function notify(title: string, content: string): void {
 export function openLink(url: string): void {
   send('open_link', url);
 }
+
+/** 平台僅回報分享介面狀態，不能用來證明檔案已傳送。 */
+export type SharePdfResult =
+  | { status: 'presented' }
+  | { status: 'cancelled_or_unavailable' }
+  | { status: 'failed'; reason?: string };
+
+let pdfSharePending = false;
+
+/** 只能從使用者主動點擊流程呼叫；不在背景或載入時自動分享。 */
+export async function sharePdf(bytes: Uint8Array, filename: string): Promise<SharePdfResult> {
+  if (pdfSharePending) return { status: 'failed', reason: 'busy' };
+  if (bytes.length === 0 || bytes.length > 10 * 1024 * 1024) {
+    return { status: 'failed', reason: 'invalid_pdf' };
+  }
+  pdfSharePending = true;
+  try {
+    // Chunk conversion avoids argument-stack limits for larger PDFs.
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+    }
+    const result = await request<unknown>('share_pdf', {
+      base64: btoa(binary), filename, userInitiated: true,
+    }, { timeoutMs: 120_000 });
+    if (typeof result !== 'object' || result === null || !('status' in result)) {
+      return { status: 'failed', reason: 'invalid_reply' };
+    }
+    const { status } = result;
+    if (status === 'presented' || status === 'cancelled_or_unavailable') return { status };
+    if (status === 'failed') {
+      const reason = 'reason' in result && typeof result.reason === 'string' ? result.reason : undefined;
+      return { status, reason };
+    }
+    return { status: 'failed', reason: 'invalid_reply' };
+  } finally {
+    pdfSharePending = false;
+  }
+}
