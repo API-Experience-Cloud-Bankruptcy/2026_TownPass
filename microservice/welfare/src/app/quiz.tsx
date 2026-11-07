@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Btn, Dots, Screen, T } from '@/components/ui-kit';
 import { QUESTIONS } from '@/data';
 import type { Identity, Profile } from '@/data/welfare-schema';
 import { useApp, type Answers } from '@/lib/app-state';
+import { markAnswered, prefill } from '@/lib/prefill';
 import { questionsFor, type Question } from '@/lib/questions-types';
 import { getUserInfo, profileFromAccount, type KnownProfile } from '@/lib/townpass';
 
@@ -17,15 +18,21 @@ export default function Quiz() {
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState<Answers>(answers);
   const [known, setKnown] = useState<KnownProfile | null>(null);
+  // Bumped to remount the shown question so its local state picks up late Town Pass data.
+  const [refresh, setRefresh] = useState(0);
   const q = questions[index];
+  const shown = useRef({ questions, q, touched: false });
+  if (shown.current.q.id !== q.id) shown.current = { questions, q, touched: false };
 
   useEffect(() => {
     let live = true;
     getUserInfo().then((account) => {
       if (!live || !account) return;
       const k = profileFromAccount(account);
+      const { questions: qs, q: current, touched } = shown.current;
       setKnown(k);
-      setDraft((d) => prefill(d, k));
+      setDraft((d) => prefill(d, k, qs, touched ? [current.id] : []));
+      if (!touched) setRefresh((n) => n + 1);
     });
     return () => {
       live = false;
@@ -33,6 +40,7 @@ export default function Quiz() {
   }, []);
 
   function next(updated: Answers) {
+    updated = markAnswered(updated, q.id);
     setDraft(updated);
     if (index + 1 < questions.length) setIndex(index + 1);
     else {
@@ -61,7 +69,13 @@ export default function Quiz() {
           已帶入台北通資料
         </T>
       ) : null}
-      <QuestionBody key={q.id} q={q} draft={draft} onDone={next} />
+      <QuestionBody
+        key={`${q.id}:${refresh}`}
+        q={q}
+        draft={draft}
+        onDone={next}
+        onTouch={() => (shown.current.touched = true)}
+      />
       <View style={s.navRow}>
         {index > 0 ? (
           <Btn label="上一題" onPress={() => setIndex(index - 1)} style={s.flex1} />
@@ -70,16 +84,6 @@ export default function Quiz() {
       </View>
     </Screen>
   );
-}
-
-/** Fills only what is still unanswered, so the person's own answers win. */
-function prefill(a: Answers, k: KnownProfile): Answers {
-  const profile: Profile = { ...a.profile };
-  if (k.birthYear !== undefined && profile.birthYear === undefined) profile.birthYear = k.birthYear;
-  if (k.residentMonths !== undefined && profile.residentMonths === undefined) profile.residentMonths = k.residentMonths;
-  const identitiesUntouched = profile.identities.length === 0 && a.unknownIdentities.length === 0;
-  if (identitiesUntouched && k.identities.length) profile.identities = [...k.identities];
-  return { ...a, profile };
 }
 
 /** The current answer to `q` still equals what Town Pass supplied. */
@@ -123,14 +127,28 @@ function clearAnswer(q: Question, a: Answers): Answers {
       unknownIdentities = [...new Set([...unknownIdentities, q.identity])];
       break;
   }
-  return { profile, unknownIdentities };
+  return { ...a, profile, unknownIdentities };
 }
 
-function QuestionBody({ q, draft, onDone }: { q: Question; draft: Answers; onDone: (a: Answers) => void }) {
+interface BodyProps {
+  q: Question;
+  draft: Answers;
+  onDone: (a: Answers) => void;
+  /** The person changed this question's local state without finishing it. */
+  onTouch: () => void;
+}
+
+function QuestionBody({ q, draft, onDone, onTouch }: BodyProps) {
   const p = draft.profile;
   switch (q.kind) {
     case 'birthYear':
-      return <BirthYear value={p.birthYear} onPick={(y) => onDone({ ...draft, profile: { ...p, birthYear: y } })} />;
+      return (
+        <BirthYear
+          value={p.birthYear}
+          onTouch={onTouch}
+          onPick={(y) => onDone({ ...draft, profile: { ...p, birthYear: y } })}
+        />
+      );
     case 'single':
       return (
         <View style={s.options} role="radiogroup">
@@ -153,6 +171,7 @@ function QuestionBody({ q, draft, onDone }: { q: Question; draft: Answers; onDon
       const has = p.identities.includes(q.identity);
       const answer = (yes: boolean) =>
         onDone({
+          ...draft,
           profile: {
             ...p,
             identities: yes ? [...new Set([...p.identities, q.identity])] : p.identities.filter((i) => i !== q.identity),
@@ -167,25 +186,18 @@ function QuestionBody({ q, draft, onDone }: { q: Question; draft: Answers; onDon
       );
     }
     case 'identities':
-      return <MultiIdentity q={q} draft={draft} onDone={onDone} />;
+      return <MultiIdentity q={q} draft={draft} onDone={onDone} onTouch={onTouch} />;
     case 'children':
-      return <Children q={q} draft={draft} onDone={onDone} />;
+      return <Children q={q} draft={draft} onDone={onDone} onTouch={onTouch} />;
   }
 }
 
-function MultiIdentity({
-  q,
-  draft,
-  onDone,
-}: {
-  q: Extract<Question, { kind: 'identities' }>;
-  draft: Answers;
-  onDone: (a: Answers) => void;
-}) {
+function MultiIdentity({ q, draft, onDone, onTouch }: BodyProps & { q: Extract<Question, { kind: 'identities' }> }) {
   const ids = q.options.map((o) => o.identity);
   const [picked, setPicked] = useState<Identity[]>(draft.profile.identities.filter((i) => ids.includes(i)));
   const finish = (list: Identity[]) =>
     onDone({
+      ...draft,
       profile: { ...draft.profile, identities: [...draft.profile.identities.filter((i) => !ids.includes(i)), ...list] },
       unknownIdentities: draft.unknownIdentities.filter((i) => !ids.includes(i)),
     });
@@ -201,7 +213,10 @@ function MultiIdentity({
             icon={on ? '✓' : '○'}
             selected={on}
             align="left"
-            onPress={() => setPicked(on ? picked.filter((i) => i !== o.identity) : [...picked, o.identity])}
+            onPress={() => {
+              onTouch();
+              setPicked(on ? picked.filter((i) => i !== o.identity) : [...picked, o.identity]);
+            }}
           />
         );
       })}
@@ -211,15 +226,7 @@ function MultiIdentity({
   );
 }
 
-function Children({
-  q,
-  draft,
-  onDone,
-}: {
-  q: Extract<Question, { kind: 'children' }>;
-  draft: Answers;
-  onDone: (a: Answers) => void;
-}) {
+function Children({ q, draft, onDone, onTouch }: BodyProps & { q: Extract<Question, { kind: 'children' }> }) {
   const [picked, setPicked] = useState<number[]>(draft.profile.childrenUnder ?? []);
   const finish = (list: number[]) => onDone({ ...draft, profile: { ...draft.profile, childrenUnder: list } });
   return (
@@ -234,7 +241,10 @@ function Children({
             icon={on ? '✓' : '○'}
             selected={on}
             align="left"
-            onPress={() => setPicked(on ? picked.filter((a) => a !== o.age) : [...picked, o.age])}
+            onPress={() => {
+              onTouch();
+              setPicked(on ? picked.filter((a) => a !== o.age) : [...picked, o.age]);
+            }}
           />
         );
       })}
@@ -244,9 +254,13 @@ function Children({
   );
 }
 
-function BirthYear({ value, onPick }: { value?: number; onPick: (y: number) => void }) {
+function BirthYear({ value, onPick, onTouch }: { value?: number; onPick: (y: number) => void; onTouch: () => void }) {
   const thisYear = new Date().getFullYear();
-  const [decade, setDecade] = useState<number | null>(value ? Math.floor(value / 10) * 10 : null);
+  const [decade, setDecadeState] = useState<number | null>(value ? Math.floor(value / 10) * 10 : null);
+  const setDecade = (d: number | null) => {
+    onTouch();
+    setDecadeState(d);
+  };
   const decades: number[] = [];
   for (let d = 1920; d <= thisYear; d += 10) decades.push(d);
 
