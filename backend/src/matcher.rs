@@ -397,7 +397,7 @@ pub fn run_match_at<'a>(
     p: &Profile,
     today: &str,
 ) -> Vec<(&'a Entry, MatchResult)> {
-    let mut out: Vec<(u32, &Entry, MatchResult)> = entries
+    let mut out: Vec<(u32, &Entry, MatchResult, bool)> = entries
         .iter()
         .filter_map(|e| {
             let score = keyword_score(e, &p.q)?;
@@ -414,7 +414,8 @@ pub fn run_match_at<'a>(
             if (r.fit == Fit::Ineligible || r.closed_on.is_some()) && !p.include_ineligible {
                 return None;
             }
-            Some((score, e, r))
+            let limited = !missing_identities(e, p).is_empty();
+            Some((score, e, r, limited))
         })
         .collect();
     let rank = |f: Fit| match f {
@@ -423,12 +424,12 @@ pub fn run_match_at<'a>(
         Fit::Ineligible => 2,
     };
     out.sort_by(|a, b| {
-        (a.2.closed_on.is_some(), rank(a.2.fit))
-            .cmp(&(b.2.closed_on.is_some(), rank(b.2.fit)))
+        (a.2.closed_on.is_some(), rank(a.2.fit), a.3)
+            .cmp(&(b.2.closed_on.is_some(), rank(b.2.fit), b.3))
             .then(b.0.cmp(&a.0))
             .then_with(|| a.1.subsidy.id.cmp(&b.1.subsidy.id))
     });
-    out.into_iter().map(|(_, e, r)| (e, r)).collect()
+    out.into_iter().map(|(_, e, r, _)| (e, r)).collect()
 }
 
 fn validate_age(age: Option<f64>) -> Result<(), String> {
