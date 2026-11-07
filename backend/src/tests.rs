@@ -56,6 +56,62 @@ async fn optional_web_serves_built_files_and_preserves_api_and_missing_asset_err
     std::fs::remove_dir_all(root).unwrap();
 }
 
+#[tokio::test]
+async fn form_pdfs_are_served_only_by_exact_hash_names() {
+    let router = app(state());
+    // every shipped form file is reachable under its own name and is a real PDF
+    let dir = default_forms_dir();
+    let name = std::fs::read_dir(&dir)
+        .expect("data/forms")
+        .map(|e| e.unwrap().file_name().into_string().unwrap())
+        .find(|n| is_form_file_name(n))
+        .expect("at least one form pdf");
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!("/api/forms/{name}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()["content-type"], "application/pdf");
+    assert_eq!(response.headers()["x-content-type-options"], "nosniff");
+    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    assert!(bytes.starts_with(b"%PDF-"));
+    // anything else is 404, even when the path would resolve on disk
+    for bad in [
+        "..%2fCargo.toml",
+        "..%2f..%2fCargo.toml",
+        "%2e%2e%2fCargo.toml",
+        "Cargo.toml",
+        "000000000000.pdf",
+        "0123456789AB.pdf",
+        "0123456789ag.pdf",
+        "0123456789abc.pdf",
+        "0123456789ab.txt",
+        "0123456789ab.pdf.pdf",
+        "é12345678.pdf",
+        "%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9.pdf",
+    ] {
+        let response = router
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/forms/{bad}"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND, "{bad}");
+        let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert!(!bytes.starts_with(b"%PDF-"), "{bad} leaked a file");
+    }
+}
+
 fn state() -> AppState {
     state_from_str(EMBEDDED_DATA).expect("embedded dataset")
 }

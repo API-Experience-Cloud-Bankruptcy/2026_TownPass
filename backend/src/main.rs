@@ -9,7 +9,8 @@ use axum::{
         rejection::{JsonRejection, QueryRejection},
         Path, Query, State,
     },
-    http::StatusCode,
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
@@ -29,9 +30,24 @@ pub struct AppState {
     by_id: HashMap<String, usize>,
     version: String,
     questions: Vec<questions::Question>,
+    forms_dir: std::path::PathBuf,
 }
 
 type Shared = Arc<AppState>;
+
+/// Form PDFs produced by `tools/form_fields/build.py`: `<sha256 prefix, 12 hex>.pdf`.
+/// `FORMS_DIR` overrides the default (the repository copy next to `Cargo.toml`).
+fn default_forms_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("data/forms")
+}
+
+/// Exact-shape check only: no separators, no dots other than the extension, lowercase hex.
+fn is_form_file_name(name: &str) -> bool {
+    let b = name.as_bytes();
+    b.len() == 16
+        && &b[12..] == b".pdf"
+        && b[..12].iter().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
+}
 
 fn load_state() -> Result<AppState, String> {
     // SUBSIDY_DATA overrides the embedded snapshot so data can be refreshed without a rebuild.
@@ -39,7 +55,11 @@ fn load_state() -> Result<AppState, String> {
         Ok(path) => std::fs::read_to_string(&path).map_err(|e| format!("read {path}: {e}"))?,
         Err(_) => EMBEDDED_DATA.to_string(),
     };
-    state_from_str(&raw)
+    let mut state = state_from_str(&raw)?;
+    if let Some(dir) = std::env::var_os("FORMS_DIR") {
+        state.forms_dir = std::path::PathBuf::from(dir);
+    }
+    Ok(state)
 }
 
 fn state_from_str(raw: &str) -> Result<AppState, String> {
@@ -70,6 +90,7 @@ fn state_from_str(raw: &str) -> Result<AppState, String> {
         by_id,
         version,
         questions,
+        forms_dir: default_forms_dir(),
     })
 }
 
@@ -160,6 +181,32 @@ async fn get_one(
     }
 }
 
+async fn form_file(State(st): State<Shared>, Path(file): Path<String>) -> Response {
+    if !is_form_file_name(&file) {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "not_found", "id": file })),
+        )
+            .into_response();
+    }
+    match tokio::fs::read(st.forms_dir.join(&file)).await {
+        Ok(bytes) => (
+            [
+                (header::CONTENT_TYPE, "application/pdf"),
+                (header::CACHE_CONTROL, "public, max-age=86400"),
+                (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+            ],
+            bytes,
+        )
+            .into_response(),
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "not_found", "id": file })),
+        )
+            .into_response(),
+    }
+}
+
 async fn facets(State(st): State<Shared>) -> Json<Value> {
     let mut scope: BTreeMap<String, usize> = BTreeMap::new();
     let mut region: BTreeMap<String, usize> = BTreeMap::new();
@@ -241,6 +288,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/catalog", get(catalog))
         .route("/api/questions", get(question_bank))
         .route("/api/match", post(match_profile))
+        .route("/api/forms/{file}", get(form_file))
         .layer(CorsLayer::permissive())
         .with_state(Arc::new(state))
 }

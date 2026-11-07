@@ -93,7 +93,10 @@
 | 180 | W0 − ux | uy |
 | 270 | H0 − uy | W0 − ux |
 
-**注意：這張表是依旋轉方向推導的，尚未用真實檔案實測。** 寫入文字時，旋轉頁的文字也要以相同角度繪製。在完成實測前，R≠0 的頁面應該拒絕填寫，見下方範例。
+**已實測（2026-11-08）**：對全部 161 份已分析 PDF 的 5274 個欄位，用 pdf-lib 依此表放標記、PyMuPDF 渲染比對，5273 個不同中心點中 5222 個誤差 ≤1pt，其餘 51 個皆因相距 <6.5pt 的標記在點陣上合併（每個都有相鄰欄位），無無法解釋的偏差。涵蓋 0°、90°；180°、270° 以 WEL-0028 第 4 頁合成旋轉測試；CropBox 原點非 (0,0) 的 4 頁也在測試內。
+
+- 使用者空間座標一律要加上 CropBox 原點：`x = cropBox.x + ux`，`y = cropBox.y + uy`，其中 `ux, uy` 以 CropBox 寬高（W0, H0）計算。
+- 文字方向：旋轉頁的文字要以 `rotate: degrees(R)` 繪製（R 為頁面 `/Rotate`）。已用 NotoSansTC 在 0/90/180/270 空白頁各畫一次「申請人」，墨跡都落在顯示座標的同一框內。
 
 ## 4. 預填規則（app 必須遵守）
 
@@ -111,11 +114,22 @@
 ### 5.1 範例（草稿，尚未在 app 內執行）
 
 ```ts
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, rgb, degrees } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
 type Box = { page: number; x: number; y: number; w: number; h: number };
 type Field = { type: string; prefill: boolean; prefill_key?: string; box: Box; preprinted_prefix?: string };
+
+// 顯示座標（左上原點）→ CropBox 內的使用者座標，依 §3.1 已實測
+function toUser(R: number, dx: number, dy: number, W0: number, H0: number): [number, number] {
+  switch (R) {
+    case 0: return [dx, H0 - dy];
+    case 90: return [dy, dx];
+    case 180: return [W0 - dx, dy];
+    case 270: return [W0 - dy, H0 - dx];
+    default: throw new Error(`unsupported rotation ${R}`);
+  }
+}
 
 // values 必須是使用者已確認的內容，例如 { name: '…', national_id: '…' }
 export async function fillForm(
@@ -126,7 +140,8 @@ export async function fillForm(
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.load(pdfBytes);
   doc.registerFontkit(fontkit);
-  const font = await doc.embedFont(fontBytes, { subset: true });
+  // 完整嵌入，與 checklist-pdf.ts 一致：subset 在 PyMuPDF 渲染為空白
+  const font = await doc.embedFont(fontBytes, { subset: false });
   const pages = doc.getPages();
 
   for (const f of fields) {
@@ -136,17 +151,20 @@ export async function fillForm(
     if (f.preprinted_prefix && value.startsWith(f.preprinted_prefix)) {
       value = value.slice(f.preprinted_prefix.length);
     }
-
     const page = pages[f.box.page - 1];
-    if (page.getRotation().angle !== 0) {
-      // 旋轉頁尚未實測，先拒絕，見指南 3.1
-      throw new Error(`第 ${f.box.page} 頁為旋轉頁，尚未支援`);
-    }
-    const { height } = page.getSize();
-    const x = Math.max(0, f.box.x);
-    const size = Math.min(11, f.box.h * 0.6);
-    const baseline = height - (f.box.y + f.box.h) + f.box.h * 0.25;
-    page.drawText(value, { x: x + 2, y: baseline, size, font, color: rgb(0, 0, 0) });
+    const R = page.getRotation().angle;
+    const cb = page.getCropBox();
+    // 錨點：框左側 +2pt，基線約在框高 80%；超出框寬的文字尚未處理（需縮字級或換行）
+    const size = Math.min(11, f.box.h * 0.8);
+    const [ux, uy] = toUser(R, f.box.x + 2, f.box.y + f.box.h * 0.8, cb.width, cb.height);
+    page.drawText(value, {
+      x: cb.x + ux,
+      y: cb.y + uy,
+      size,
+      font,
+      color: rgb(0, 0, 0),
+      rotate: degrees(R),
+    });
   }
   return doc.save();
 }
@@ -155,7 +173,7 @@ export async function fillForm(
 注意事項：
 - 文字寬度超過 `w` 時要縮小字級或換行，草稿沒有處理。
 - 字型必須嵌入 CJK 字型（同 `checklist-pdf.ts` 的 NotoSansTC），pdf-lib 內建字型不支援中文。
-- 必須在真實 PDF 上目視比對，包括旋轉頁與多人表單。
+- 錨點位置與字級只驗證了文字方向與大致落點，未檢查中文字在欄位內的垂直置中；必須在真實表單上目視比對。
 
 ### 5.2 分享
 
@@ -176,10 +194,7 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 
 ## 6. 尚未完成的缺口（上線前必須決定）
 
-1. **PDF 送達路徑。** 目前沒有任何服務會把 `backend/data/forms/*.pdf` 送到前端：後端只服務 `WEB_ROOT` 內的建置檔，subsidy-web 也沒有 `public/`。可選方案：
-   - A（建議）：後端新增 `GET /api/forms/{file}`，只允許 `^[0-9a-f]{12}\.pdf$` 這種檔名，避免路徑穿越。
-   - B：隨 subsidy-web 建置放入 `public/forms/`。全部約 39 MB，WebView 負擔大。
-   - C：打包進 Flutter assets。同樣很大，且每次更新都要發版。
+1. **PDF 送達路徑（已實作，分支 `feat/form-fields-serving`）。** 後端提供 `GET /api/forms/{file}`，只接受 `^[0-9a-f]{12}\.pdf$`，其他檔名一律 404。檔案目錄預設為 `backend/data/forms`，部署時以 `FORMS_DIR` 覆寫。app 取用時用 `local_file` 的檔名組出 `/api/forms/<檔名>`。回應為 `application/pdf`，`Cache-Control: public, max-age=86400`，`X-Content-Type-Options: nosniff`。另外 B、C 兩個方案不採用：B 約 39MB 會放進 web 建置，C 會把同樣的體積打進 Flutter 殼且每次更新都要發版。
 2. **資料更新需重建。** 後端用 `include_str!` 內嵌 JSON，改資料後要重建後端，或設定 `SUBSIDY_DATA` 覆寫；subsidy-web 快照也要重新建置。
 3. **檔案體積。** `subsidies.json` 約 4.3 MB（已排版），其中 `form_fields` 約 1 MB；`forms/` 約 39 MB。前端快照是獨立 chunk 按需載入，但仍需留意手機 WebView 的載入時間。
 4. **`urls.form` 未被修改。** 規則檔的審核指紋包含 `urls.form`，所以找到的新網址只寫在 `form_fields.source_url`。`form_fields` 不參與指紋計算（後端與前端一致）。
@@ -190,7 +205,7 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 - 所有來源 PDF 都是平面檔（沒有 AcroForm 可填欄位），所有位置都靠文字與格線推算。
 - 以下情況不會產生可填欄位：ODT／DOCX／XLS（24 筆）、掃描檔（4 筆）、亂碼字型（2 筆）、非申請表（5 筆）、網頁入口（9 筆）。
 - 學生、病人、被保險人、授權人、承租人的欄位會被擋下（`subject_unclear`），即使表單其實就是本人填寫。這是刻意保守的設計；若要放寬需另行確認規則。
-- 旋轉頁座標映射尚未實測（見 3.1）。
+- 旋轉頁座標與文字方向已實測（見 3.1），但中文字在欄位內的垂直置中與超寬文字尚未處理。
 - 出現在同頁的其他人物（代理人、家庭成員、受款人）以標題、列位與距離判斷，多人表單容易出錯，應以抽樣檢查為準。
 
 ## 8. 驗收清單
@@ -214,28 +229,24 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 
 `audit_prefill.py` 每次在 `build.py` 之後都要重跑，因為 `build.py` 會重寫 `form_fields`。
 
-## 10. 待決定事項（尚未實作）
+## 10. 決定與狀態（2026-11-08）
 
-以下三項需要先決定，才能進入實作。目前只記錄，不改程式。
+| 項目 | 決定 | 狀態 |
+|---|---|---|
+| 10.1 PDF 送達 | 方案 A：後端 `GET /api/forms/{file}` | 已實作，含測試 |
+| 10.2 填寫位置 | web 以 pdf-lib 填寫，Dart 只負責 `share_pdf` | 已決定，app 內填寫流程尚未實作 |
+| 10.3 旋轉頁座標 | 以真實渲染實測 | 已實測，見下 |
 
-### 10.1 PDF 送達路徑
+### 10.1 實作細節
+- 路由：`GET /api/forms/{file}`。只接受 16 字元、小寫十六進位加 `.pdf` 的檔名；路徑穿越、大寫、非 ASCII、錯誤長度皆 404（測試 `form_pdfs_are_served_only_by_exact_hash_names` 涵蓋 12 種非法名稱）。
+- 目錄：預設為編譯時的 `backend/data/forms`（`CARGO_MANIFEST_DIR`）。已確認 167 個檔名全部符合規則。部署到其他路徑時設定 `FORMS_DIR`。
+- 注意：預設值是編譯時寫入的路徑，二進位搬離原始碼目錄時必須設定 `FORMS_DIR`。
 
-狀態：未決定。
-- A（建議）：後端新增 `GET /api/forms/{file}`，檔名只允許 `^[0-9a-f]{12}\.pdf$`，避免路徑穿越。優點：不增加 app 體積，可獨立更新。
-- B：隨 subsidy-web 建置放入 `public/forms/`。缺點：約 39 MB，WebView 負擔大。
-- C：打包進 Flutter assets。缺點：同樣很大，每次更新都要發版。
-
-### 10.2 填寫放在哪一端
-
-狀態：未決定。
-- A（建議）：subsidy-web 用 `pdf-lib` 填寫，Dart 只負責 `share_pdf`。理由：前端已有 `pdf-lib`、CJK 字型與檢核表 PDF 流程，Dart 端沒有 PDF 繪製套件。
-- B：Dart 端填寫。需要新增 PDF 套件，並自行處理 CJK 字型與座標轉換。
-
-### 10.3 旋轉頁座標
-
-狀態：未驗證。第 3.1 節的映射表是依旋轉方向推導的，尚未用真實檔案實測。
-- 待辦：以 `WEL-0028`（第 1–3 頁為 90° 旋轉）實測，確認映射正確後，才能在草稿代碼中開放旋轉頁填寫。
-- 目前草稿對旋轉頁直接拋出錯誤，屬於刻意保守。
+### 10.3 旋轉頁座標（已實測）
+- 方法：`backend/tools/form_fields/verify/` 內的腳本。pdf-lib 依 §3.1 的映射放洋紅色標記，PyMuPDF 渲染後比對質心。
+- 結果：見 §3.1。沒有無法解釋的偏差。
+- 文字方向：`drawText` 的 `rotate: degrees(R)` 已驗證。
+- 未驗證：Acrobat、Preview、Chrome 等閱讀器的實際顯示；只用 PyMuPDF 渲染。
 
 ## 11. 資料更新流程備註
 
