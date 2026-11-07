@@ -9,6 +9,7 @@ import { sharePdfFile } from '../domain/pdf-file';
 import type { Subsidy, Target } from '../domain/types';
 import { getUserInfo, isInTownPass, type Account } from '../townpass';
 import ExternalLink from './ExternalLink.vue';
+import Expand from './motion/Expand.vue';
 
 const props = withDefaults(defineProps<{
   item: Subsidy;
@@ -111,11 +112,18 @@ async function share() {
       </div>
 
       <div v-if="target === 'self'" class="actions card" :aria-busy="busy">
-        <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="generate">{{ busy ? '正在填寫…' : result ? '重新產生' : '帶入資料，產生申請表' }}</button>
+        <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="generate">
+          <Transition name="fade" mode="out-in">
+            <span :key="busy ? 'busy' : result ? 'again' : 'go'">{{ busy ? '正在填寫…' : result ? '重新產生' : '帶入資料，產生申請表' }}</span>
+          </Transition>
+        </button>
       </div>
       <p v-else class="alert">目前不是替自己申請，不會自動填入任何個人資料。請改選「幫自己找」，或把空白表單列印後手寫。</p>
-      <p class="status-text note" role="status" aria-live="polite">{{ status }}</p>
+      <Transition name="fade" mode="out-in">
+        <p v-if="status" :key="status" class="status-text note" role="status">{{ status }}</p>
+      </Transition>
 
+      <Expand>
       <section v-if="result" class="actions card" aria-labelledby="form-fill-result-h">
         <h3 id="form-fill-result-h" class="sub-title">已帶入資料</h3>
         <ul>
@@ -139,6 +147,7 @@ async function share() {
           <div class="more__body"><p class="muted">若這裡無法顯示，請用上方按鈕儲存 PDF 後再開啟。</p><iframe :src="pdfUrl" class="pdf-preview" title="已填申請表預覽"></iframe></div>
         </details>
       </section>
+      </Expand>
     </template>
 
     <div v-else-if="availability.kind === 'external'" class="actions card">

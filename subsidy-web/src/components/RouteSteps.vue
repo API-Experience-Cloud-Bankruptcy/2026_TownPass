@@ -26,11 +26,14 @@ const total = computed(() => route.value.steps.length);
         <p v-if="!total">原文沒有列出辦理步驟，請先問承辦窗口。</p>
         <ol v-else class="steps steps--numbered">
           <li v-for="(step, i) in route.steps" :key="i">
-            <p>{{ i + 1 }}. {{ sourceExcerpt(step) }}</p>
-            <details v-if="sourceExcerpt(step) !== step" class="more">
-              <summary>第 {{ i + 1 }} 步完整原文</summary>
-              <div class="more__body"><p><LinkedText :text="step" /></p></div>
-            </details>
+            <span class="steps__index" aria-hidden="true">{{ i + 1 }}</span>
+            <div class="steps__body">
+              <p>{{ sourceExcerpt(step) }}</p>
+              <details v-if="sourceExcerpt(step) !== step" class="more">
+                <summary>第 {{ i + 1 }} 步完整原文</summary>
+                <div class="more__body"><p><LinkedText :text="step" /></p></div>
+              </details>
+            </div>
           </li>
         </ol>
         <p v-if="total && !route.splitFromArrow" class="muted">原文沒有分步，這裡保留整段內容。</p>

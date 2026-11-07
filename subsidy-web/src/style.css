@@ -478,7 +478,17 @@ li + li {
 }
 .row__chev {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.5rem;
   color: var(--muted);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.browse-results {
+  position: relative;
 }
 .row__mark {
   color: var(--accent);
@@ -536,8 +546,9 @@ li + li {
   flex: none;
   width: 24px;
   height: 24px;
-  margin: 2px 0 0;
+  margin: calc((1em * var(--lh-body) - 24px) / 2) 0 0;
   accent-color: var(--accent-fill);
+  font: inherit;
 }
 .check__body {
   display: grid;
@@ -667,6 +678,37 @@ details.bubble-more.is-closing[open] > summary::after {
 .facts dd {
   margin: 0;
 }
+.steps--numbered {
+  gap: var(--space-3);
+}
+.steps--numbered > li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  column-gap: var(--space-3);
+  align-items: start;
+}
+.steps__index {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: calc((var(--fs-body) * var(--lh-body) - 1.75rem) / 2);
+  border-radius: 50%;
+  background: var(--surface-brand);
+  color: var(--accent);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.steps__body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.steps__body > p {
+  margin: 0;
+}
 
 /* 外部連結 */
 .ext {
@@ -674,13 +716,26 @@ details.bubble-more.is-closing[open] > summary::after {
   gap: 4px;
 }
 .ext__link {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
   min-height: var(--touch);
   padding: 8px 0;
   color: var(--accent);
   font-weight: var(--fw-medium);
+  text-decoration: none;
+}
+.ext__label {
+  min-width: 0;
+  text-decoration: underline;
   text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.ext__icon {
+  flex: none;
+  display: block;
 }
 .inline-link {
   color: var(--accent);
@@ -698,6 +753,9 @@ details.bubble-more.is-closing[open] > summary::after {
 .link-list {
   list-style: none;
   padding: 0;
+}
+.link-list > li {
+  margin: 0;
 }
 
 /* 匯出 */
@@ -941,11 +999,13 @@ details.bubble-more.is-closing[open] > summary::after {
 .paper-check { display: flex; align-items: flex-start; gap: 12px; }
 .paper-check__box {
   flex: none;
+  display: inline-grid;
+  place-items: center;
   width: 20px;
   height: 20px;
-  line-height: 18px;
-  margin-top: 4px;
+  margin-top: calc((1em * var(--lh-body) - 20px) / 2);
   border: 1px solid currentColor;
+  line-height: 1;
   text-align: center;
 }
 .paper-notes { min-height: 72px; border-bottom: 1px solid var(--line); }
@@ -1681,12 +1741,13 @@ li.wheel__item + li.wheel__item {
 }
 /* 展開符號和對話泡泡一致：向下箭頭，展開後朝上 */
 .app-main--page .more > summary::after {
+  align-self: center;
   width: 0.5em;
   height: 0.5em;
   background: none;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
-  transform: rotate(45deg) translateY(-2px);
+  transform: rotate(45deg);
   transition: transform var(--dur) var(--ease);
 }
 .app-main--page .more[open] > summary::after {
@@ -1788,11 +1849,13 @@ li.wheel__item + li.wheel__item {
 .paper-check { display: flex; align-items: flex-start; gap: 12px; }
 .paper-check__box {
   flex: none;
+  display: inline-grid;
+  place-items: center;
   width: 20px;
   height: 20px;
-  line-height: 18px;
-  margin-top: 4px;
+  margin-top: calc((1em * var(--lh-body) - 20px) / 2);
   border: 1px solid currentColor;
+  line-height: 1;
   text-align: center;
 }
 .paper-notes { min-height: 72px; border-bottom: 1px solid var(--line); }

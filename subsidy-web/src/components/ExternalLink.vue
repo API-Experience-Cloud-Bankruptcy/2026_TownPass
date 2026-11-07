@@ -23,7 +23,8 @@ function onClick(event: MouseEvent) {
 <template>
   <span v-if="safe" class="ext">
     <a class="ext__link" :href="safe" target="_blank" rel="noopener noreferrer" @click="onClick">
-      <span>{{ label }}</span>
+      <span class="ext__label">{{ label }}</span>
+      <svg class="ext__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M14 5h5v5M19 5 10 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /><path d="M17 13.5V18a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
       <span class="sr-only">（開啟外部網站）</span>
     </a>
     <span v-if="failed" class="ext__fallback" role="status">

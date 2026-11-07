@@ -6,6 +6,7 @@ import { planProgress } from '../domain/plan-progress';
 import { benefitLabel, itemFlags, progressText, sourceExcerpt, statusPlain } from '../presentation';
 import { detailAnswers, detailResults, inPlan, itemsById, openPlanItem, state, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
+import Expand from './motion/Expand.vue';
 import RouteSteps from './RouteSteps.vue';
 import SourceText from './SourceText.vue';
 import { plainLanguageFor } from '../domain/plain-language';
@@ -95,24 +96,32 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
     <section class="block card" aria-labelledby="d-start-h">
       <h2 id="d-start-h" class="section-title">想申請的話</h2>
       <div class="actions">
-        <button v-if="state.detailTarget === 'other'" type="button" class="btn btn--primary btn--block" :aria-expanded="pdfOpen" aria-controls="detail-pdf" @click="pdfOpen = !pdfOpen">{{ pdfOpen ? '關閉 PDF 預覽' : '匯出申請準備 PDF' }}</button>
-        <button v-else-if="!added" type="button" class="btn btn--primary btn--block" @click="addToPlan">加入行動單，開始準備</button>
-        <template v-else>
-          <button type="button" class="btn btn--primary btn--block btn--tall" @click="openPlanItem(item.id)">
-            <span class="btn__stack">
-              <span>打開行動單，照步驟準備</span>
-              <span class="btn__sub">{{ planStepText }}</span>
-            </span>
+        <Transition name="pop" mode="out-in">
+          <button v-if="state.detailTarget === 'other'" key="pdf" type="button" class="btn btn--primary btn--block" :aria-expanded="pdfOpen" aria-controls="detail-pdf" @click="pdfOpen = !pdfOpen">
+            <Transition name="fade" mode="out-in">
+              <span :key="pdfOpen ? 'close' : 'open'">{{ pdfOpen ? '關閉 PDF 預覽' : '匯出申請準備 PDF' }}</span>
+            </Transition>
           </button>
-          <button type="button" class="btn btn--text" @click="togglePlan(item.id)">從行動單移除<span class="sr-only">：{{ item.name }}</span></button>
-        </template>
+          <button v-else-if="!added" key="add" type="button" class="btn btn--primary btn--block" @click="addToPlan">加入行動單，開始準備</button>
+          <div v-else key="in-plan" class="actions">
+            <button type="button" class="btn btn--primary btn--block btn--tall" @click="openPlanItem(item.id)">
+              <span class="btn__stack">
+                <span>打開行動單，照步驟準備</span>
+                <span class="btn__sub">{{ planStepText }}</span>
+              </span>
+            </button>
+            <button type="button" class="btn btn--text" @click="togglePlan(item.id)">從行動單移除<span class="sr-only">：{{ item.name }}</span></button>
+          </div>
+        </Transition>
         <ExternalLink v-if="applyLink" :url="applyLink.url" :label="`看申請方法：${applyLink.label}`" />
       </div>
     </section>
 
-    <section v-if="pdfOpen && state.detailTarget === 'other'" id="detail-pdf" aria-label="匯出這項補助的申請準備 PDF">
-      <ChecklistView :item="item" />
-    </section>
+    <Expand>
+      <section v-if="pdfOpen && state.detailTarget === 'other'" id="detail-pdf" aria-label="匯出這項補助的申請準備 PDF">
+        <ChecklistView :item="item" />
+      </section>
+    </Expand>
 
     <div class="card-stack">
       <RouteSteps :item="item" hide-deadline />

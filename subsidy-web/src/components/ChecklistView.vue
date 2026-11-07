@@ -7,6 +7,7 @@ import { sharePdfFile } from '../domain/pdf-file';
 import { conditionLines, pickConditions, results, state } from '../store';
 import type { Subsidy } from '../domain/types';
 import { isInTownPass } from '../townpass';
+import Expand from './motion/Expand.vue';
 
 const props = defineProps<{ item: Subsidy }>();
 const planItems = computed(() => [props.item]);
@@ -22,12 +23,14 @@ const input = computed<PlanInput>(() => ({
 const checklist = computed(() => buildChecklist(input.value));
 const merged = computed(() => mergeDocuments(planItems.value, state.session.answers));
 const previewOpen = ref(false);
-const busy = ref(false);
+const busy = ref(true);
 const sharing = ref(false);
-const status = ref('');
+const status = ref('正在製作 A4 PDF，第一次需載入中文字型。');
+let previewStarted = false;
 const pdfUrl = ref('');
 const file = ref<File | null>(null);
 const previewHeading = ref<HTMLElement | null>(null);
+const textDetails = ref<HTMLDetailsElement | null>(null);
 const filename = `福利行動檢核表-${[generatedAt.getFullYear(), String(generatedAt.getMonth() + 1).padStart(2, '0'), String(generatedAt.getDate()).padStart(2, '0')].join('-')}.pdf`;
 let revision = 0;
 let mounted = true;
@@ -45,7 +48,9 @@ watch(input, () => {
 onBeforeUnmount(() => { mounted = false; revision++; releasePdf(); });
 
 async function preview() {
-  if (busy.value) return;
+  if (busy.value && previewStarted) return;
+  previewStarted = true;
+  const wasOpen = previewOpen.value;
   const current = revision;
   busy.value = true;
   status.value = '正在製作 A4 PDF，第一次需載入中文字型。';
@@ -66,6 +71,17 @@ async function preview() {
     status.value = 'PDF 已做好。請先確認下方全文，再儲存或分享。';
     await nextTick();
     previewHeading.value?.focus();
+    const details = textDetails.value;
+    if (!wasOpen && details?.animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const summary = details.querySelector('summary');
+      const from = summary?.offsetHeight ?? 0;
+      const to = details.getBoundingClientRect().height;
+      if (to - from > 4) {
+        details.style.overflow = 'hidden';
+        const anim = details.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+        anim.onfinish = () => { details.style.overflow = ''; };
+      }
+    }
   } catch {
     if (mounted && current === revision) status.value = 'PDF 製作失敗，請重新嘗試。下方仍可查看完整檢核表。';
   } finally { busy.value = false; }
@@ -128,9 +144,16 @@ onMounted(() => { void preview(); });
       </details>
       <div class="actions card" :aria-busy="busy">
         <p class="muted">紙本包含：文件清單、辦理步驟、資格與期限提醒、窗口與來源、求助問句、手寫紀錄欄。</p>
-        <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="preview">{{ busy ? '正在製作 PDF…' : previewOpen ? '重新製作 PDF' : '預覽 A4 檢核表' }}</button>
+        <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="preview">
+          <Transition name="fade" mode="out-in">
+            <span :key="busy ? 'busy' : previewOpen ? 'again' : 'idle'">{{ busy ? '正在製作 PDF…' : previewOpen ? '重新製作 PDF' : '預覽 A4 檢核表' }}</span>
+          </Transition>
+        </button>
       </div>
-      <p class="status-text note" role="status" aria-live="polite">{{ status }}</p>
+      <Transition name="fade" mode="out-in">
+        <p v-if="status" :key="status" class="status-text note" role="status">{{ status }}</p>
+      </Transition>
+      <Expand>
       <section v-if="previewOpen && file" class="actions card" aria-labelledby="checklist-preview-h">
         <h2 id="checklist-preview-h" ref="previewHeading" tabindex="-1" class="stage-title">確認檢核表全文</h2>
         <p class="muted">{{ planItems.length }} 項資源 · A4 直式 · {{ (file.size / 1024).toFixed(0) }} KB</p>
@@ -145,7 +168,8 @@ onMounted(() => { void preview(); });
           <div class="more__body"><p class="muted">若這裡無法顯示，請用上方的按鈕存下 PDF 再開啟。下方另有完整文字。</p><iframe :src="pdfUrl" class="pdf-preview" title="A4 行動檢核表 PDF 預覽"></iframe></div>
         </details>
       </section>
-      <details class="more more--single card card--list" :open="previewOpen">
+      </Expand>
+      <details ref="textDetails" class="more more--single card card--list" :open="previewOpen">
         <summary>完整檢核表文字</summary>
         <article class="checklist-paper selectable">
           <header class="checklist-paper__head">
