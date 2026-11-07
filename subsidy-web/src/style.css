@@ -935,6 +935,15 @@ legend {
   gap: var(--space-3);
   margin-top: var(--space-2);
 }
+/* 打完字才出現的卡片、選項：淡入而不是突然冒出。 */
+.bubble__extra,
+.msg__after {
+  animation: msg-in 260ms var(--ease) both;
+}
+/* 還沒打到的字：照常排版、看不見，所以打字時不會換行跳動。 */
+.bubble__ghost {
+  visibility: hidden;
+}
 .bubble--user {
   max-width: 100%;
   background: var(--bubble-user);
@@ -986,6 +995,7 @@ legend {
   height: 1em;
   margin-left: 1px;
   vertical-align: -0.15em;
+  margin-right: -3px; /* 不佔寬度，避免游標把字推到下一行 */
   background: var(--brand);
   animation: caret 0.9s steps(1) infinite;
 }
@@ -1031,16 +1041,6 @@ legend {
   color: var(--text-2);
   font-size: var(--fs-small);
   padding-bottom: var(--space-2);
-}
-.bubble-more__list {
-  display: grid;
-  gap: var(--space-1);
-  padding: 0 0 var(--space-2) 1.2rem;
-  color: var(--text-2);
-  font-size: var(--fs-small);
-}
-.bubble-more__list li {
-  margin: 0;
 }
 .bubble-groups {
   display: grid;
@@ -1287,7 +1287,7 @@ li.wheel__item + li.wheel__item {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .msg, .reply { animation: none; }
+  .msg, .reply, .bubble__extra, .msg__after { animation: none; }
   .typing i, .caret { animation: none; }
 }
 @media (forced-colors: active) {

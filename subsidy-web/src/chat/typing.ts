@@ -25,16 +25,23 @@ export function resetTyped(): void {
 }
 
 const MS_PER_CHAR = 38;
-const MAX_DURATION = 1800;
-const MIN_MS_PER_CHAR = 4;
+const BASE_MS = 700;
+const GROWTH_MS = 120;
+const MAX_DURATION = 3500;
 
 /**
- * 每個字的間隔：短句照正常速度；字越多越快，整則最多約 1.8 秒打完。
- * 例：20 字 → 38ms／字（0.76 秒）；100 字 → 18ms／字；500 字 → 4ms／字。
+ * 整則打完的時間：短句照正常速度（38ms／字）；字多時總時間只按平方根成長，
+ * 長文仍看得到逐字打出，不會一下子整段跳出。上限 3.5 秒，點泡泡可直接看全文。
+ * 例：20 字 0.76 秒；100 字 1.9 秒；400 字 3.1 秒；1000 字以上 3.5 秒。
  */
-export function msPerChar(length: number): number {
+export function typingDuration(length: number): number {
   if (length <= 0) return 0;
-  return Math.max(MIN_MS_PER_CHAR, Math.min(MS_PER_CHAR, MAX_DURATION / length));
+  return Math.min(length * MS_PER_CHAR, BASE_MS + GROWTH_MS * Math.sqrt(length), MAX_DURATION);
+}
+
+/** 平均每個字的間隔（毫秒）。 */
+export function msPerChar(length: number): number {
+  return length > 0 ? typingDuration(length) / length : 0;
 }
 
 /** 經過 elapsed 毫秒時應該顯示幾個字。 */
@@ -49,19 +56,30 @@ export function prefersReducedMotion(): boolean {
 }
 
 let pinned = true;
+let autoUntil = 0;
 
 /** 捲動時記錄使用者是否停在底部附近；往上翻閱時就不再自動跟著捲。 */
 export function trackPinned(): void {
   if (typeof window === 'undefined') return;
+  // 自己發起的平滑捲動途中離底部還遠，不能因此判定使用者往上翻。
+  if (performance.now() < autoUntil) return;
   const doc = document.documentElement;
   pinned = window.innerHeight + window.scrollY >= doc.scrollHeight - 160;
 }
 
-/** 新訊息或內容長高時捲到底；force 用於換題（使用者剛按下選項）。 */
+/** 新訊息或內容長高時平滑捲到底；force 用於換題（使用者剛按下選項）。 */
 export function followBottom(force = false): void {
   if (typeof window === 'undefined') return;
   if (force) pinned = true;
   if (!pinned) return;
   const doc = document.documentElement;
-  window.scrollTo?.({ top: doc.scrollHeight, behavior: force && !prefersReducedMotion() ? 'smooth' : 'auto' });
+  if (window.innerHeight + window.scrollY >= doc.scrollHeight - 1) return;
+  const smooth = !prefersReducedMotion();
+  if (smooth) autoUntil = performance.now() + 600;
+  window.scrollTo?.({ top: doc.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+}
+
+/** 使用者手指或滾輪一動，就停止把捲動當成程式發起的。 */
+export function releaseFollow(): void {
+  autoUntil = 0;
 }

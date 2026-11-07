@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // 福利通的訊息泡泡：新訊息先顯示「輸入中」再逐字打出；播放過的直接顯示全文。
 // 讀屏讀的是完整文字（sr-only），逐字顯示的部分對讀屏隱藏，避免一個字一個字被念出。
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+// 流暢的關鍵：全文一開始就排好版，還沒打到的字只是隱形，所以打字時泡泡不會一直變寬長高、
+// 頁面也不會一行一行跳；泡泡從「輸入中」長成最終大小只發生一次，用遮罩動畫展開。
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { charsAt, isTyped, markTyped, prefersReducedMotion, type Line } from '../../chat/typing';
 
 const props = defineProps<{ msgKey: string; lines: Line[]; active?: boolean; wide?: boolean }>();
@@ -13,8 +15,24 @@ const shown = ref(isTyped(props.msgKey) ? Number.POSITIVE_INFINITY : 0);
 const waiting = ref(!isTyped(props.msgKey));
 const done = computed(() => shown.value >= total.value && !waiting.value);
 
+const bubble = ref<HTMLElement | null>(null);
 let frame = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
+
+/** 泡泡從「輸入中」的小尺寸展開到全文大小（只動遮罩，不影響排版）。 */
+function grow(from: DOMRect) {
+  const el = bubble.value;
+  if (!el?.animate) return;
+  const to = el.getBoundingClientRect();
+  const dx = Math.max(0, to.width - from.width);
+  const dy = Math.max(0, to.height - from.height);
+  if (dx < 1 && dy < 1) return;
+  const round = getComputedStyle(el).borderRadius || '0';
+  el.animate(
+    [{ clipPath: `inset(0 ${dx}px ${dy}px 0 round ${round})` }, { clipPath: `inset(0 0 0 0 round ${round})` }],
+    { duration: Math.min(360, 180 + (dx + dy) / 6), easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+  );
+}
 
 function finish() {
   cancelAnimationFrame(frame);
@@ -34,8 +52,11 @@ onMounted(() => {
     return;
   }
   // 先顯示「輸入中」一下，再開始打字。
-  timer = setTimeout(() => {
+  timer = setTimeout(async () => {
+    const from = bubble.value?.getBoundingClientRect();
     waiting.value = false;
+    await nextTick();
+    if (from) grow(from);
     const start = performance.now();
     const tick = (now: number) => {
       shown.value = charsAt(now - start, total.value);
@@ -51,13 +72,13 @@ onBeforeUnmount(() => {
   clearTimeout(timer);
 });
 
-/** 每一行目前要顯示的文字。 */
+/** 每一行拆成已打出（visible）與尚未打出（rest，隱形佔位）兩段。 */
 const visible = computed(() => {
   let left = shown.value;
   return content.value.map((l) => {
-    const text = l.text.slice(0, Math.max(0, left));
+    const cut = Math.min(l.text.length, Math.max(0, left));
     left -= l.text.length;
-    return { ...l, visible: text, started: text.length > 0 };
+    return { ...l, visible: l.text.slice(0, cut), rest: l.text.slice(cut), typing: cut > 0 || left + l.text.length === 0 };
   });
 });
 </script>
@@ -68,6 +89,7 @@ const visible = computed(() => {
     <div class="msg__col">
       <div
         :id="active ? 'view-title' : undefined"
+        ref="bubble"
         class="bubble bubble--bot"
         :tabindex="active ? -1 : undefined"
         @click="!done && finish()"
@@ -76,12 +98,11 @@ const visible = computed(() => {
         <template v-else>
           <p
             v-for="(l, i) in visible"
-            v-show="l.started"
             :key="i"
             class="bubble__line"
             :class="l.tone ? `bubble__line--${l.tone}` : ''"
             aria-hidden="true"
-          >{{ l.visible }}<span v-if="!done && l.visible.length < l.text.length && l.started" class="caret"></span></p>
+          >{{ l.visible }}<span v-if="!done && l.rest && l.typing" class="caret"></span><span v-if="l.rest" class="bubble__ghost">{{ l.rest }}</span></p>
         </template>
         <span class="sr-only">{{ content.map((l) => l.text).join('。') }}</span>
         <div v-if="done && $slots.default" class="bubble__extra">
