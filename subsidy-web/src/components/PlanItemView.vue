@@ -16,6 +16,7 @@ import ExternalLink from './ExternalLink.vue';
 import LinkedText from './LinkedText.vue';
 import Expand from './motion/Expand.vue';
 import PlanExport from './PlanExport.vue';
+import StepHelp from './StepHelp.vue';
 
 const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
 
@@ -195,6 +196,7 @@ const planText = computed(() => item.value ? buildPlanText({
               <Expand>
                 <div v-if="i === progress.current" class="task-step__actions">
                   <button type="button" class="btn btn--primary btn--block" @click="complete(i)">這步完成了</button>
+                  <StepHelp :key="`${item.id}:${step}`" :item="item" :step="step" />
                 </div>
               </Expand>
             </div>
