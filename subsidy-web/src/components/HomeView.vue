@@ -10,19 +10,19 @@ import { requestTarget, state } from '../store';
     </div>
     <ul class="rows" aria-label="查詢對象">
       <li>
-        <button type="button" class="row" :aria-pressed="state.session.target === 'self'" @click="requestTarget('self')">
+        <button type="button" class="row" aria-label="幫自己找" aria-describedby="target-self-sub" :aria-pressed="state.session.target === 'self'" @click="requestTarget('self')">
           <span class="row__main">
             <span class="row__title">幫自己找</span>
-            <span class="row__sub">依你的情況回答，存成線上行動單</span>
+            <span id="target-self-sub" class="row__sub">依你的情況回答，存成線上行動單</span>
           </span>
           <span class="row__chev" aria-hidden="true">›</span>
         </button>
       </li>
       <li>
-        <button type="button" class="row" :aria-pressed="state.session.target === 'other'" @click="requestTarget('other')">
+        <button type="button" class="row" aria-label="幫家人或別人找" aria-describedby="target-other-sub" :aria-pressed="state.session.target === 'other'" @click="requestTarget('other')">
           <span class="row__main">
             <span class="row__title">幫家人或別人找</span>
-            <span class="row__sub">依對方的情況回答，製作可列印的 A4 檢核表</span>
+            <span id="target-other-sub" class="row__sub">依對方的情況回答，製作可列印的 A4 檢核表</span>
           </span>
           <span class="row__chev" aria-hidden="true">›</span>
         </button>

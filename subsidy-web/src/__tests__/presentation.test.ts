@@ -4,9 +4,12 @@ import type { MatchResult } from '../domain/types';
 import {
   applicationStatusAlert,
   benefitLabel,
+  benefitOriginal,
+  benefitSummary,
   currentStepIndex,
   deadlineNote,
   distinctGroups,
+  firstSentence,
   fitNote,
   insightLine,
   itemFlags,
@@ -16,6 +19,7 @@ import {
   progressText,
   rangeLine,
   statusPlain,
+  stepSummary,
 } from '../presentation';
 
 const result = (over: Partial<MatchResult>): MatchResult => ({ id: 'x', fit: 'possible', reasons: [], warnings: [], blocked_by: [], ...over });
@@ -122,5 +126,53 @@ describe('受理情形提示', () => {
   it('常態受理不提示', () => {
     expect(applicationStatusAlert('常態性；依各校或承辦公告受理')).toBeNull();
     expect(applicationStatusAlert('')).toBeNull();
+  });
+});
+
+describe('利益摘要與步驟摘要', () => {
+  it('第一句跳過開頭空句，沒有分句時回傳整段', () => {
+    expect(firstSentence('；每月 3,000 元。另有加給')).toBe('每月 3,000 元');
+    expect(firstSentence('免費搭乘公車')).toBe('免費搭乘公車');
+    expect(firstSentence('')).toBe('');
+  });
+  it('利益摘要取原文第一句並補類型，原文仍完整可取', () => {
+    const raw = '一般生每學期5,000元；低／中低收入戶及現役軍人子女7,000元';
+    const item = makeSubsidy({ benefit: { kind: '住宿費直接減免', raw } } as any);
+    expect(benefitSummary(item)).toEqual({ text: '住宿費直接減免：一般生每學期5,000元…', partial: true });
+    expect(benefitOriginal(item)).toBe(raw);
+  });
+  it('原文只有一句時不加省略號，類型已在句中不重複', () => {
+    const item = makeSubsidy({ benefit: { kind: '助學金', raw: '大專助學金每學期5,000元。' } } as any);
+    expect(benefitSummary(item)).toEqual({ text: '大專助學金每學期5,000元', partial: false });
+  });
+  it('沒有原文時用金額條目原文，不自行組金額', () => {
+    const item = makeSubsidy({
+      benefit: { kind: '現金', raw: null, amounts: [{ fixed: 1000, raw: '每月1,000元' }, { fixed: 2000, raw: '重度每月2,000元' }] },
+    } as any);
+    expect(benefitOriginal(item)).toBe('每月1,000元；重度每月2,000元');
+    expect(benefitSummary(item)).toEqual({ text: '現金：每月1,000元…', partial: true });
+  });
+  it('完全沒有內容時只留類型短標', () => {
+    const item = makeSubsidy({ benefit: { kind: null, raw: null }, classification: { category: '生活', benefit_type: '實物/服務' } } as any);
+    expect(benefitSummary(item)).toEqual({ text: '實物/服務', partial: false });
+    expect(benefitOriginal(item)).toBe('');
+  });
+  it('短步驟原樣顯示', () => {
+    expect(stepSummary('學生／家長向學校提出')).toEqual({ text: '學生／家長向學校提出', partial: false });
+  });
+  it('長步驟取第一句並在 40 字內的逗號前截斷', () => {
+    const step = '請攜帶身分證明文件、戶口名簿及最近三個月的存摺影本，親自前往戶籍所在地區公所社會課臨櫃申請，並填寫申請書。如有疑問請洽承辦人。';
+    const s = stepSummary(step);
+    expect(s.partial).toBe(true);
+    expect(s.text).toBe('請攜帶身分證明文件、戶口名簿及最近三個月的存摺影本…');
+    expect([...s.text].length).toBeLessThanOrEqual(41);
+    expect(step.startsWith(s.text.slice(0, -1))).toBe(true);
+  });
+  it('沒有逗號的長句在 40 字硬切', () => {
+    const step = '甲'.repeat(55);
+    expect(stepSummary(step).text).toBe('甲'.repeat(40) + '…');
+  });
+  it('只有句末標點不算省略', () => {
+    expect(stepSummary('向區公所申請。')).toEqual({ text: '向區公所申請', partial: false });
   });
 });

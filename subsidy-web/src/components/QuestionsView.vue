@@ -72,21 +72,28 @@ function submitNumber() {
 
       <div :key="q.id" class="actions">
         <ul v-if="q.kind !== 'number'" class="rows" :aria-label="titleFor(q, target)">
-          <li v-for="opt in q.options" :key="String(opt.value)">
-            <button type="button" class="row" :aria-pressed="current === opt.value" @click="choose(opt.value)">
+          <li v-for="(opt, i) in q.options" :key="String(opt.value)">
+            <button
+              type="button"
+              class="row"
+              :aria-label="opt.label"
+              :aria-describedby="optionalText(opt, 'description') ? `${q.id}-opt-${i}-sub` : undefined"
+              :aria-pressed="current === opt.value"
+              @click="choose(opt.value)"
+            >
               <span class="row__main">
                 <span class="row__title">{{ opt.label }}</span>
-                <span v-if="optionalText(opt, 'description')" class="row__sub">{{ optionalText(opt, 'description') }}</span>
-                <span v-if="current === opt.value" class="row__mark">上次選這個</span>
+                <span v-if="optionalText(opt, 'description')" :id="`${q.id}-opt-${i}-sub`" class="row__sub">{{ optionalText(opt, 'description') }}</span>
+                <span v-if="current === opt.value" class="row__mark" aria-hidden="true">上次選這個</span>
               </span>
               <span class="row__chev" aria-hidden="true">›</span>
             </button>
           </li>
           <li>
-            <button type="button" class="row row--quiet" @click="choose(undefined)">
+            <button type="button" class="row row--quiet" aria-label="不知道，先跳過" :aria-describedby="`${q.id}-skip-sub`" @click="choose(undefined)">
               <span class="row__main">
                 <span class="row__title">不知道，先跳過</span>
-                <span class="row__sub">不會當成「否」</span>
+                <span :id="`${q.id}-skip-sub`" class="row__sub">不會當成「否」</span>
               </span>
               <span class="row__chev" aria-hidden="true">›</span>
             </button>
@@ -95,9 +102,10 @@ function submitNumber() {
         <template v-else>
           <form class="actions" novalidate @submit.prevent="submitNumber">
             <label class="field" :for="`${q.id}-input`">
-              <span class="field__label">{{ numberUnit(q) }}</span>
+              <span :id="`${q.id}-unit`" class="field__label">{{ numberUnit(q) }}</span>
               <input
                 :id="`${q.id}-input`"
+                :aria-labelledby="`view-title ${q.id}-unit`"
                 v-model="numberInput"
                 class="input"
                 type="number"

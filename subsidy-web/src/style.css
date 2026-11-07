@@ -559,6 +559,18 @@ legend {
   line-height: 1.5;
   font-weight: 500;
 }
+.benefit-line {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.step-full {
+  border-top: 0;
+}
+.step-full > summary {
+  min-height: 48px;
+  color: var(--text-2);
+}
 .steps {
   list-style: none;
   padding: 0;

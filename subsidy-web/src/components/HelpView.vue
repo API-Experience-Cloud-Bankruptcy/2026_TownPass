@@ -100,7 +100,7 @@ function onItemChange() {
       <p v-if="item" class="muted">{{ item.name }}<template v-if="stepText">・{{ stepText }}</template></p>
       <ul class="rows">
         <li v-for="o in STUCK_OPTIONS" :key="o.id">
-          <button type="button" class="row" @click="chooseReason(o.id)">
+          <button type="button" class="row" :aria-label="o.label" @click="chooseReason(o.id)">
             <span class="row__main"><span class="row__title">{{ o.label }}</span></span>
             <span class="row__chev" aria-hidden="true">›</span>
           </button>
