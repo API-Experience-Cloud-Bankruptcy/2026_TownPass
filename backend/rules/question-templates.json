@@ -155,8 +155,8 @@
       "id": "q-education-level",
       "field": "education_level",
       "kind": "single",
-      "title": "這次申請所對應的學期／學年，是哪個教育階段？",
-      "description": "不同教育階段能找的補助不同；請依要申請的學期或學年回答。",
+      "title": "想申請補助的學期或學年，是哪個教育階段？",
+      "description": "請依這次想申請補助的學期或學年回答。",
       "burden": 1,
       "options": [
         {
@@ -194,7 +194,7 @@
       "field": "education_support",
       "kind": "single",
       "title": "目前就學最需要哪種協助？",
-      "description": "先選最想處理的就學支出，其他方向仍可在結果查看。",
+      "description": "先選最想處理的就學支出，其他方向還是看得到。",
       "burden": 1,
       "options": [
         {
@@ -230,8 +230,8 @@
       "id": "q-employment-status",
       "field": "employment_status",
       "kind": "single",
-      "title": "目前的工作狀況較接近哪一項？",
-      "description": "先了解目前工作狀況，幫忙找值得詢問的資源。",
+      "title": "目前的工作情況比較接近哪一項？",
+      "description": "請依目前的工作情況回答。",
       "burden": 1,
       "options": [
         {
@@ -265,7 +265,7 @@
       "field": "work_support",
       "kind": "single",
       "title": "目前工作方面想先處理什麼？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
@@ -313,7 +313,7 @@
       "id": "q-housing-status",
       "field": "housing_status",
       "kind": "single",
-      "title": "目前的居住安排較接近哪一項？",
+      "title": "目前的居住情況比較接近哪一項？",
       "description": "依目前居住安排回答，不確定可以先跳過。",
       "burden": 1,
       "options": [
@@ -343,7 +343,7 @@
       "field": "housing_support",
       "kind": "single",
       "title": "住宅方面想先處理什麼？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
@@ -376,11 +376,11 @@
       "field": "care_context",
       "kind": "single",
       "title": "目前需要哪一類照顧安排？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
-          "label": "日常支持、暫不需長照",
+          "label": "日常協助，暫時不需長照",
           "value": "independent"
         },
         {
@@ -405,8 +405,8 @@
       "id": "q-family-stage",
       "field": "family_stage",
       "kind": "single",
-      "title": "目前家庭需要較接近哪個階段？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "title": "家中目前需要哪方面的協助？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
@@ -443,7 +443,7 @@
       "field": "health_support",
       "kind": "single",
       "title": "健康方面最需要哪一種協助？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
@@ -472,7 +472,7 @@
       "field": "living_support",
       "kind": "single",
       "title": "生活方面想先處理哪件事？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
@@ -526,7 +526,7 @@
       "field": "disability_support",
       "kind": "single",
       "title": "身心障礙方面想先了解什麼？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
@@ -542,7 +542,7 @@
           "value": "care"
         },
         {
-          "label": "就業支持",
+          "label": "就業協助",
           "value": "employment"
         },
         {
@@ -550,7 +550,7 @@
           "value": "transport"
         },
         {
-          "label": "教育支持",
+          "label": "教育協助",
           "value": "education"
         }
       ],
@@ -563,7 +563,7 @@
       "field": "community_support",
       "kind": "single",
       "title": "文化與社區資源想先了解哪個方向？",
-      "description": "先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
       "burden": 1,
       "options": [
         {
@@ -595,8 +595,8 @@
       "id": "q-is-unemployed",
       "field": "is_unemployed",
       "kind": "boolean",
-      "title": "這次申請所指的期間，是否有待業或失業事實？",
-      "description": "請看這次申請所指的期間，不只看今天有沒有工作；不確定可以先跳過。",
+      "title": "這次想申請補助的期間，有待業或失業嗎？",
+      "description": "請依這次想申請補助的期間回答，不只看今天有沒有工作。不確定可以跳過。",
       "options": [
         {
           "label": "是",
@@ -616,8 +616,8 @@
       "id": "q-is-renting",
       "field": "is_renting",
       "kind": "boolean",
-      "title": "這次申請所指住宅，是否有本人或申請家庭的承租關係？",
-      "description": "請看這次要申請的住宅與期間，不確定可以先跳過。",
+      "title": "這次想申請補助的房子，是本人或申請家庭租的嗎？",
+      "description": "請依這次想申請補助的住宅與期間回答，不確定可以跳過。",
       "options": [
         {
           "label": "是",
@@ -637,7 +637,7 @@
       "id": "q-owns-home",
       "field": "owns_home",
       "kind": "boolean",
-      "title": "本人名下是否持有住宅所有權？",
+      "title": "本人名下有住宅嗎？",
       "description": "這題問本人是否有住宅所有權，和目前住哪裡不同。",
       "options": [
         {
@@ -658,7 +658,7 @@
       "id": "q-explore-context",
       "field": "explore_context",
       "kind": "single",
-      "title": "這次查詢對象目前的生活狀況，較接近哪一項？",
+      "title": "查詢對象目前的生活情況比較接近哪一項？",
       "description": "不需要知道補助名稱，先從生活狀況找方向；不確定也可以選或跳過。",
       "options": [
         {
@@ -735,7 +735,7 @@
       "field": "benefit_style",
       "kind": "single",
       "title": "想先了解哪種協助方式？",
-      "description": "先挑想了解的方式，其他資源仍會保留在結果中。",
+      "description": "先選想了解的協助方式，其他資源還是看得到。",
       "options": [
         {
           "label": "現金補助或津貼",
@@ -814,7 +814,7 @@
       "field": "work_applicant",
       "kind": "single",
       "title": "這次想替哪一種身分找工作相關資源？",
-      "description": "有些補助給勞工，有些由雇主、事業或家屬申請，先分清楚要找哪一邊的協助。",
+      "description": "有些補助給勞工，有些由雇主、事業或家屬申請，請先選要找哪一類。",
       "options": [
         {
           "label": "勞工、求職者或受訓者本人",

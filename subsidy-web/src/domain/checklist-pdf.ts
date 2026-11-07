@@ -11,7 +11,7 @@ import type { PlanInput } from './export';
 let fontBytesPromise: Promise<ArrayBuffer> | undefined;
 function loadFont(): Promise<ArrayBuffer> {
   if (!fontBytesPromise) fontBytesPromise = fetch(fontUrl).then(response => {
-    if (!response.ok) throw new Error('檢核表字型載入失敗，請稍後重試。');
+    if (!response.ok) throw new Error('暫時無法載入檢核表的中文字型，請稍後再試。');
     return response.arrayBuffer();
   }).catch(error => { fontBytesPromise = undefined; throw error; });
   return fontBytesPromise;
@@ -283,7 +283,7 @@ export async function createChecklistPdf(input: PlanInput): Promise<Uint8Array> 
   table({
     widths: [META_L, META_V, META_L, META_V], context: '表頭',
     rows: [
-      [label('文件編號'), { text: form.code }, label('產製日期'), { text: form.generatedDate }],
+      [label('文件編號'), { text: form.code }, label('產生日期'), { text: form.generatedDate }],
       [label('對象'), { text: form.target }, label('已選資源'), { text: form.itemCount }],
       [label('資料版本'), { text: form.catalogVersion, span: 3 }],
       [label('資料來源'), { text: form.sourceLabel, span: 3 }],
@@ -311,7 +311,7 @@ export async function createChecklistPdf(input: PlanInput): Promise<Uint8Array> 
   sectionBar('二、申請項目總覽');
   table({
     widths: [32, 94, 70, 106, 80, 79, CONTENT_W - 461], context: '二、申請項目總覽',
-    header: ['編號', '資源名稱', '主辦／\n承辦機關', '受理窗口', '申請期限', '初篩結果\n（非資格認定）', '頁次'].map(h => head(h)),
+    header: ['編號', '資源名稱', '主辦／\n承辦機關', '受理窗口', '申請期限', '初步比對\n（資格仍須審核）', '頁次'].map(h => head(h)),
     rows: form.overview.length
       ? form.overview.map((row): Cell[] => [
         { text: String(row.no), align: 'center' }, { text: row.name }, { text: row.agency }, { text: row.channel },
@@ -380,7 +380,7 @@ export async function createChecklistPdf(input: PlanInput): Promise<Uint8Array> 
       header: [head('來源類別'), head('來源連結'), head('來源日期'), head('查核日期')],
       rows: resource.sources.length
         ? resource.sources.map(s => [label(s.category), { text: s.url, url: s.url }, { text: s.sourceDate, align: 'center' }, { text: s.checkedDate, align: 'center' }])
-        : [[{ text: '資料未列來源紀錄，請以官方網站為準。', span: 4 }]],
+        : [[{ text: '資料沒有列出來源紀錄，請到官方網站確認。', span: 4 }]],
     });
   }
 

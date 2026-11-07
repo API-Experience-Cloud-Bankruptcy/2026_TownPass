@@ -165,9 +165,9 @@ export const questionInsight = computed(()=> {
   return {initialCount:candidates.value.length,remainingCount:focusedCandidates.value.length,nonIneligibleCount,
     excludedCount:candidates.value.length-nonIneligibleCount,weakCount:nonIneligibleCount-focusedCandidates.value.length,
     answeredCount:conditionEntries.value.length,
-    reason:['need_area','explore_context','expense_priority'].includes(current?.field??'') ? '從容易回答的生活狀況與支出，找出接下來值得確認的資源方向；不知道可以略過。' : current?.purpose==='qualification'
-      ? '目前候選包含已逐筆審閱的這項必要條件；回答後會重算初篩與下一題，其他資格仍待確認。'
-      : '這題依目前候選的原文協助聚焦需求；方向不同的方案仍保留在其他資源，不判定資格不符。'};
+    reason:['need_area','explore_context','expense_priority'].includes(current?.field??'') ? '先了解生活狀況與支出，再找相關資源；不知道可以跳過。' : current?.purpose==='qualification'
+      ? '這題會確認相關補助的一項必要條件，並依回答調整結果與下一題；其他資格仍要確認。'
+      : '這題會依補助原文幫忙縮小查詢方向；其他方向的方案仍會列在「其他相關資源」，不會因此判定資格不符。'};
 });
 
 export const planItems = computed(() =>
@@ -341,7 +341,7 @@ export function clearAllData(): void {
   clearSession();
   resetPerson(null);
   state.personalPlan = { ...emptySession('self'), catalogVersion: state.personalPlan.catalogVersion, rulesVersion: state.personalPlan.rulesVersion, engineVersion: state.personalPlan.engineVersion };
-  state.notice = '已清除這次的答案、行動單與進度；資料庫清除結果請看保存狀態。';
+  state.notice = '已清除這次的答案、行動單與進度；資料庫是否已清除，請看行動單的儲存狀態。';
 }
 
 function beginQuestions(continuing: boolean): void {
@@ -362,7 +362,7 @@ export function startQuestions(): void { beginQuestions(false); }
 export function continueQuestions(): void { beginQuestions(true); }
 export function startExplore(): void {
   if(state.loading) return;
-  if(!state.session.target) {state.notice='請先選擇查詢對象，再開始探索。';return;}
+  if(!state.session.target) {state.notice='請先選這次要幫誰找。';return;}
   state.session.situation=null; state.session.query='';
   // A new discovery direction must not inherit old branch-specific preferences.
   clearDiscoveryPreferences(); state.session.seenQuestions=[];

@@ -12,7 +12,7 @@ const panel = (id: string, target: Target | null) => render(FormFillPanel, { ite
 describe('FormFillPanel', () => {
   it('替本人申請：只有一顆一鍵填寫按鈕與親簽提醒，不預先讀取或顯示個資', async () => {
     const html = await panel('WEL-0067', 'self');
-    expect(html).toContain('一鍵填好申請表');
+    expect(html).toContain('帶入資料，產生申請表');
     expect(html).toContain('本人親筆簽名');
     expect(html).toContain('開啟空白表單');
     expect(html).not.toContain('class="input"');
@@ -22,12 +22,12 @@ describe('FormFillPanel', () => {
     for (const target of ['other', null] as const) {
       const html = await panel('WEL-0067', target);
       expect(html).toContain('目前不是替自己申請');
-      expect(html).not.toContain('一鍵填好申請表');
+      expect(html).not.toContain('帶入資料，產生申請表');
     }
   });
   it('不能填寫的表單：說明原因並給官方入口，不出現填寫流程', async () => {
     const online = await panel('WEL-0059', 'self');
-    expect(online).not.toContain('一鍵填好申請表');
+    expect(online).not.toContain('帶入資料，產生申請表');
     expect(online).toMatch(/線上|沒有可用的申請表|不能自動填寫/);
   });
   it('每一筆資料都能渲染，不丟例外', async () => {

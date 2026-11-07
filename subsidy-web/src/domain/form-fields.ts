@@ -99,7 +99,7 @@ export function formAvailability(item: { application?: unknown } | null | undefi
   const app = isObj(item?.application) ? item!.application : {};
   const rawMain = (app as Record<string, unknown>).form_fields;
   const main = parseEntry(rawMain);
-  if (!main) return { kind: 'none', status: 'unknown', reason: '資料沒有申請表分析結果' };
+  if (!main) return { kind: 'none', status: 'unknown', reason: '目前沒有可供填寫的申請表資訊' };
   const attachments = isObj(rawMain) && Array.isArray(rawMain.attachments) ? rawMain.attachments : [];
   const raws: unknown[] = [rawMain, ...attachments];
   const seen = new Set<string>();
@@ -113,9 +113,17 @@ export function formAvailability(item: { application?: unknown } | null | undefi
   if (forms.length) return { kind: 'fillable', forms };
   const url = main.officeFiles[0] ?? main.sourceUrl;
   if (['online_system', 'office_file_only', 'download_failed', 'scanned_image_pdf', 'text_unreadable', 'analysis_error'].includes(main.status)) {
-    return { kind: 'external', status: main.status, url, reason: main.reason };
+    const reasons: Record<string, string> = {
+      online_system: '這項補助需要到線上申請系統填寫，請開啟申請入口。',
+      office_file_only: '這份表單需要另外下載，以文書軟體開啟或列印後填寫。',
+      download_failed: '目前無法取得這份表單，請到來源網站下載。',
+      scanned_image_pdf: '這份表單是掃描檔，目前無法自動填寫。請下載後自行填寫。',
+      text_unreadable: '目前無法讀取這份表單的填寫欄位，請下載後自行填寫。',
+      analysis_error: '目前無法自動填寫這份表單，請到來源網站下載後自行填寫。',
+    };
+    return { kind: 'external', status: main.status, url, reason: reasons[main.status]! };
   }
-  return { kind: 'none', status: main.status, reason: main.reason };
+  return { kind: 'none', status: main.status, reason: '目前沒有可自動填寫的申請表，請向受理窗口或來源網站確認。' };
 }
 
 export function formPdfUrl(localFile: string, base: string = apiBase()): string | null {
@@ -131,11 +139,11 @@ export async function fetchFormPdf(
   options: { base?: string; fetchImpl?: FetchLike } = {},
 ): Promise<Uint8Array> {
   const url = entry.localFile ? formPdfUrl(entry.localFile, options.base) : null;
-  if (!url) throw new Error('表單檔案路徑無效');
+  if (!url) throw new Error('暫時無法取得這份表單，請到來源網站下載。');
   const response = await (options.fetchImpl ?? ((u: string, i?: RequestInit) => fetch(u, i)))(url);
-  if (!response.ok) throw new Error(`表單下載失敗（HTTP ${response.status}）`);
+  if (!response.ok) throw new Error('表單暫時下載不了，請稍後再試，或到來源網站下載。');
   const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.length > MAX_FORM_BYTES) throw new Error('表單檔案過大');
-  if (String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') throw new Error('取得的內容不是 PDF');
+  if (bytes.length > MAX_FORM_BYTES) throw new Error('這份表單超過可處理的大小，請到來源網站下載後自行填寫。');
+  if (String.fromCharCode(...bytes.slice(0, 5)) !== '%PDF-') throw new Error('下載的檔案不是可填寫的 PDF，請到來源網站確認表單。');
   return bytes;
 }

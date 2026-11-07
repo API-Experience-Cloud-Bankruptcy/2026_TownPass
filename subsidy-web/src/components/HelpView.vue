@@ -53,7 +53,7 @@ const choices = computed(() => {
   return list;
 });
 const item = computed(() => (itemId.value ? itemsById.value.get(itemId.value) ?? null : null));
-const advice = computed(() => (item.value && reason.value ? stuckAdvice(item.value, reason.value, stepText.value) : null));
+const advice = computed(() => (item.value && reason.value ? stuckAdvice(item.value, reason.value, stepText.value, state.helpContext.target ?? 'self') : null));
 const conditionLines = computed(() => helpConditions.value.map(c => c.line));
 const includedValid = computed(() => helpConditions.value.filter(c => included.value.includes(c.line)));
 
@@ -93,7 +93,7 @@ function onItemChange() {
         <button type="button" class="btn btn--text" @click="previous"><span aria-hidden="true">‹</span> 返回</button>
       </div>
       <h1 id="view-title" class="view-title" tabindex="-1">找人幫忙</h1>
-      <p class="muted">幫你整理要問的話，不會替你建立案件或轉介</p>
+      <p class="muted">幫你整理要問的話，不會替你建立案件或轉介。</p>
     </div>
 
     <section v-if="stage === 'reason'" class="actions" aria-labelledby="help-reason-h">
@@ -126,10 +126,10 @@ function onItemChange() {
       <p class="muted">{{ item?.name ?? '一般詢問' }}<template v-if="stepText">・{{ stepText }}</template></p>
       <template v-if="advice">
         <p class="next__text">{{ advice.found[0] ?? advice.notFound[0] }}</p>
-        <p class="muted">實際辦法以承辦機關答覆為準</p>
+        <p class="muted">實際辦法以承辦機關答覆為準。</p>
       </template>
-      <p v-else class="next__text">先打市政諮詢說明你的狀況，問清楚該找哪個窗口</p>
-      <button type="button" class="btn btn--primary btn--block" @click="setStage('export')">產生要問的話</button>
+      <p v-else class="next__text">可以先打 1999，說明{{ state.helpContext.target === 'other' ? '對方' : '你' }}的狀況，問問該找哪個窗口。</p>
+      <button type="button" class="btn btn--primary btn--block" @click="setStage('export')">整理要問的話</button>
       <div class="more-group">
         <details v-if="advice" class="more">
           <summary>資料裡的其他方法</summary>

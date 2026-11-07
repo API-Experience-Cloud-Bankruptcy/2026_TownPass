@@ -38,9 +38,9 @@ export interface FollowupPlan {
   outcome: FollowupOutcome | null;
 }
 
-export const FIELD_LABELS: Record<FactField, string> = { age: '年齡', region: '戶籍', is_student: '在學身分', household_type: '已核定家戶身分' };
+export const FIELD_LABELS: Record<FactField, string> = { age: '年齡', region: '戶籍', is_student: '在學身分', household_type: '低收入戶／中低收入戶資格' };
 const FIELD_NOTES: Partial<Record<FactField, string>> = {
-  household_type: '要有政府核定的低收入戶或中低收入戶資格才算；生活困難不等於已核定。',
+  household_type: '請以政府核定的低收入戶或中低收入戶資格為準，生活困難不代表已有資格。',
   region: '這裡指戶籍所在地，不是目前住的地方。',
 };
 
@@ -61,7 +61,7 @@ export function planFollowups(input: FollowupInput, answers: Readonly<Record<str
     const only = subjects.size === 1 ? [...subjects][0] as Target : null;
     const otherLabel = only === 'other' ? facts.find(f => f.subject === 'other')?.subjectLabel : '';
     const step: FollowupStep = only === 'self'
-      ? { id: 'target', prompt: '聽起來是你自己的情況，這次是幫自己找嗎？', choices: [{ id: 'target:self', label: '對，幫自己找' }, { id: 'target:other', label: '不是，幫家人或別人找' }], yes: 'target:self' }
+      ? { id: 'target', prompt: '這次是幫自己找嗎？', choices: [{ id: 'target:self', label: '對，幫自己找' }, { id: 'target:other', label: '不是，幫家人或別人找' }], yes: 'target:self' }
       : only === 'other'
         ? { id: 'target', prompt: `這次是幫${otherLabel || '家人或別人'}找嗎？`, choices: [{ id: 'target:other', label: '對，幫家人或別人找' }, { id: 'target:self', label: '不是，幫自己找' }], yes: 'target:other' }
         : { id: 'target', prompt: '這次要幫誰找？', choices: [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }] };
@@ -91,7 +91,7 @@ export function planFollowups(input: FollowupInput, answers: Readonly<Record<str
   const labels = [...new Set(people.map(f => f.subjectLabel))];
   let person = labels[0];
   if (labels.length > 1) {
-    const answer = ask({ id: 'person', prompt: '你提到了好幾位，這一輪先查哪一位？', note: '其他人的情況可以之後換人再查。', choices: labels.map((label, i) => ({ id: `person:${i}`, label })) });
+    const answer = ask({ id: 'person', prompt: '你提到了好幾位，這次先幫哪一位找？', note: '其他人可以之後再查。', choices: labels.map((label, i) => ({ id: `person:${i}`, label })) });
     if (!answer) return stop();
     person = labels[Number(answer.slice(7))];
     for (const label of labels) if (label !== person) skipped.push(`${label}的情況這輪先不查`);
@@ -104,11 +104,11 @@ export function planFollowups(input: FollowupInput, answers: Readonly<Record<str
     const options = mine.filter(f => f.field === field).filter((f, i, all) => all.findIndex(g => g.value === f.value) === i);
     if (options.length === 1) {
       const fact = options[0]!;
-      const answer = ask({ id: `fact:${field}`, prompt: `你提到「${fact.evidence}」，要記下「${input.describe(fact)}」嗎？`, note: FIELD_NOTES[field], ...yesNo('對，記下來', '先不要') });
+      const answer = ask({ id: `fact:${field}`, prompt: `你提到「${fact.evidence}」，要把「${input.describe(fact)}」記為${target === 'self' ? '你的情況' : '對方的情況'}嗎？`, note: FIELD_NOTES[field], ...yesNo('對，記下來', '先不要') });
       if (!answer) return stop();
       if (answer === 'yes') chosen.push(fact); else skipped.push(`${FIELD_LABELS[field]}先不填`);
     } else {
-      const answer = ask({ id: `fact:${field}`, prompt: `關於${FIELD_LABELS[field]}，你提到幾種說法，哪一個才對？`, note: FIELD_NOTES[field], choices: [...options.map((f, i) => ({ id: `value:${i}`, label: input.describe(f) })), { id: 'no', label: '都不確定，先不填' }], no: 'no' });
+      const answer = ask({ id: `fact:${field}`, prompt: `關於${FIELD_LABELS[field]}，你提到不同的情況，要記下哪一個？`, note: FIELD_NOTES[field], choices: [...options.map((f, i) => ({ id: `value:${i}`, label: input.describe(f) })), { id: 'no', label: '都不確定，先不填' }], no: 'no' });
       if (!answer) return stop();
       if (answer === 'no') skipped.push(`${FIELD_LABELS[field]}先不填`); else chosen.push(options[Number(answer.slice(6))]!);
     }

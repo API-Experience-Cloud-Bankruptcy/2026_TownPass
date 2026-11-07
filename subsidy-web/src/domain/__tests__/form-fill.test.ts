@@ -156,11 +156,11 @@ describe('取得 PDF', () => {
     expect(fetchImpl).toHaveBeenCalledWith('http://x/api/forms/0123456789ab.pdf');
   });
   it('拒絕非 PDF、HTTP 錯誤與非法路徑，且不發請求', async () => {
-    await expect(fetchFormPdf(entry, { fetchImpl: reply('<html>') })).rejects.toThrow('不是 PDF');
-    await expect(fetchFormPdf(entry, { fetchImpl: reply('x', 404) })).rejects.toThrow('404');
+    await expect(fetchFormPdf(entry, { fetchImpl: reply('<html>') })).rejects.toThrow('不是可填寫的 PDF');
+    await expect(fetchFormPdf(entry, { fetchImpl: reply('x', 404) })).rejects.toThrow('表單暫時下載不了');
     const never = vi.fn();
-    await expect(fetchFormPdf({ localFile: 'forms/../secret.pdf' }, { fetchImpl: never })).rejects.toThrow('無效');
-    await expect(fetchFormPdf({ localFile: null }, { fetchImpl: never })).rejects.toThrow('無效');
+    await expect(fetchFormPdf({ localFile: 'forms/../secret.pdf' }, { fetchImpl: never })).rejects.toThrow('暫時無法取得這份表單');
+    await expect(fetchFormPdf({ localFile: null }, { fetchImpl: never })).rejects.toThrow('暫時無法取得這份表單');
     expect(never).not.toHaveBeenCalled();
   });
 });

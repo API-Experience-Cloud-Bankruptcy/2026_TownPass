@@ -130,8 +130,8 @@ async function download(scope: 'one' | 'all') {
       // App 內的網頁不能直接存檔，改由手機的儲存畫面存成檔案。
       const outcome = await sharePdfFile(file);
       if (!mounted) return;
-      status.value = outcome === 'presented' ? '已開啟手機的儲存畫面，請選「儲存到檔案」把 PDF 存下來。'
-        : outcome === 'cancelled' ? '沒有存檔。需要時再按一次下載。'
+      status.value = outcome === 'presented' ? '已要求開啟手機分享畫面，請選擇儲存檔案或分享，並確認是否完成。'
+        : outcome === 'cancelled' ? '已取消儲存或分享；需要時可以再按一次下載。'
         : '這支手機目前無法存 PDF，請稍後再試，或改用「複製文字」。';
       return;
     }
@@ -140,7 +140,7 @@ async function download(scope: 'one' | 'all') {
     const a = document.createElement('a');
     a.href = url; a.download = name; a.rel = 'noopener';
     document.body.appendChild(a); a.click(); a.remove();
-    status.value = `已下載「${name}」。如果沒看到檔案，可以按下方連結再下載一次。`;
+    status.value = `已開始下載「${name}」。如果沒看到檔案，可以按下方連結再下載一次。`;
   } catch {
     if (mounted) status.value = 'PDF 製作失敗，請再試一次；也可以改用「複製文字」。';
   } finally {
@@ -313,7 +313,7 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
 .pexp__pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .pexp__nav {
   width: var(--touch); height: var(--touch); flex: none;
-  border: 1px solid var(--line-strong); border-radius: 50%; background: var(--raised); color: var(--accent);
+  border: 1px solid var(--line-strong); border-radius: 50%; background: var(--bg); color: var(--accent);
   font-size: 1.75rem; line-height: 1; cursor: pointer;
 }
 .pexp__nav:disabled { color: var(--disabled-text); border-color: var(--line); cursor: default; }
@@ -321,7 +321,7 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
 .pexp__count { font-size: var(--fs-section); font-weight: var(--fw-bold); }
 .pexp__dots { display: flex; gap: 6px; }
 .pexp__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); transition: width var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease); }
-.pexp__dot.is-on { width: 20px; border-radius: 4px; background: var(--accent); }
+.pexp__dot.is-on { width: 20px; border-radius: 4px; background: var(--brand); }
 .pexp__hint { margin: 0; text-align: center; font-size: var(--fs-small); }
 
 /* 一張一頁，橫向吸附；外層不會出現水平捲軸。 */
@@ -340,7 +340,7 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
   background: var(--bg); overflow-wrap: anywhere; display: grid; gap: var(--space-4); align-content: start;
 }
 .pexp__track--many .paper { margin: 0 2px; }
-.paper__head { display: grid; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: 2px solid var(--accent); }
+.paper__head { display: grid; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: 3px solid var(--brand); }
 .paper__no { margin: 0; color: var(--accent); font-size: var(--fs-small); font-weight: var(--fw-bold); }
 .paper__title { margin: 0; font-size: var(--fs-section); line-height: var(--lh-tight); }
 .paper__tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
@@ -360,7 +360,7 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
   border: 2px solid var(--line-strong); border-radius: 50%; font-size: var(--fs-small); font-weight: var(--fw-bold); color: var(--text-2);
 }
 .paper__box--check { border-radius: 6px; }
-.is-done > .paper__box { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.is-done > .paper__box { border-color: var(--done-line); background: var(--done-bg); color: var(--done-ink); }
 .paper__muted { color: var(--muted); }
 .paper__sub { display: block; color: var(--muted); font-size: var(--fs-small); }
 .paper__bullets { margin: 0; padding-left: 1.25em; display: grid; gap: var(--space-1); }
@@ -370,7 +370,7 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
 .paper__dl dd { margin: 0; line-height: var(--lh-body); }
 .paper__links { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .paper__links a { color: var(--accent); text-underline-offset: 3px; display: inline-flex; align-items: center; min-height: var(--touch); }
-.paper__quote { margin: 0; padding: var(--space-3); border-left: 4px solid var(--accent); background: var(--raised); border-radius: 0 var(--radius) var(--radius) 0; line-height: var(--lh-body); }
+.paper__quote { margin: 0; padding: var(--space-3); border-left: 4px solid var(--brand); background: var(--accent-soft); border-radius: 0 var(--radius) var(--radius) 0; line-height: var(--lh-body); }
 .paper__more { border-top: 1px solid var(--line); padding-top: var(--space-2); }
 .paper__more > summary { min-height: var(--touch); display: flex; align-items: center; cursor: pointer; color: var(--accent); font-weight: var(--fw-medium); }
 .paper__more[open] > summary { margin-bottom: var(--space-2); }

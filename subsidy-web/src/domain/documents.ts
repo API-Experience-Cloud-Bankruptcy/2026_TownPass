@@ -6,7 +6,7 @@ import type { Answers, DocumentRegionBasis, RequiredDocument, Subsidy } from './
 export const DOCUMENT_REGION_BASIS_LABEL: Record<DocumentRegionBasis, string> = {
   registered: '戶籍地', residence: '實際居住地', application: '受理縣市', unknown: '地區依據待確認',
 };
-export const DOCUMENT_REGION_NOTICE = '地方文件僅供核對原文，不能據此判定其他縣市的文件要求；未列出當地文件不代表免附文件。戶籍地不代替實際居住地或受理縣市。';
+export const DOCUMENT_REGION_NOTICE = '這裡列的是個別縣市的文件要求，其他縣市可能不同。沒列出當地文件，不代表免附文件。戶籍地、實際居住地和受理縣市也可能不同。';
 const COUNTIES = new Set(['臺北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市', '基隆市', '新竹市', '嘉義市', '新竹縣', '苗栗縣', '彰化縣', '南投縣', '雲林縣', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣', '臺東縣', '澎湖縣', '金門縣', '連江縣']);
 function exactRegion(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;

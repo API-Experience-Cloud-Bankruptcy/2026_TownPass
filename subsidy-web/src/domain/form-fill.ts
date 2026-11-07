@@ -91,7 +91,7 @@ function toUser(R: number, dx: number, dy: number, W0: number, H0: number): [num
     case 90: return [dy, dx];
     case 180: return [W0 - dx, dy];
     case 270: return [W0 - dy, H0 - dx];
-    default: throw new Error(`不支援的頁面旋轉 ${R}`);
+    default: throw new Error('這份表單的頁面方向目前無法自動填寫，請下載空白表單自行填寫。');
   }
 }
 

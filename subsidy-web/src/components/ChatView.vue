@@ -6,7 +6,7 @@ import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMoun
 import LogoMark from './LogoMark.vue';
 import { vSmoothDetails } from '../chat/smooth-details';
 import { followBottom, forgetTyped, isTyped, markTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
-import { answerOf, describeAnswer, MAX_AGE, titleFor } from '../domain/questions';
+import { answerOf, describeAnswer, descriptionFor, MAX_AGE, titleFor } from '../domain/questions';
 import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
 import { explicitSelfAge, InterpretationTurn, type CandidateFact, type ChatChoice, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
 import { FIELD_LABELS, matchFollowupChoice, planFollowups, type FollowupStep } from '../chat/followups';
@@ -59,7 +59,7 @@ const past = (step: 'home' | 'needs') =>
 const greetKey = 'greet';
 const greetLines: Line[] = [
   { text: '嗨，我是福利連。' },
-  { text: '回答幾個簡單問題，我幫你從補助、津貼、獎助與服務中，找出值得先看的幾項。' },
+  { text: '回答幾個問題，我幫你找找有哪些補助、津貼、獎助或服務可以先了解。' },
   { text: '這次要幫誰找？', tone: 'title' },
 ];
 const targetLabel = computed(() => (state.session.target === 'other' ? '幫家人或別人找' : '幫自己找'));
@@ -68,7 +68,7 @@ const targetLabel = computed(() => (state.session.target === 'other' ? '幫家�
 const needKey = computed(() => `need:${target.value}`);
 const needLines = computed<Line[]>(() => [
   { text: `${ask.value}需要哪方面的幫忙？`, tone: 'title' },
-  { text: target.value === 'other' ? '提醒：幫別人查，不代表可以替對方申請。' : '不確定也沒關係，我可以一步步帶你找。', tone: 'muted' },
+  { text: target.value === 'other' ? '請依對方的情況回答；能不能代辦，要看各項申請規定。' : '不確定也沒關係，我可以一步步帶你找。', tone: 'muted' },
 ]);
 const needAnswer = computed(() => {
   if (state.session.query) return `找「${state.session.query}」`;
@@ -92,7 +92,7 @@ function answerText(q: Question): string {
   return v === undefined ? '不知道，先跳過' : describeAnswer(q, v);
 }
 function qLines(q: Question, withMeta: boolean): Line[] {
-  const purpose = optionalText(q, 'description');
+  const purpose = descriptionFor(q, target.value);
   return [
     { text: titleFor(q, target.value), tone: 'title' },
     { text: withMeta ? purpose : '', tone: 'muted' },
@@ -154,10 +154,10 @@ const groups = computed(() => {
 const ineligible = computed(() => sortedCandidates.value.filter((i) => !notIneligible(i)));
 const sections = computed(() =>
   [
-    { key: 'general', title: '其他相關資源', note: '沒有列在上面，但可能和你的情況有關，不代表不能申請。', list: groups.value.general },
+    { key: 'general', title: '其他相關資源', note: `這些也可能和${ask.value}的情況有關，沒有排在前面不代表不能申請。`, list: groups.value.general },
     { key: 'uncertain', title: '受理時間需確認', note: '資料沒有寫清楚現在是否受理，請看原文或問承辦窗口。', list: groups.value.uncertain },
     { key: 'closed', title: '目前已截止', note: '依資料原文的受理情形或期限；之後可能再開放，請看官方公告。', list: groups.value.closed },
-    { key: 'ineligible', title: '依填寫的條件不符', note: '只依你填的答案判斷；填錯或情況改變，可以改答案再看。', list: ineligible.value },
+    { key: 'ineligible', title: '與填寫條件不符的資源', note: '只依填寫的答案判斷；填錯或情況改變，可以改答案再看。', list: ineligible.value },
   ].filter((s) => s.list.length),
 );
 const answeredCount = computed(() => questionInsight.value?.answeredCount ?? 0);
@@ -176,8 +176,8 @@ const resultLines = computed<Line[]>(() => [
         : '可以先看看這些資源：',
     tone: 'title',
   },
-  { text: answeredCount.value === 0 && !nothing.value ? '還沒有回答問題，下面依需求列出，不是依你的情況挑選。' : '', tone: 'muted' },
-  { text: nothing.value ? '沒找到不代表沒有可以申請的福利。可以換個需求、改答案，或找人幫忙。' : '相關不等於符合資格，能不能領由承辦機關審核。', tone: 'muted' },
+  { text: answeredCount.value === 0 && !nothing.value ? `還沒回答問題，這些是依需求列出的資源，還沒比對${ask.value}的情況。` : '', tone: 'muted' },
+  { text: nothing.value ? '沒找到不代表沒有可以申請的福利。可以換個需求、改答案，或找人幫忙。' : '這些資源是否適用，還要由承辦機關審核。', tone: 'muted' },
 ]);
 const nextKey = computed(() => `${resultsKey.value}:next`);
 const nextLines: Line[] = [{ text: '接下來想怎麼做？' }];
@@ -291,7 +291,7 @@ const context = computed<InterpretationContext>(() => {
 });
 // 包含答案、題目、對象與資料版本；按鈕、返回、換人或資料重載都會使舊結果失效。
 const fingerprint = computed(() => JSON.stringify([context.value, state.session.answers, state.session.situation, state.session.query, state.session.catalogVersion, state.session.rulesVersion, state.session.engineVersion, pendingSwitch.value]));
-watch(fingerprint, () => { turn.cancel(); if (interpreting.value) { const latest = turns.value[turns.value.length - 1]; if (latest && !latest.reply) latest.reply = '流程已更新，已略過先前的理解。'; } interpreting.value = false; followup.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; }, { flush: 'sync' });
+watch(fingerprint, () => { turn.cancel(); if (interpreting.value) { const latest = turns.value[turns.value.length - 1]; if (latest && !latest.reply) latest.reply = '查詢內容已變更，剛剛輸入的內容不會套用。'; } interpreting.value = false; followup.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; }, { flush: 'sync' });
 watch(() => state.session, (_session, previous) => {
   if (previous.target === null && state.session.target !== null) return;
   turn.cancel(); turns.value = []; typedAnswers.value = {}; typedTarget.value = null; typedNeed.value = null; query.value = ''; followup.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; fallbackCount.value = 0;
@@ -356,9 +356,9 @@ const statusText = computed(() => {
   const s = modelStatus.value;
   if (!s) return '正在確認裝置端模型…';
   if (s.state === 'unavailable') return s.reason;
-  if (s.state === 'ready') return 'Gemma 4 E2B 已就緒，情況只在此裝置理解。';
+  if (s.state === 'ready') return 'Gemma 4 E2B 已就緒，輸入內容只在這台裝置上處理。';
   if (s.state === 'downloading') return `正在下載模型${s.progress === undefined ? '' : ` ${Math.round(s.progress * 100)}%`}`;
-  if (s.state === 'downloaded') return '模型已下載，正在自動準備文字理解…';
+  if (s.state === 'downloaded') return '模型已下載，正在啟用文字理解功能…';
   if (s.state === 'loading') return '正在載入模型，第一次可能需要較久。';
   if (s.state === 'error') return '模型未能啟動，可重試或直接使用選項。';
   return '可載入 Gemma 4 E2B，理解你輸入的情況。首次需下載模型。';
@@ -408,7 +408,7 @@ function cancelInput() {
   const pendingId = followup.value?.turnId ?? actionProposal.value?.turnId;
   turn.cancel(); interpreting.value = false; followup.value = null; actionProposal.value = null; searchSuggestions.value = []; recovery.value = null; clarification.value = null;
   const latest = pendingId ? turns.value.find(t => t.id === pendingId) : turns.value[turns.value.length - 1];
-  if (latest && (pendingId || !latest.reply)) latest.reply = '已取消理解，原本的答案與需求沒有改動。';
+  if (latest && (pendingId || !latest.reply)) latest.reply = '已取消，原本的答案與需求沒有改動。';
 }
 function factValue(fact: CandidateFact): string {
   const q = state.bank?.questions.find(q => q.field === fact.field);
@@ -440,7 +440,7 @@ function startFollowup(id: number, result: Extract<Interpretation, { kind: 'situ
   followupHint.value = '';
   const t = turns.value.find(t => t.id === id);
   const asks = (state.session.target ? 0 : 1) + result.facts.length + (result.situationIds.length ? 1 : 0);
-  if (t) t.reply = asks > 1 ? '我聽到了幾件事，跟你一題一題確認；全部答完才會一起記下。' : '';
+  if (t) t.reply = asks > 1 ? '你提到了幾件事，我會一題一題確認，全部答完才一起記下。' : '';
   if (!followupPlan.value?.current) finishFollowup();
 }
 function answerFollowup(choiceId: string, typed?: string) {
@@ -500,7 +500,7 @@ function restateFollowup() {
   const original = turns.value.find(t => t.id === f.turnId)?.text ?? '';
   dropFollowup();
   const t = turns.value.find(t => t.id === f.turnId);
-  if (t) t.outro = '好，請改一下輸入內容再送出，剛剛這些都不會套用。';
+  if (t) t.outro = '請修改輸入內容再送出，剛剛確認的內容都不會套用。';
   query.value = original;
   void nextTick(() => document.getElementById('chat-search')?.focus());
 }
@@ -529,7 +529,7 @@ async function applyAnswer(result: Extract<Interpretation, { kind: 'answer' }>, 
 }
 function nextPrompt(mode: 'current' | 'need'): string {
   if (!state.session.target) return '這次要幫自己找，還是幫家人或別人找？';
-  if (mode === 'need') return '你現在最想減輕哪方面的負擔？也可以選「還不確定，帶我找」。';
+  if (mode === 'need') return `${ask.value}目前最需要哪方面的幫忙？也可以選「還不確定，帶我找」。`;
   if (view.value === 'questions' && current.value) return titleFor(current.value, target.value);
   return view.value === 'results' ? '接下來想繼續縮小範圍，還是換個需求？' : '目前最需要減輕哪一筆支出，或解決什麼困難？';
 }
@@ -594,14 +594,14 @@ function executeSearch(id: number, text: string, searchQuery: string) {
   const matches = state.catalog ? filterCatalog(state.catalog.items, null, searchQuery) : [];
   const t = turns.value.find(t => t.id === id);
   if (!matches.length) {
-    showRecovery(id, text, `沒有找到「${searchQuery}」。這不代表你沒有可申請的福利，原本資料都保留。`, 'need');
+    showRecovery(id, text, `沒有找到「${searchQuery}」。這不代表沒有可申請的福利，原本資料都保留。`, 'need');
     searchSuggestions.value = suggestSearchQueries(searchQuery, state.catalog?.items ?? []);
     return;
   }
   searchResources(searchQuery);
   typedNeed.value = { situation: null, query: state.session.query, text };
   fallbackCount.value = 0;
-  if (t) t.reply = `找到 ${matches.length} 項名稱或內容相關的資源，接著確認你的情況；相關不代表符合資格。`;
+  if (t) t.reply = `找到 ${matches.length} 項名稱或內容相關的資源，接著確認${ask.value}的情況；找到相關資源還不代表符合資格。`;
 }
 async function confirmAction(choiceId?: string) {
   const p = actionProposal.value;
@@ -636,7 +636,7 @@ function rejectAction() {
   const p = actionProposal.value; if (!p) return;
   cancelInput();
   const t = turns.value.find(t => t.id === p.turnId);
-  if (t) t.reply = '好，這項建議沒有採用，原本的資料與進度都保留。你可以重說，或繼續目前問題。';
+  if (t) t.reply = '好，這項建議沒有採用，原本的資料與進度都保留。可以重新說明，或繼續回答目前的問題。';
 }
 function suggestSearch(queryText: string) {
   const id = addInputTurn(queryText);
@@ -663,7 +663,7 @@ async function onInput() {
       }
     }
     if (isYes) {
-      if (p.kind === 'choice' && p.choices.length !== 1) addInputTurn(text, '有幾個可能的選項，請選一個，我不會替你猜。');
+      if (p.kind === 'choice' && p.choices.length !== 1) addInputTurn(text, '有幾個可能的選項，請選其中一個。');
       else if (p.kind === 'search' && !state.session.target) addInputTurn(text, '請先選這次要幫自己還是別人找。');
       else { addInputTurn(text); await confirmAction(); }
       return;
@@ -753,21 +753,21 @@ async function onInput() {
       if ('choiceId' in result) {
         const choiceId = result.choiceId;
         const choice = inputContext.choices.find(c => c.id === choiceId);
-        if (choice) offerChoices(id, text, [choice], '我把你的說法理解為目前題目的答案。');
+        if (choice) offerChoices(id, text, [choice], '我想確認一下，');
         else showRecovery(id, text, '目前沒有這個選項，請再確認一次。');
       } else {
         const label = `${result.numberValue}${inputContext.question?.field === 'age' ? '歲' : ''}`;
         actionProposal.value = { kind: 'number', value: result.numberValue, label, text, turnId: id, fingerprint: snapshot };
-        t.reply = `你的意思是「${label}」嗎？確認後才會填入目前這題。`;
+        t.reply = `你的意思是「${label}」嗎？確認後就會填入這一題。`;
       }
     } else if (result.kind === 'situation') {
       if (!result.situationIds.length && !result.facts.length) {
         showRecovery(id, text, result.details.length ? `我聽到你提到「${result.details.join('、')}」。` : '我還需要多了解一點。', 'need'); return;
       }
       startFollowup(id, result, localFact ? text : inferenceInput);
-    } else showRecovery(id, text, result.kind === 'off_topic' ? '我主要協助找補助與生活資源，我們回到你需要的幫忙。' : '我還沒理解完整，我們先確認一件事。');
+    } else showRecovery(id, text, result.kind === 'off_topic' ? '我主要協助找補助與生活資源，我們回到你需要的幫忙。' : '我還不太確定你的意思，先確認一件事。');
   } catch (error) {
-    if (snapshot === fingerprint.value) showRecovery(id, text, error instanceof ModelInputTooLongError ? error.message : '這次沒能整理完整，原本資料都保留。可以換個說法，或直接選下方選項。');
+    if (snapshot === fingerprint.value) showRecovery(id, text, error instanceof ModelInputTooLongError ? error.message : '這次沒能讀懂你的意思，原本資料都還在。可以換個說法，或直接選下方選項。');
   } finally { if (snapshot === fingerprint.value) interpreting.value = false; }
 }
 
@@ -777,14 +777,14 @@ async function onInput() {
   <div class="chat">
     <h1 class="sr-only">福利連對話</h1>
     <ConfirmDialog :open="downloadPrompt" title="下載裝置端文字理解模型？" confirm-label="同意下載並啟用" @confirm="acceptDownload" @cancel="dismissDownload">
-      <p>下載約 2.6 GB 的 Gemma 4 E2B 後，就能用自己的話描述情況。文字會在手機上理解。</p>
+      <p>下載約 2.6 GB 的 Gemma 4 E2B 後，就能用自己的話描述情況。輸入內容只在手機上處理。</p>
       <p>建議使用 Wi-Fi 並保留足夠空間。下載完成會自動啟用，以後每次開啟補助專區也會自動載入。</p>
       <p>取消仍可使用選項與名稱搜尋，下次開啟補助專區會再詢問。</p>
     </ConfirmDialog>
     <p v-if="modelStatus?.state === 'downloading'" class="chat__system" role="status">{{ statusText }}，下載期間可以先使用選項。</p>
     <p v-else-if="modelStatus?.state === 'error'" class="chat__system" role="status">{{ statusText }} <button type="button" class="btn" @click="prepareModel">重試</button></p>
     <section ref="log" class="chat__log" aria-label="對話紀錄">
-      <p class="chat__day" aria-hidden="true">你的回答只存在這支手機，不會傳出去</p>
+      <p class="chat__day" aria-hidden="true">填答只留在本分頁，不會上傳</p>
 
       <!-- 1. 打招呼與選對象 -->
       <BotMessage :msg-key="greetKey" :lines="greetLines" :active="view === 'home'">
@@ -859,7 +859,7 @@ async function onInput() {
                   :min="current.min ?? 0"
                   :max="current.max ?? MAX_AGE"
                   :unit="numberUnit(current)"
-                  :label="current.field === 'age' ? '年齡（實歲）' : titleFor(current, target)"
+                  :label="titleFor(current, target)"
                 />
               </template>
 
@@ -867,7 +867,7 @@ async function onInput() {
                 <div :key="current.id" class="replies" role="group" :aria-label="titleFor(current, target)">
                   <template v-if="current.kind === 'number'">
                     <button type="button" class="reply reply--primary reply--center" @click="submit(wheelValue)">
-                      <span class="reply__label">就是 {{ wheelValue }} {{ numberUnit(current) }}</span>
+                      <span class="reply__label">{{ wheelValue }} {{ numberUnit(current) }}，確認</span>
                     </button>
                   </template>
                   <template v-else>
@@ -907,8 +907,8 @@ async function onInput() {
               key="q-empty"
               msg-key="q-empty"
               :lines="[
-                { text: '沒有其他能幫忙縮小的問題了，可以先看結果。', tone: 'title' },
-                { text: '目前仍有條件需要確認，請在每一項的詳情看原文或問承辦窗口。', tone: 'muted' },
+                { text: '目前沒有其他問題了，先看看找到的資源。', tone: 'title' },
+                { text: '還有些申請條件需要確認，可以點開詳情看原文，或問承辦窗口。', tone: 'muted' },
               ]"
               active
             >
@@ -1024,14 +1024,14 @@ async function onInput() {
       <div v-if="interpreting" class="msg msg--bot">
         <span class="avatar" aria-hidden="true"><LogoMark thinking /></span>
         <div class="msg__col">
-          <p class="bubble bubble--bot thinking__text" role="status">正在裝置上理解你的說法…</p>
+          <p class="bubble bubble--bot thinking__text" role="status">正在確認你的意思…</p>
           <div class="msg__after"><button type="button" class="btn" @click="cancelInput">取消</button></div>
         </div>
       </div>
     </section>
 
     <form class="composer no-print conversation-composer" @submit.prevent="onInput">
-      <label class="sr-only" for="chat-search">輸入目前選項、補助名稱，或說說你的情況</label>
+      <label class="sr-only" for="chat-search">輸入選項、補助名稱，或說說需要什麼幫忙</label>
       <input
         id="chat-search"
         v-model="query"
@@ -1039,7 +1039,7 @@ async function onInput() {
         type="text"
         enterkeyhint="send"
         maxlength="2000"
-        placeholder="輸入選項、補助名稱，或說說你的情況"
+        placeholder="輸入選項、補助名稱，或說說需要什麼幫忙"
         :disabled="busy || !!pendingSwitch"
       />
       <button type="submit" class="composer__send" :disabled="busy || interpreting || applyingInput || !!pendingSwitch || !query.trim()">
@@ -1056,5 +1056,5 @@ async function onInput() {
 .conversation-modes button { min-height: 48px; padding: .5rem .75rem; border: 0; border-radius: .5rem; background: transparent; color: var(--muted); font: inherit; }
 /* 打字後的確認／補救選項：和其他選項一樣對齊在福利連的泡泡下方（頭像寬＋間距） */
 .conversation-recovery { margin-left: calc(36px + var(--space-2)); }
-.conversation-modes button[aria-pressed='true'] { background: var(--raised); color: var(--accent); font-weight: 600; }
+.conversation-modes button[aria-pressed='true'] { background: var(--brand-soft); color: var(--accent); font-weight: 600; }
 </style>

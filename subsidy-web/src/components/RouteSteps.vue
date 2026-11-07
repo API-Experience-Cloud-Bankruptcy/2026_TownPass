@@ -6,6 +6,7 @@ import type { Subsidy } from '../domain/types';
 import { sourceExcerpt } from '../presentation';
 import { detailAnswers } from '../store';
 import ExternalLink from './ExternalLink.vue';
+import LinkedText from './LinkedText.vue';
 
 /** hideDeadline：詳情頁已在「要先注意」列出期限時不重複。 */
 const props = defineProps<{ item: Subsidy; hideDeadline?: boolean }>();
@@ -28,11 +29,11 @@ const total = computed(() => route.value.steps.length);
             <p>{{ i + 1 }}. {{ sourceExcerpt(step) }}</p>
             <details v-if="sourceExcerpt(step) !== step" class="more">
               <summary>第 {{ i + 1 }} 步完整原文</summary>
-              <div class="more__body"><p class="selectable">{{ step }}</p></div>
+              <div class="more__body"><p><LinkedText :text="step" /></p></div>
             </details>
           </li>
         </ol>
-        <p v-if="total && !route.splitFromArrow" class="muted">原文沒有分步，整段列出</p>
+        <p v-if="total && !route.splitFromArrow" class="muted">原文沒有分步，這裡保留整段內容。</p>
         <p v-if="route.deadline && !hideDeadline" class="note">期限：{{ route.deadline }}</p>
       </div>
     </details>
@@ -75,7 +76,7 @@ const total = computed(() => route.value.steps.length);
       <summary>去哪裡辦</summary>
       <div class="more__body">
         <dl class="facts">
-          <div v-if="route.channel"><dt>受理窗口</dt><dd>{{ route.channel }}</dd></div>
+          <div v-if="route.channel"><dt>受理窗口</dt><dd><LinkedText :text="route.channel" /></dd></div>
           <div v-if="route.agency"><dt>主管或承辦單位</dt><dd>{{ route.agency }}</dd></div>
           <div v-if="route.methods.length"><dt>辦理方式</dt><dd>{{ route.methods.join('、') }}</dd></div>
           <div v-if="route.applicationStatus"><dt>受理情形</dt><dd>{{ route.applicationStatus }}</dd></div>

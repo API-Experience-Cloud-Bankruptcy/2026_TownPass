@@ -207,7 +207,7 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 - Figma：Town Pass UI Kit（45+ 畫面、100+ 元件），開發文件首頁有連結，搜「Town Pass Design Tokens」。
 - 色票（`lib/util/tp_colors.dart`，網頁完整寫成 `src/tokens.css` 的 `--tp-*`，元件只用其語意層）：Primary 500 `#5AB4C5`、Secondary 500 `#F5BA4B`、Grayscale 500 `#738995`，各有 50–950 階。
-  - 白字放在 primary-500 上對比不足（約 2.4:1）；本專案按鈕底色用 primary-700 `#356C77`，次要文字用 grayscale-700。
+  - 白字放在 primary-500 上對比不足（約 2.4:1）。本專案配色依入門指引簡報：底 `#F7FAFA`、大面積淺青（primary-50～200）、primary-500 只當裝飾與進度；主要按鈕填 primary-600 `#468D9B`（`--accent-fill`），文字連結用 primary-700（`--accent`），**不要再用 primary-700 當大塊填色**（看起來像墨綠）。完成狀態用 primary-100 底、進行中用 secondary（黃）底，對照見 `tokens.css` 開頭註解。
 - 字體：中文 PingFang TC，英數 Roboto。
 - 字級（`TPTextStyles`）：h1 36、h2 24、title 18、h3 16、body 14、caption 12。
 
@@ -265,7 +265,11 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 行動單畫面：`PlanView.vue` 只列方框，一張行動單＝一筆補助，依進行中／還沒開始／待問窗口／已完成排序，底部可匯出全部。點進去是 `PlanItemView.vue`（view `planItem`、`state.planItemId`）：各自的辦理步驟（逐步完成、可取消、焦點移到下一步）、該筆文件勾選、去哪裡辦、申請表、單張匯出與移除；「看補助詳細內容」才開 `DetailView`，兩頁互相返回不疊層。進度計算在 `domain/plan-progress.ts`。詳情頁的步驟是唯讀；步驟進度只記在本人行動單，移除行動單會一併清除該筆步驟進度。
 
+連結處理：App 的 WebView 不會自己處理 `target="_blank"`、`tel:`、`mailto:`，所以 `main.ts` 安裝 `townpass/links.ts` 的全域點擊攔截（只在城市通內生效）。外部網頁走 `open_link`，電話走 `phone_call`，其他協定走 `launch_map`。同頁錨點、`download`、blob 交還給 WebView。新增連結直接寫 `<a href>` 即可，不要自己呼叫 `postMessage`。受理窗口與步驟原文經 `LinkedText.vue`（`domain/channel-text.ts`）把網址、電話變成可點連結，原文不改寫。App 內不顯示 blob 的「下載／開啟 PDF」（WKWebView 無法使用），改用「儲存／分享 PDF」。Flutter 端 `tp_web_view.dart` 也處理新視窗、非網頁協定與檔案下載（交給系統瀏覽器）；改完要重新建置 App。地圖依競賽規則只能用開源方案，目前不提供。
+
 頂部品牌／分頁與底部對話輸入列不參與內容捲動；對話在 `.chat__log` 捲動，一般頁在 `.app-main` 捲動。返回找資源時提供續接選擇，初始招呼頁除外；開新對話保留行動單，換人只清除查詢；清除全部才清除本人行動單。
+
+白話導讀：`src/content/plain-language-*.json` 逐筆整理誰可先了解、給付、第一步與注意事項，與官方原文分開顯示，詳情、清單及匯出共用。`domain/plain-language.ts` 依來源指紋防止資料更新後誤用舊導讀；新增或更新資料須逐筆回讀並更新導讀與指紋，不可只刷新指紋繞過檢查。導讀不參與資格判斷。
 
 UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊查詢答案，保留獨立的本人行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。
 
@@ -273,7 +277,7 @@ UI 維護原則：每頁一個決定，完整資格及來源按需展開；不�
 
 替他人查詢的交付為詳情頁單筆 A4 PDF 檢核表：`checklist.ts` 建共用內容、`checklist-pdf.ts` 本機產生實際 PDF（TTF 完整嵌入以避免閱讀器缺字，不改成未驗證的 subset），`ChecklistView.vue` 接收當前資源並在詳情內預覽／下載，不寫入本人行動單；總覽詳情只有本人行動單入口，主要「行動單」分頁不隨查詢對象改名或換頁。PDF 需保留完整條件、待確認、來源與文件差異，個人填答沿用欄位揭露控制；內容變更撤銷舊檔。字型為附授權的本站 Noto Sans TC，按需載入，不用 CDN。App 的 `share_pdf` 由 printing 開啟系統分享選單，回覆不代表已保存或送出；新增外掛需重新建置 App。
 
-資源詳情的「申請表與填寫」按需載入 `FormFillPanel`；按「一鍵填好申請表」即讀城市通本人資料直接產生 PDF（只限本人），關閉或換資源／對象即清除舊 PDF。`/api/forms/{file}` 提供空白官方 PDF，搬移後端執行檔時須設定 `FORMS_DIR`；macOS 安裝工具會複製空白表單到各 release。已知共用表單的錯位姓名欄禁止自動填入並提示手寫。
+資源詳情的「申請表與填寫」按需載入 `FormFillPanel`；按「帶入資料，產生申請表」即讀城市通本人資料直接產生 PDF（只限本人），關閉或換資源／對象即清除舊 PDF。`/api/forms/{file}` 提供空白官方 PDF，搬移後端執行檔時須設定 `FORMS_DIR`；macOS 安裝工具會複製空白表單到各 release。已知共用表單的錯位姓名欄禁止自動填入並提示手寫。
 
 待驗收：手機 WebView 的檔案交付、分享、讀屏及完整離線；原版 Gemma 4 E2B 已接入並完成 iPhone 原生載入，語意/schema 與端到端結果依實機紀錄分別判定。安裝 App 不等於全部手機流程已通過；未部署正式公開服務。
 

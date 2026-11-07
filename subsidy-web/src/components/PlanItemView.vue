@@ -12,6 +12,7 @@ import {
 } from '../store';
 import ConfirmDialog from './ConfirmDialog.vue';
 import ExternalLink from './ExternalLink.vue';
+import LinkedText from './LinkedText.vue';
 import PlanExport from './PlanExport.vue';
 
 const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
@@ -133,7 +134,7 @@ const planText = computed(() => item.value ? buildPlanText({
               </p>
               <details v-if="sourceExcerpt(step) !== step" class="more more--inline">
                 <summary>看完整原文</summary>
-                <div class="more__body"><p class="selectable">{{ step }}</p></div>
+                <div class="more__body"><p><LinkedText :text="step" /></p></div>
               </details>
               <div v-if="i === progress.current" class="task-step__actions">
                 <button type="button" class="btn btn--primary btn--block" @click="complete(i)">這步完成了</button>
@@ -142,7 +143,7 @@ const planText = computed(() => item.value ? buildPlanText({
             </div>
           </li>
         </ol>
-        <p v-if="!route.splitFromArrow" class="muted">原文沒有分步，整段列為一步</p>
+        <p v-if="!route.splitFromArrow" class="muted">原文沒有分步，這裡將整段列為一步。</p>
 
         <div v-if="progress.status === 'done'" class="task-done">
           <p class="task-done__title">步驟都完成了</p>
@@ -199,7 +200,7 @@ const planText = computed(() => item.value ? buildPlanText({
     <section v-if="route.channel || route.agency || route.methods.length || route.links.length" class="card" aria-labelledby="task-where-h">
       <h2 id="task-where-h" class="section-title">去哪裡辦</h2>
       <dl class="facts">
-        <div v-if="route.channel"><dt>受理窗口</dt><dd>{{ route.channel }}</dd></div>
+        <div v-if="route.channel"><dt>受理窗口</dt><dd><LinkedText :text="route.channel" /></dd></div>
         <div v-if="route.agency"><dt>主管或承辦單位</dt><dd>{{ route.agency }}</dd></div>
         <div v-if="route.methods.length"><dt>辦理方式</dt><dd>{{ route.methods.join('、') }}</dd></div>
       </dl>

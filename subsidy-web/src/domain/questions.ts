@@ -130,24 +130,69 @@ export function questionsFor(bank: Question[], candidateIds: string[]): Question
   return bank.filter((q) => q.resource_ids.some((id) => set.has(id)));
 }
 
-const SELF_TITLES: Record<string, string> = {
-  region: '你的戶籍設在哪裡？',
-  age: '你目前幾歲（實歲）？',
-  is_student: '你目前是在學學生嗎？',
-  household_type: '你是否已取得低收入戶或中低收入戶資格？',
-};
-
-const OTHER_TITLES: Record<string, string> = {
-  region: '對方的戶籍設在哪裡？',
-  age: '對方目前幾歲（實歲）？',
-  is_student: '對方目前是在學學生嗎？',
-  household_type: '對方是否已取得低收入戶或中低收入戶資格？',
-};
-
-/** 依查詢對象調整問句；未知欄位沿用原題目。 */
+/** 固定文案只改人稱與說法；欄位、選項及資格判斷仍沿用題庫。 */
 export function titleFor(question: Question, target: Target): string {
-  const titles = target === 'other' ? OTHER_TITLES : SELF_TITLES;
+  const who = target === 'other' ? '對方' : '你';
+  const titles: Record<string, string> = {
+    need_area: `${who}想先處理哪一類事情？`,
+    community_support: `${who}想先了解哪一類文化或社區資源？`,
+    benefit_style: `${who}想先了解哪種協助方式？`,
+    elder_support: `${who}在長者生活方面，最需要哪種協助？`,
+    region: `${who}的戶籍在哪裡？`,
+    age: `${who}目前幾歲（實歲）？`,
+    is_student: `${who}目前還在學嗎？`,
+    household_type: `${who}已取得低收入戶或中低收入戶資格嗎？`,
+    has_farmer_insurance: `${who}曾參加農保，有農保投保年資嗎？`,
+    veteran_status: `${who}有輔導條例第2條規定的退除役官兵身分嗎？`,
+    education_level: '想申請補助的學期或學年，是哪個教育階段？',
+    education_support: `${who}就學方面最需要哪種協助？`,
+    employment_status: `${who}目前的工作情況比較接近哪一項？`,
+    work_support: `${who}工作方面想先處理什麼？`,
+    housing_status: `${who}目前的居住情況比較接近哪一項？`,
+    housing_support: `${who}住屋方面想先處理什麼？`,
+    care_context: `${who}目前需要哪種照顧安排？`,
+    family_stage: `${who}家中目前需要哪方面的協助？`,
+    health_support: `${who}健康方面最需要哪種協助？`,
+    living_support: `${who}生活方面想先處理哪件事？`,
+    disability_certificate: `${who}目前有有效的身心障礙證明嗎？`,
+    disability_support: `${who}身心障礙方面想先了解什麼？`,
+    is_unemployed: `這次想申請補助的期間，${who}有待業或失業嗎？`,
+    is_renting: `這次想申請補助的房子，是${who}或申請家庭租的嗎？`,
+    owns_home: `${who}名下有住宅嗎？`,
+    explore_context: `${who}目前的生活情況比較接近哪一項？`,
+    expense_priority: `${who}最近最想減輕哪一筆生活開銷？`,
+    work_applicant: '這次想找哪一類對象的工作相關資源？',
+  };
   return titles[question.field] ?? question.title;
+}
+
+/** 提示與問句使用同一查詢對象；API 題庫與本機題庫都套用。 */
+export function descriptionFor(question: Question, target: Target): string {
+  const who = target === 'other' ? '對方' : '你';
+  const descriptions: Record<string, string> = {
+    need_area: '先選一個想了解的方向，不確定可以跳過。',
+    education_level: '請依這次想申請補助的學期或學年回答。',
+    education_support: '先選最想處理的就學支出，其他方向還是看得到。',
+    employment_status: `請依${who}目前的工作情況回答。`,
+    housing_status: `請依${who}目前的居住情況回答，不確定可以跳過。`,
+    disability_certificate: '請依目前有效的證明回答；還在申請或不確定可以跳過。',
+    is_unemployed: '請依這次想申請補助的期間回答，不只看今天有沒有工作。不確定可以跳過。',
+    is_renting: '請依這次想申請補助的住宅與期間回答，不確定可以跳過。',
+    benefit_style: '先選想了解的協助方式，其他資源還是看得到。',
+    elder_support: '先選最想處理的事情，例如生活費、交通或照顧。',
+    age: `請填${who}目前已滿的歲數，不清楚可以先跳過。`,
+    region: '這裡問的是戶籍，不一定和現在住的地方相同。',
+    is_student: `請依${who}目前的在學情況回答。`,
+    household_type: '請依目前有效的政府核定證明回答；生活困難不代表已有資格。不確定可以先跳過。',
+    has_farmer_insurance: '老農津貼還會核對農保年資與是否持續加保。有投保年資不代表符合資格，不清楚可以先跳過。',
+    veteran_status: '這是榮民就養給付需要的身分，和一般服過兵役不同。不確定身分類別可以先跳過。',
+    owns_home: `這裡問的是${who}有沒有住宅所有權，和目前住哪裡不同。`,
+    explore_context: '不用先知道補助名稱，先從生活情況找。不確定可以選「這些都不確定，先看看」或跳過。',
+    expense_priority: '先從最困擾的支出找，不用先知道補助名稱。',
+    work_applicant: '有些補助給勞工，有些由雇主、事業或家屬申請，先選要找哪一類。',
+  };
+  if (descriptions[question.field]) return descriptions[question.field]!;
+  return question.description?.replace('先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。', '先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。') ?? '';
 }
 
 /** 題目目前的答案；未回答或不知道回傳 undefined。 */

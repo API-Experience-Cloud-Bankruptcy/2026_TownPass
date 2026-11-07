@@ -143,20 +143,20 @@ export async function loadCatalog(options: LoadOptions = {}): Promise<LoadedCata
       signal: controller?.signal,
     });
     if (!response.ok) {
-      reason = `API 回應 ${response.status}`;
+      reason = `暫時無法取得線上資料（回應代碼 ${response.status}），先使用隨附資料。`;
     } else {
       const checked = validateCatalog(await response.json());
       if (checked.ok) {
         return {
           ...checked.catalog,
           origin: 'api',
-          sourceLabel: `後端 API（/api/catalog），版本 ${checked.catalog.version}`,
+          sourceLabel: '從服務取得的福利資料（原始來源見各項詳情）',
         };
       }
-      reason = `API 資料格式不符：${checked.error}`;
+      reason = '線上資料格式不完整，先使用隨附資料。';
     }
   } catch (error) {
-    reason = (error as Error)?.name === 'AbortError' ? 'API 逾時' : 'API 無法連線';
+    reason = (error as Error)?.name === 'AbortError' ? '取得線上資料逾時，先使用隨附資料。' : '目前無法連上資料服務，先使用隨附資料。';
   } finally {
     if (timer) clearTimeout(timer);
   }
@@ -165,7 +165,7 @@ export async function loadCatalog(options: LoadOptions = {}): Promise<LoadedCata
   return {
     ...fallback,
     origin: 'snapshot',
-    sourceLabel: `建置快照（backend/data/subsidies.json 原始檔），版本 ${fallback.version}`,
+    sourceLabel: '此版本隨附的福利資料（原始來源見各項詳情）',
     fallbackReason: reason,
   };
 }

@@ -52,6 +52,12 @@ describe('紙本交接完整性', () => {
 });
 
 describe('求助文字', () => {
+  it('替他人詢問時不冒用本人資格', () => {
+    const base = { meta, target: 'other' as const, reason: 'understand' as const, conditions: [] };
+    expect(buildHelpText({ ...base, item: makeSubsidy() })).toContain('對方是否符合申請資格');
+    expect(buildHelpText({ ...base, item: null })).toContain('我正在協助家人或其他人申請福利');
+  });
+
   it('有資源時產生詢問文字與聲明', () => {
     const t = buildHelpText({ meta, target: 'self', reason: 'visit', item: makeSubsidy(), conditions: [] });
     expect(t).toContain('可以這樣詢問');

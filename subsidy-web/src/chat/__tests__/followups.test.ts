@@ -59,6 +59,17 @@ describe('一句話拆成逐題追問', () => {
     expect(planFollowups(conflict, { 'fact:household_type': 'value:1' }).outcome?.facts[0]?.value).toBe('mid_low_income');
   });
 
+  it('幫家人確認條件時，問句與歷史步驟都標明對方', () => {
+    const fact: CandidateFact = { field: 'age', value: 70, subject: 'other', subjectLabel: '媽媽', evidence: '媽媽70歲' };
+    const base = input({ target: 'other' }, [fact], []);
+    const current = planFollowups(base, {}).current!;
+    expect(current.prompt).toContain('對方的情況');
+    expect(current.prompt).not.toContain('你的情況');
+    const done = planFollowups(base, { 'fact:age': 'yes' });
+    expect(done.steps[0]!.prompt).toBe(current.prompt);
+    expect(done.outcome?.facts).toEqual([fact]);
+  });
+
   it('多個方向用單選題，可以先不選', () => {
     const plan = planFollowups(input({ target: 'self' }, [], ['living', 'housing']), {});
     expect(plan.current?.choices.map(c => c.id)).toEqual(['situation:living', 'situation:housing', 'no']);

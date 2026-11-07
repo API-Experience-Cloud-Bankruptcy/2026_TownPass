@@ -69,7 +69,7 @@ async function generate() {
     release();
     result.value = out;
     pdfUrl.value = URL.createObjectURL(out.file);
-    status.value = isInTownPass() ? '已用你的城市通資料填好，可以下載或分享。' : '目前不在城市通內，填入的是模擬資料。';
+    status.value = isInTownPass() ? '已帶入你的城市通資料，請檢查後再儲存或分享。' : '目前不在城市通內，填入的是模擬資料。';
   } catch (e) {
     if (mounted && current === revision) status.value = e instanceof Error && e.message ? `填寫失敗：${e.message}` : '填寫失敗，請重新嘗試。';
   } finally { busy.value = false; }
@@ -80,7 +80,7 @@ async function share() {
   sharing.value = true;
   try {
     const outcome = await sharePdfFile(result.value.file);
-    status.value = outcome === 'presented' ? '已開啟分享畫面；分享畫面開啟不代表已儲存或送出，請自行確認。'
+    status.value = outcome === 'presented' ? '已要求開啟分享畫面，請在手機上完成儲存或分享，並確認檔案是否存好。'
       : outcome === 'cancelled' ? '已取消分享。'
       : outcome === 'unsupported' ? '這個瀏覽器不能直接分享檔案，請改用下載。'
       : '未能確認分享結果。若沒有出現分享畫面，請改用下載或開啟 PDF。';
@@ -111,32 +111,32 @@ async function share() {
       </div>
 
       <div v-if="target === 'self'" class="actions card" :aria-busy="busy">
-        <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="generate">{{ busy ? '正在填寫…' : result ? '重新產生' : '一鍵填好申請表' }}</button>
+        <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="generate">{{ busy ? '正在填寫…' : result ? '重新產生' : '帶入資料，產生申請表' }}</button>
       </div>
-      <p v-else class="alert">目前不是替自己申請，不會自動填入任何個人資料。請改用「本人」，或把空白表單列印後手寫。</p>
+      <p v-else class="alert">目前不是替自己申請，不會自動填入任何個人資料。請改選「幫自己找」，或把空白表單列印後手寫。</p>
       <p class="status-text note" role="status" aria-live="polite">{{ status }}</p>
 
       <section v-if="result" class="actions card" aria-labelledby="form-fill-result-h">
-        <h3 id="form-fill-result-h" class="sub-title">已填好</h3>
+        <h3 id="form-fill-result-h" class="sub-title">已帶入資料</h3>
         <ul>
           <li>已填入 {{ result.summary.drawn }} 欄。</li>
           <li v-if="result.summary.signatures">{{ result.summary.signatures }} 處簽名／蓋章欄未填，請本人簽署。</li>
           <li v-if="result.summary.checkboxes">{{ result.summary.checkboxes }} 個勾選框請自行勾選。</li>
           <li v-if="result.summary.otherBlanks">另有 {{ result.summary.otherBlanks }} 個欄位需要自行填寫或沒有自動填入。</li>
           <li v-for="s in result.report.skipped.filter((x) => x.reason === 'too_wide' || x.reason === 'prefix_mismatch')" :key="`${s.field.box.page}-${s.field.box.x}-${s.field.box.y}`">
-            「{{ s.field.label || '未命名欄位' }}」{{ s.reason === 'too_wide' ? '內容太長放不進格子，請手寫。' : '表單已印好的地址前綴與你的地址不同，請手寫。' }}
+            「{{ s.field.label || '未命名欄位' }}」{{ s.reason === 'too_wide' ? '內容太長放不進格子，請手寫。' : '表單上預印的地址與你的地址不同，請手寫。' }}
           </li>
         </ul>
         <p class="muted">欄位位置由程式推算，個別表單可能有偏差，列印前建議開啟 PDF 看一下。</p>
         <div class="share__grid">
           <button v-if="isInTownPass()" type="button" class="btn btn--primary" :disabled="sharing" @click="share">{{ sharing ? '等待手機分享…' : '儲存／分享 PDF' }}</button>
-          <a :href="pdfUrl" :download="result.file.name" class="btn" :class="{ 'btn--primary': !isInTownPass() }">下載 PDF</a>
+          <a v-if="!isInTownPass()" :href="pdfUrl" :download="result.file.name" class="btn btn--primary">下載 PDF</a>
           <button v-if="!isInTownPass()" type="button" class="btn" :disabled="sharing" @click="share">分享 PDF</button>
-          <a :href="pdfUrl" target="_blank" rel="noopener" class="btn">開啟 PDF<span class="sr-only">（新視窗）</span></a>
+          <a v-if="!isInTownPass()" :href="pdfUrl" target="_blank" rel="noopener" class="btn">開啟 PDF<span class="sr-only">（新視窗）</span></a>
         </div>
         <details class="more more--single">
           <summary>在這裡預覽</summary>
-          <div class="more__body"><p class="muted">若無法顯示，請用上方「開啟 PDF」。</p><iframe :src="pdfUrl" class="pdf-preview" title="已填申請表預覽"></iframe></div>
+          <div class="more__body"><p class="muted">若這裡無法顯示，請用上方按鈕儲存 PDF 後再開啟。</p><iframe :src="pdfUrl" class="pdf-preview" title="已填申請表預覽"></iframe></div>
         </details>
       </section>
     </template>

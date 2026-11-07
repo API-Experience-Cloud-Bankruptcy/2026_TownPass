@@ -29,7 +29,7 @@ export function migrateSession(session: SessionState, catalog: { version: string
   const migratedAnswers={...session.answers};
   if(versionChanged) delete migratedAnswers.extra;
   const notices: string[] = [];
-  if (versionChanged) notices.push(`資料版本已更新（${catalog.version}），結果已依新資料重新判斷，準備進度已重設。探索偏好與已看題目也已重設，請重新確認。`);
+  if (versionChanged) notices.push(`資料已更新，結果已重新比對。準備進度、找補助的偏好及問答進度已重設，請重新確認。`);
   if (removed) notices.push(`有 ${removed} 項已不在資料中，已從行動單移除。`);
   return {
     planIds,

@@ -96,7 +96,7 @@ export function rangeLine(insight: InsightLike | null | undefined): string {
   const initial = count(insight.initialCount);
   const remaining = count(insight.remainingCount);
   if (initial === null || remaining === null) return '';
-  if (remaining < initial) return `依你的回答，從 ${initial} 項聚焦到 ${remaining} 項，先從這些了解`;
+  if (remaining < initial) return `依填寫的答案，先從 ${initial} 項中的 ${remaining} 項了解`;
   return `目前聚焦 ${remaining} 項`;
 }
 
@@ -110,7 +110,7 @@ export function narrowingNote(before: number | null | undefined, after: number |
   const a = count(after);
   if (b === null || a === null) return null;
   if (a < b) return `目前聚焦：${b} 項 → ${a} 項`;
-  if (a === b) return '聚焦範圍沒有變，接著換個條件問。';
+  if (a === b) return '項目數沒有變，接著確認其他條件。';
   return null;
 }
 

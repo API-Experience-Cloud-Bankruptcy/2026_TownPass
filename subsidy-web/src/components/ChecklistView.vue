@@ -63,7 +63,7 @@ async function preview() {
     file.value = new File([new Uint8Array(bytes)], filename, { type: 'application/pdf' });
     pdfUrl.value = URL.createObjectURL(file.value);
     previewOpen.value = true;
-    status.value = 'PDF 已製作。請先確認下方全文，再下載或分享。';
+    status.value = 'PDF 已做好。請先確認下方全文，再儲存或分享。';
     await nextTick();
     previewHeading.value?.focus();
   } catch {
@@ -77,13 +77,13 @@ async function share() {
   try {
     const outcome = await sharePdfFile(file.value);
     if (!mounted) return;
-    status.value = outcome === 'presented' ? '已提出開啟系統分享；請自行完成儲存或分享，這不代表已送件。'
+    status.value = outcome === 'presented' ? '已要求開啟分享畫面，請在手機上完成儲存或分享；這不代表已送件。'
       : outcome === 'cancelled' ? '已取消或未開啟分享，檔案仍可下載。'
       : outcome === 'unsupported' ? '這裡無法分享 PDF，請使用下載或開啟 PDF。'
       : '未能確認分享結果。請先查看手機分享畫面；若未開啟，可改用下載或開啟 PDF。';
   } finally { sharing.value = false; }
 }
-function downloaded() { status.value = '已提出下載；若未出現檔案，請用「儲存／分享 PDF」或「開啟 PDF」。'; }
+function downloaded() { status.value = '已要求下載；若沒有出現檔案，請用「分享 PDF」或「開啟 PDF」。'; }
 const fullText = computed(() => [checklist.value.title, checklist.value.subtitle, ...checklist.value.metaLines,
   checklist.value.privacyNotice, ...checklist.value.conditions,
   ...checklist.value.sections.flatMap(s => [s.title, ...s.blocks.map(b => `${b.kind === 'check' ? (b.checked ? '[已準備] ' : '[ ] ') : ''}${b.text}${b.url && !b.text.includes(b.url) ? `\n${b.url}` : ''}`)]),
@@ -103,7 +103,7 @@ onMounted(() => { void preview(); });
       <details v-if="merged.documents.length" class="more more--single card card--list">
         <summary>已經準備好的文件（選填）</summary>
         <div class="more__body">
-          <p class="muted">勾選會帶到 PDF；未勾選的項目保留空格，讓家人在紙上打勾。</p>
+          <p class="muted">勾選會帶到 PDF；未勾選的項目保留空格，讓對方在紙上打勾。</p>
           <label v-for="doc in merged.documents" :key="doc.key" class="check">
             <input type="checkbox" :checked="!!docChecks[doc.key]" @change="toggleDoc(doc.key)" />
             <span class="check__body">
@@ -136,13 +136,13 @@ onMounted(() => { void preview(); });
         <p class="muted">{{ planItems.length }} 項資源 · A4 直式 · {{ (file.size / 1024).toFixed(0) }} KB</p>
         <div class="share__grid">
           <button v-if="isInTownPass()" type="button" class="btn btn--primary" :disabled="sharing" @click="share">{{ sharing ? '等待手機分享…' : '儲存／分享 PDF' }}</button>
-          <a :href="pdfUrl" :download="filename" class="btn" :class="{ 'btn--primary': !isInTownPass() }" @click="downloaded">下載 A4 PDF</a>
+          <a v-if="!isInTownPass()" :href="pdfUrl" :download="filename" class="btn btn--primary" @click="downloaded">下載 A4 PDF</a>
           <button v-if="!isInTownPass()" type="button" class="btn" :disabled="sharing" @click="share">分享 PDF</button>
-          <a :href="pdfUrl" target="_blank" rel="noopener" class="btn">開啟 PDF<span class="sr-only">（新視窗）</span></a>
+          <a v-if="!isInTownPass()" :href="pdfUrl" target="_blank" rel="noopener" class="btn">開啟 PDF<span class="sr-only">（新視窗）</span></a>
         </div>
         <details class="more more--single">
           <summary>查看 A4 PDF 排版</summary>
-          <div class="more__body"><p class="muted">若這裡無法顯示，請用上方「開啟 PDF」。下方另有完整文字。</p><iframe :src="pdfUrl" class="pdf-preview" title="A4 行動檢核表 PDF 預覽"></iframe></div>
+          <div class="more__body"><p class="muted">若這裡無法顯示，請用上方的按鈕存下 PDF 再開啟。下方另有完整文字。</p><iframe :src="pdfUrl" class="pdf-preview" title="A4 行動檢核表 PDF 預覽"></iframe></div>
         </details>
       </section>
       <details class="more more--single card card--list" :open="previewOpen">

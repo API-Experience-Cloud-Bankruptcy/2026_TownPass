@@ -33,7 +33,7 @@ export function savedPlan(session: SessionState, items?: Subsidy[]): SavedPlan {
 export class PlanError extends Error {
   readonly status: number;
   constructor(status: number) {
-    super(status === 409 ? '另一個視窗已更新行動單，請先載入最新版本。' : '行動單尚未存入資料庫，請檢查連線後重試。');
+    super(status === 409 ? '另一個視窗已更新行動單，請先載入最新版本。' : '行動單還沒儲存成功，請檢查網路後再試。');
     this.status = status;
   }
 }
@@ -103,7 +103,7 @@ export class ActionPlanSync {
         this.state.profile = response.profile;
         if ((this.changedBeforeLoad || fingerprint(this.current()) !== initial) && response.plan && !discardLocal) {
           this.state.phase = 'conflict';
-          this.state.error = '連線恢復了，資料庫已有行動單。請先載入最新版本，避免覆蓋已保存的項目。';
+          this.state.error = '連線已恢復，但已儲存的行動單和目前內容不同。請先載入最新版本，避免覆蓋先前的項目。';
           return;
         }
         this.muted = true;
@@ -152,6 +152,6 @@ export class ActionPlanSync {
 
   private fail(error: unknown): void {
     this.state.phase = error instanceof PlanError && error.status === 409 ? 'conflict' : 'error';
-    this.state.error = error instanceof Error ? error.message : new PlanError(0).message;
+    this.state.error = error instanceof PlanError ? error.message : new PlanError(0).message;
   }
 }

@@ -68,10 +68,10 @@ describe('動態問答回饋', () => {
     expect(rangeLine(insight({ initialCount: -1 }))).toBe('');
   });
   it('只有真的變少才說先從這幾項了解', () => {
-    expect(rangeLine(insight({ remainingCount: 6 }))).toBe('依你的回答，從 40 項聚焦到 6 項，先從這些了解');
+    expect(rangeLine(insight({ remainingCount: 6 }))).toBe('依填寫的答案，先從 40 項中的 6 項了解');
     expect(rangeLine(insight({}))).toBe('目前聚焦 40 項');
     expect(narrowingNote(20, 8, false)).toBe('目前聚焦：20 項 → 8 項');
-    expect(narrowingNote(20, 20, false)).toContain('聚焦範圍沒有變');
+    expect(narrowingNote(20, 20, false)).toContain('項目數沒有變');
     expect(narrowingNote(20, 25, false)).toBeNull();
     expect(narrowingNote(undefined, 8, false)).toBeNull();
   });

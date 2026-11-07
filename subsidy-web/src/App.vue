@@ -32,6 +32,15 @@ import {
 
 const settingsOpen = ref(false);
 const modelStatus = ref<ModelStatus | null>(null);
+const modelStateLabel: Record<ModelStatus['state'], string> = {
+  unavailable: '目前無法使用',
+  not_downloaded: '尚未下載',
+  downloading: '下載中',
+  downloaded: '已下載，準備啟用',
+  loading: '啟用中',
+  ready: '可以使用',
+  error: '啟用失敗',
+};
 
 // iOS 鍵盤可能只縮小 visualViewport；外框跟著可見高度，輸入框留在鍵盤上方。
 function syncViewport() {
@@ -134,14 +143,14 @@ const dialogTitle = computed(() =>
     <section v-show="settingsOpen" id="settings-panel" class="settings" aria-label="設定">
       <label class="check">
         <input v-model="state.prefs.largeText" type="checkbox" />
-        <span>字放大</span>
+        <span>放大字體</span>
       </label>
       <label class="check">
         <input v-model="state.prefs.highContrast" type="checkbox" />
         <span>高對比</span>
       </label>
       <div class="inline-actions">
-        <button type="button" class="btn btn--text" @click="requestNewPerson">換人（清除前一位）</button>
+        <button type="button" class="btn btn--text" @click="requestNewPerson">換人查詢（清除前一位的答案）</button>
         <button type="button" class="btn btn--text" @click="pendingSwitch = 'clear'">清除這次的資料</button>
       </div>
       <p class="muted">對話與填答只留在本分頁；行動單項目、文件勾選與步驟進度會存入資料庫，關閉後可再開啟。</p>
@@ -151,9 +160,9 @@ const dialogTitle = computed(() =>
         <dl class="more__body facts">
           <div><dt>資料</dt><dd>{{ state.catalog?.sourceLabel ?? '載入中' }}</dd></div>
           <div><dt>版本</dt><dd>{{ state.catalog?.version ?? '載入中' }}</dd></div>
-          <div v-if="state.catalog?.fallbackReason"><dt>改用快照原因</dt><dd>{{ state.catalog.fallbackReason }}</dd></div>
-          <div><dt>題目</dt><dd>{{ state.bank ? (state.bank.origin === 'api' ? `後端題庫（${state.bank.version}）` : '本機題庫') : '載入中' }}</dd></div>
-          <div><dt>裝置端模型</dt><dd>{{ modelStatus?.state === 'unavailable' ? modelStatus.reason : modelStatus?.state ?? '確認中' }}</dd></div>
+          <div v-if="state.catalog?.fallbackReason"><dt>為什麼使用備份資料</dt><dd>{{ state.catalog.fallbackReason }}</dd></div>
+          <div><dt>題目</dt><dd>{{ state.bank ? (state.bank.origin === 'api' ? `線上題庫（${state.bank.version}）` : '本機題庫') : '載入中' }}</dd></div>
+          <div><dt>文字理解功能</dt><dd>{{ modelStatus?.state === 'unavailable' ? modelStatus.reason : modelStatus ? modelStateLabel[modelStatus.state] : '確認中' }}</dd></div>
           <div><dt>說明</dt><dd>本服務非政府官方服務；查核標記沿用資料原有狀態。</dd></div>
         </dl>
       </details>
@@ -185,10 +194,10 @@ const dialogTitle = computed(() =>
     <p v-if="planSync.state.phase === 'error' || planSync.state.phase === 'conflict'" class="status-line status-line--error no-print" role="alert">
       {{ planSync.state.error }}
       <button v-if="planSync.state.phase === 'conflict'" type="button" class="btn btn--text" @click="planSync.load(true)">載入最新行動單（取代本頁修改）</button>
-      <button v-else type="button" class="btn btn--text" @click="planSync.retry()">重試保存</button>
+      <button v-else type="button" class="btn btn--text" @click="planSync.retry()">重新儲存</button>
     </p>
-    <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已保存的資料，官方網站仍需連線</p>
-    <p v-if="PLAN_VIEWS.includes(state.view) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在保存行動單…' : '正在讀取已保存的行動單…' }}</p>
+    <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已儲存的資料；開啟官方網站仍需要網路。</p>
+    <p v-if="PLAN_VIEWS.includes(state.view) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在儲存行動單…' : '正在讀取已儲存的行動單…' }}</p>
 
     <div v-if="state.view === 'detail' || state.view === 'planItem'" class="topbar no-print">
       <button type="button" class="btn btn--text back-chat" @click="back">
@@ -226,6 +235,6 @@ const dialogTitle = computed(() =>
     @confirm="confirmPending"
     @cancel="pendingSwitch = null"
   >
-    <p>{{ pendingSwitch === 'clear' ? '會清除這次填答、自己的行動單和勾選進度。' : '會清除前一位的查詢答案，自己的行動單與準備進度會保留。' }}字放大與高對比設定會保留。</p>
+    <p>{{ pendingSwitch === 'clear' ? '會清除這次填答、自己的行動單和勾選進度。' : '會清除前一位的查詢答案，自己的行動單與準備進度會保留。' }}放大字體與高對比設定會保留。</p>
   </ConfirmDialog>
 </template>

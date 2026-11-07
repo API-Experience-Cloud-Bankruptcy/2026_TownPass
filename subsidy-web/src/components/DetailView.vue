@@ -7,6 +7,9 @@ import { benefitLabel, itemFlags, progressText, sourceExcerpt, statusPlain } fro
 import { detailAnswers, detailResults, inPlan, itemsById, openPlanItem, state, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import RouteSteps from './RouteSteps.vue';
+import SourceText from './SourceText.vue';
+import { plainLanguageFor } from '../domain/plain-language';
+import { sourceConditions } from '../domain/source-content';
 
 const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
 const ChecklistView = defineAsyncComponent(() => import('./ChecklistView.vue'));
@@ -15,11 +18,13 @@ const formOpen = ref(false);
 watch([() => state.detailId, () => state.session.target], () => { formOpen.value = false; });
 
 const item = computed(() => (state.detailId ? itemsById.value.get(state.detailId) : undefined));
+const plain = computed(() => item.value ? plainLanguageFor(item.value) : null);
 const result = computed(() => (item.value ? detailResults.value.get(item.value.id) : undefined));
 const route = computed(() => (item.value ? buildRoute(item.value, detailAnswers.value) : null));
 const sub = computed(() => (item.value ? [benefitLabel(item.value), text(item.value.provider?.name)].filter(Boolean).join('・') : ''));
 const benefit = computed(() => text(item.value?.benefit?.raw));
 const benefitPreview = computed(() => sourceExcerpt(benefit.value, 100));
+const conditionGroups = computed(() => item.value ? sourceConditions(item.value) : []);
 const summary = computed(() => text(item.value?.eligibility?.raw_summary));
 const flags = computed(() => (item.value ? itemFlags(item.value, result.value) : []));
 /** 受理情形原文；已在提醒列出時不重複。 */
@@ -49,12 +54,25 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
       <p v-if="sub" class="lead">{{ sub }}</p>
     </div>
 
+    <section v-if="plain" class="block card" aria-labelledby="d-plain-h">
+      <h2 id="d-plain-h" class="section-title">先看重點</h2>
+      <p class="muted">這是依現有資料整理的白話導讀，完整條件與來源在下方；是否符合資格仍須審核。</p>
+      <dl class="facts">
+        <div><dt>誰可以先了解</dt><dd>{{ plain.audience }}</dd></div>
+        <div><dt>能得到什麼幫助</dt><dd>{{ plain.support }}</dd></div>
+        <div><dt>第一步怎麼做</dt><dd>{{ plain.firstStep }}</dd></div>
+      </dl>
+      <h3 class="sub-title">申請前先確認</h3>
+      <ul><li v-for="caution in plain.cautions" :key="caution">{{ caution }}</li></ul>
+    </section>
+
     <section class="block card" aria-labelledby="d-benefit-h">
       <h2 id="d-benefit-h" class="section-title">能提供什麼</h2>
-      <p class="selectable">{{ benefitPreview || '原文沒有提供內容說明，請看官方說明頁或問承辦窗口' }}</p>
+      <SourceText v-if="benefitPreview" :text="benefitPreview" />
+      <p v-else>資料未提供給付內容，請看來源說明頁或問承辦窗口。</p>
       <details v-if="benefitPreview !== benefit" class="more">
         <summary>完整給付內容與條件（原文）</summary>
-        <div class="more__body"><p class="selectable">{{ benefit }}</p></div>
+        <div class="more__body"><SourceText :text="benefit" /></div>
       </details>
       <p v-if="benefitPreview !== benefit" class="muted">以上為原文節錄，金額、適用項目與條件請展開確認。</p>
     </section>
@@ -63,15 +81,15 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
       <h2 id="d-limit-h" class="section-title">要先注意</h2>
       <p v-for="f in flags" :key="f" class="alert">{{ f }}</p>
       <dl class="facts">
-        <div v-if="summary"><dt>適用對象（原文）</dt><dd class="selectable">{{ summary }}</dd></div>
-        <div v-if="statusText"><dt>受理情形</dt><dd>{{ statusText }}</dd></div>
-        <div v-if="route.deadline"><dt>期限</dt><dd>{{ route.deadline }}</dd></div>
+        <div v-if="summary"><dt>適用對象（原文）</dt><dd><SourceText :text="summary" /></dd></div>
+        <div v-if="statusText"><dt>受理情形</dt><dd><SourceText :text="statusText" /></dd></div>
+        <div v-if="route.deadline"><dt>期限</dt><dd><SourceText :text="route.deadline" /></dd></div>
       </dl>
       <template v-if="result?.blocked_by.length">
-        <h3 class="sub-title">依填寫的條件不符</h3>
+        <h3 class="sub-title">與填寫條件不符的部分</h3>
         <ul><li v-for="r in result.blocked_by" :key="r">{{ r }}</li></ul>
       </template>
-      <p class="muted">相關不等於符合資格。本服務不計算所得，能不能領由承辦機關審核。</p>
+      <p class="muted">是否符合這項補助的資格，須由承辦機關審核；本服務不計算所得。</p>
     </section>
 
     <section class="block card" aria-labelledby="d-start-h">
@@ -106,11 +124,20 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
       </details>
       <div class="more-group card card--list">
         <details class="more">
-          <summary>完整條件與初篩說明</summary>
+          <summary>誰能申請：完整條件與初篩說明</summary>
           <div class="more__body">
-            <p v-if="text(item.eligibility?.taipei_applicability)">{{ text(item.eligibility?.taipei_applicability) }}</p>
+            <p class="muted">以下依資料原文分組。請一併確認各子方案、擇一條件與例外，以免漏看適用限制。</p>
+            <div v-if="text(item.eligibility?.taipei_applicability)">
+              <h3>臺北市適用說明</h3>
+              <SourceText :text="text(item.eligibility?.taipei_applicability)" />
+            </div>
+            <div v-for="(group, index) in conditionGroups" :key="index" class="condition-group">
+              <h3>{{ group.label }}（原文）</h3>
+              <ul><li v-for="(entry, i) in group.entries" :key="i"><SourceText :text="entry" /></li></ul>
+            </div>
+            <p v-if="!conditionGroups.length" class="muted">資料未另列條件明細，請向承辦窗口確認完整資格。</p>
             <template v-if="result?.reasons.length">
-              <h3>依填答符合的部分</h3>
+              <h3>與填寫條件相符的部分</h3>
               <ul><li v-for="r in result.reasons" :key="r">{{ r }}</li></ul>
             </template>
             <template v-if="result?.pending?.length">
@@ -121,20 +148,21 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
               <h3>提醒</h3>
               <ul><li v-for="r in result.warnings" :key="r">{{ r }}</li></ul>
             </template>
-            <p class="muted">本服務不計算所得，能不能領由承辦機關審核</p>
+            <p class="muted">本服務不計算所得，能不能領由承辦機關審核。</p>
           </div>
         </details>
 
         <details class="more">
           <summary>資料來源</summary>
           <div class="more__body">
-            <p class="muted">{{ statusPlain(route.status, route.checkedDate) }}；沿用資料原有標記，本服務未重新查核</p>
-            <p v-if="text(item.source_meta?.verification_note)" class="muted">查核說明：{{ text(item.source_meta?.verification_note) }}</p>
-            <p v-if="text(item.source_meta?.notes)" class="muted">備註：{{ text(item.source_meta?.notes) }}</p>
+            <p class="muted">{{ statusPlain(route.status, route.checkedDate) }}；沿用資料原有標記，本服務未重新查核。</p>
+            <div v-if="text(item.source_meta?.verification_note)"><h3>資料查核說明</h3><SourceText :text="text(item.source_meta?.verification_note)" /></div>
+            <div v-if="text(item.source_meta?.notes)"><h3>資料備註</h3><SourceText :text="text(item.source_meta?.notes)" /></div>
             <ul class="link-list">
               <li v-for="s in route.sources" :key="s.url + s.role">
                 <ExternalLink :url="s.url" :label="SOURCE_ROLE[s.role] ?? (s.role || '來源')" />
                 <span v-if="s.sourceDate" class="muted">來源日期：{{ s.sourceDate }}</span>
+                <span v-if="s.checkedDate" class="muted">資料原有查核日期：{{ s.checkedDate }}</span>
               </li>
             </ul>
           </div>

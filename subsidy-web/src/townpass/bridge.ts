@@ -81,7 +81,7 @@ export interface RequestOptions {
 export function requestCorrelated<T>(name: string, data: { requestId: string; [key: string]: unknown },
   { signal, timeoutMs = 120_000 }: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<T> {
   const target = typeof window === 'undefined' ? undefined : window.flutterObject;
-  if (!target) return Promise.reject(new TownPassError('NOT_IN_APP', '請在城市通 App 使用裝置端模型'));
+  if (!target) return Promise.reject(new TownPassError('NOT_IN_APP', '請在城市通 App 使用文字理解功能。'));
   if (signal?.aborted) return Promise.reject(new DOMException('已取消', 'AbortError'));
   return new Promise<T>((resolve, reject) => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -94,7 +94,7 @@ export function requestCorrelated<T>(name: string, data: { requestId: string; [k
     };
     target.addEventListener('message', listener);
     signal?.addEventListener('abort', abort, { once: true });
-    if (timeoutMs > 0) timer = setTimeout(() => { cleanup(); reject(new TownPassError('TIMEOUT', '裝置端模型回覆逾時')); }, timeoutMs);
+    if (timeoutMs > 0) timer = setTimeout(() => { cleanup(); reject(new TownPassError('TIMEOUT', '文字理解花的時間較久，請稍後再試，或用畫面選項繼續。')); }, timeoutMs);
     try { target.postMessage(JSON.stringify({ name, data })); } catch (error) { cleanup(); reject(error); }
   });
 }
@@ -113,7 +113,7 @@ export function request<T>(
     const mock = mockReply(name, data);
     if (mock === undefined) {
       return Promise.reject(
-        new TownPassError('NOT_IN_APP', `不在 App 內，且沒有 ${name} 的模擬資料`),
+        new TownPassError('NOT_IN_APP', '這項功能需要在城市通 App 中使用。'),
       );
     }
     return new Promise((resolve) => setTimeout(() => resolve(mock as T), 300));
@@ -138,7 +138,7 @@ export function request<T>(
     if (timeoutMs > 0) {
       timer = setTimeout(() => {
         cleanup();
-        reject(new TownPassError('TIMEOUT', `${name} 等待 App 回覆逾時`));
+        reject(new TownPassError('TIMEOUT', '城市通 App 暫時沒有回應，請稍後再試。'));
       }, timeoutMs);
     }
     target.postMessage(JSON.stringify({ name, data }));

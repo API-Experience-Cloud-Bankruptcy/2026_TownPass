@@ -1,4 +1,5 @@
 // 紙本檢核表的共用結構；不直接讀取答案，個人訊息沿用行動單的揭露控制。
+import { plainLanguageFor } from './plain-language';
 import { mergeDocuments, OTHER_REGION_TITLE, regionText, type MergedDocument } from './documents';
 import { DISCLAIMER, disclosedLines, type PlanInput } from './export';
 import { FIT_LABEL, text } from './match';
@@ -77,7 +78,7 @@ export interface ChecklistForm {
 }
 
 export const FORM_TITLE = '福利資源申辦準備檢核表';
-export const FORM_NOTICE = '本表由福利通產生，供申辦準備使用，非機關正式表單。';
+export const FORM_NOTICE = '本表由福利連整理，供申請前準備使用，並非機關正式表單。';
 const PHONE_ADDRESS_MISSING = '電話與地址請依受理窗口原文或來源網站確認。';
 
 /** 文件編號：產製日期加已選項目 id 的短雜湊（FNV-1a），同一組項目同日編號相同。 */
@@ -154,15 +155,23 @@ export function buildChecklist(input: PlanInput): Checklist {
     const route = buildRoute(item, input.documentAnswers ?? { region: input.region });
     const result = input.results.get(item.id);
     const blocks: ChecklistBlock[] = [];
+    const guide = plainLanguageFor(item);
+    if (guide) {
+      blocks.push({ kind: 'heading', text: '白話導讀（協助閱讀，完整條件請看下方原文）' });
+      blocks.push({ kind: 'text', text: `適合誰先了解：${guide.audience}` });
+      blocks.push({ kind: 'text', text: `可以獲得什麼：${guide.support}` });
+      blocks.push({ kind: 'text', text: `第一步：${guide.firstStep}` });
+      for (const caution of guide.cautions) blocks.push({ kind: 'text', text: `導讀提醒：${caution}` });
+    }
     const line = (label: string, value: unknown) => { const v = text(value); if (v) blocks.push({ kind: 'text', text: `${label}：${paperText(v)}` }); };
     if (result) {
-      line('保守初篩（非資格認定）', FIT_LABEL[result.fit]);
-      for (const [key, label] of [['blocked_by', '不符原因'], ['reasons', '已知相符的單項'], ['warnings', '提醒']] as const) {
+      line('初步比對（資格仍須審核）', FIT_LABEL[result.fit]);
+      for (const [key, label] of [['blocked_by', '不符原因'], ['reasons', '已符合的個別條件'], ['warnings', '提醒']] as const) {
         for (const value of disclosedLines(result, key, fields)) line(label, value);
       }
     } else line('初篩', '尚無結果，請向窗口確認資格。');
     blocks.push({ kind: 'heading', text: '資源內容與完整資格' });
-    line('資源利益（原文）', item.benefit?.raw || '原文未提供，請向窗口確認。');
+    line('補助內容（原文）', item.benefit?.raw || '原文未提供，請向窗口確認。');
     for (const amount of item.benefit?.amounts ?? []) { const original = ruleText(amount); if (original) line('金額補充（原文）', original); }
     line('資格摘要（原文）', item.eligibility?.raw_summary);
     let ruleCount = 0;
@@ -178,9 +187,9 @@ export function buildChecklist(input: PlanInput): Checklist {
     if (result?.pending?.length) for (const [n, p] of result.pending.entries()) blocks.push({ kind: 'check', key: `${item.id}:pending:${n}`, checked: false, text: `待確認：${paperText(p)}` });
     else line('待確認', '請向窗口核對完整資格、文件及受理情形；未列出待確認項目不代表資格已確認。');
     line('期限（原文）', route.deadline || '原文未提供，請確認是否仍受理。');
-    line('受理狀態（資料原值）', route.applicationStatus || '未註明');
-    if (item.application?.deadline?.start) line('期限起日（資料值）', item.application.deadline.start);
-    if (item.application?.deadline?.end) line('期限迄日（資料值）', item.application.deadline.end);
+    line('資料記載的受理狀態', route.applicationStatus || '未註明');
+    if (item.application?.deadline?.start) line('資料記載的開始日期', item.application.deadline.start);
+    if (item.application?.deadline?.end) line('資料記載的截止日期', item.application.deadline.end);
     blocks.push({ kind: 'heading', text: '受理窗口與辦理步驟' });
     line('主管／承辦', route.agency || '未提供');
     line('受理窗口（原文）', route.channel || '未提供，請至來源網站確認');
@@ -203,12 +212,12 @@ export function buildChecklist(input: PlanInput): Checklist {
     if (route.rejectedUrls) line('網址提醒', `${route.rejectedUrls} 個無效或不安全網址未列入，請向窗口確認。`);
     for (const extension of item.extensions ?? []) line(extension.label || '補充說明', extension.raw);
     blocks.push({ kind: 'heading', text: '求助時可以照著說' });
-    blocks.push({ kind: 'text', text: stuckAdvice(item, 'understand').askText });
+    blocks.push({ kind: 'text', text: stuckAdvice(item, 'understand', undefined, input.target).askText });
     blocks.push({ kind: 'text', text: '若不方便到場或想請人協助，請先詢問是否接受郵寄、線上或委託，以及需要哪些文件；本表不代表已取得委託權。' });
     blocks.push({ kind: 'notes', text: '詢問紀錄：日期＿＿＿＿　承辦／窗口＿＿＿＿　下一步／約定時間：' });
     sections.push({ id: `resource:${item.id}`, title: `${index + 1}. ${item.name}`, blocks });
   });
-  const privacyNotice = input.conditions.length ? '僅加入下列經使用者同意的條件；自行填寫，未經查證。' : '未加入個人條件，本表不含個人填答。';
+  const privacyNotice = input.conditions.length ? '只加入已同意提供的回答；內容由使用者填寫，尚未查證。' : '未加入個人條件，本表不含個人填答。';
   return {
     title: FORM_TITLE, subtitle: DISCLAIMER,
     metaLines: [`產生日期：${date}`, `對象：${input.target === 'self' ? '本人' : '家人或其他人'}`, `資料來源：${meta.sourceLabel}`, `資料版本：${meta.catalogVersion}`, `已選資源：${input.items.length} 項`],
@@ -245,19 +254,27 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
     const screening = result ? FIT_LABEL[result.fit] : '尚無結果，請向窗口確認資格。';
     overview.push({ no, id: item.id, name: item.name, agency: route.agency || '未提供', channel: route.channel || '未提供，請至來源網站確認', deadline: route.deadline || '原文未提供，請確認是否仍受理', screening });
     const summary: FormField[] = [];
-    field(summary, '初篩結果（非資格認定）', screening);
+    const guide = plainLanguageFor(item);
+    if (guide) {
+      field(summary, '白話導讀', '協助閱讀，完整條件請看下方原文。');
+      field(summary, '適合誰先了解', guide.audience);
+      field(summary, '可以獲得什麼', guide.support);
+      field(summary, '第一步', guide.firstStep);
+      for (const caution of guide.cautions) field(summary, '導讀提醒', caution);
+    }
+    field(summary, '初步比對（資格仍須審核）', screening);
     if (result) {
-      for (const [key, label] of [['blocked_by', '不符原因'], ['reasons', '已知相符的單項'], ['warnings', '提醒']] as const) {
+      for (const [key, label] of [['blocked_by', '不符原因'], ['reasons', '已符合的個別條件'], ['warnings', '提醒']] as const) {
         for (const value of disclosedLines(result, key, fields)) field(summary, label, value);
       }
     }
-    field(summary, '資源利益（原文）', item.benefit?.raw || '原文未提供，請向窗口確認。');
+    field(summary, '補助內容（原文）', item.benefit?.raw || '原文未提供，請向窗口確認。');
     for (const amount of item.benefit?.amounts ?? []) field(summary, '金額補充（原文）', ruleText(amount));
     field(summary, '資格摘要（原文）', item.eligibility?.raw_summary);
     field(summary, '申請期限（原文）', route.deadline || '原文未提供，請確認是否仍受理。');
-    field(summary, '受理狀態（資料原值）', route.applicationStatus || '未註明');
-    field(summary, '期限起日（資料值）', item.application?.deadline?.start);
-    field(summary, '期限迄日（資料值）', item.application?.deadline?.end);
+    field(summary, '資料記載的受理狀態', route.applicationStatus || '未註明');
+    field(summary, '資料記載的開始日期', item.application?.deadline?.start);
+    field(summary, '資料記載的截止日期', item.application?.deadline?.end);
     const eligibility: FormResource['eligibility'] = [];
     for (const [key, value] of Object.entries(item.eligibility ?? {})) {
       if (key === 'raw_summary') continue;
@@ -278,10 +295,10 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
     field(contact, '主管／承辦機關', route.agency || '未提供');
     field(contact, '受理窗口（原文）', route.channel || '未提供，請至來源網站確認');
     field(contact, '辦理方式（原文列出）', route.methods.join('、') || '未提供');
-    contact.push({ label: '地址', text: `資料未列獨立欄位；${PHONE_ADDRESS_MISSING}` });
-    contact.push({ label: '電話', text: `資料未列獨立欄位；${PHONE_ADDRESS_MISSING}` });
+    contact.push({ label: '地址', text: `資料沒有另外列出；${PHONE_ADDRESS_MISSING}` });
+    contact.push({ label: '電話', text: `資料沒有另外列出；${PHONE_ADDRESS_MISSING}` });
     for (const link of route.links) contact.push({ label: `${link.label}（${SOURCE_KIND_LABEL[link.sourceKind]}）`, text: link.url, url: link.url });
-    for (const missing of route.missing) if (missing !== PHONE_ADDRESS_MISSING) contact.push({ label: '資料缺漏', text: missing });
+    for (const missing of route.missing) if (missing !== PHONE_ADDRESS_MISSING) contact.push({ label: '還缺少的資訊', text: missing });
     const verification: FormField[] = [];
     field(verification, '查核狀態', STATUS_LABEL[route.status] ?? `資料狀態：${route.status || '未註明'}`);
     field(verification, '查核日期', route.checkedDate || '未註明');
@@ -302,7 +319,7 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
       stepsNote: route.steps.length && !route.splitFromArrow ? '流程原文，未自行拆步。' : '',
       contact,
       ask: [
-        { label: '詢問時可以這樣說', text: stuckAdvice(item, 'understand').askText },
+        { label: '詢問時可以這樣說', text: stuckAdvice(item, 'understand', undefined, input.target).askText },
         { label: '委託或不便到場', text: '若不方便到場或想請人協助，請先詢問是否接受郵寄、線上或委託，以及需要哪些文件；本表不代表已取得委託權。' },
       ],
       verification, sources,
@@ -314,17 +331,17 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
     target: input.target === 'self' ? '本人' : '家人或他人',
     catalogVersion: meta.catalogVersion, sourceLabel: meta.sourceLabel, itemCount: `${input.items.length} 項`,
     basicFields: ['申請人姓名', '聯絡電話', '協助者／代辦人', '與申請人關係', '預計洽詢日期'],
-    conditionsTitle: '已同意列入之條件（自述，未經查證）',
+    conditionsTitle: '已同意加入的回答（自行填寫，尚未查證）',
     conditions: input.conditions.map(c => c.line), privacyNotice,
     overview, documents, otherRegionTitle: otherRegionDocuments.length ? OTHER_REGION_TITLE : '', otherRegionDocuments, incomplete, emptyNote: '尚未選擇資源；請先確認要準備的項目。', resources,
     notes: [
       DISCLAIMER,
-      '本表不是申請書，也不是送件、受理、核准或取得福利的證明；正式申請請使用機關公告之表單及管道。',
-      '是否符合資格由主管機關審核認定；「初篩結果」僅依已知條件整理，不代表資格認定。',
-      '申請期限、受理狀態及應備文件可能變動，洽詢或送件前請以機關最新公告為準。',
-      '方框僅記錄文件或步驟已準備；待確認事項請於洽詢後記錄窗口回覆。',
+      '本表不能代替申請書，也不代表已送件、受理、核准或取得福利。正式申請請使用機關公告的表單及方式。',
+      '是否符合資格由主管機關審核；初步比對只依已知條件整理，不能代替資格審核。',
+      '申請期限、是否受理及所需文件可能變動，詢問或送件前請查看機關最新公告。',
+      '勾選只用來記錄文件或步驟已準備。詢問窗口後，請在待確認事項旁記下回覆。',
       '臨櫃辦理時請攜帶身分證明及各項文件正本，並依窗口指示準備影本。',
-      '本表可能含個人資料，請妥善保管；交付他人前請確認內容，不需要時請銷毀。',
+      '本表可能含有個人資料，請妥善保管。交給他人前請先確認內容，不再需要時請銷毀。',
     ],
   };
 }

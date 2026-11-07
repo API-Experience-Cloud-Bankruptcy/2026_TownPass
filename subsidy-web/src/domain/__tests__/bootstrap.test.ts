@@ -18,7 +18,7 @@ describe('版本遷移', () => {
   it('版本變更時重設進度、移除不存在的資源，且不修改輸入', () => {
     const patch = migrateSession(old, catalog('new', ['A']));
     expect(patch).toMatchObject({ planIds: ['A'], stepDone: {}, docChecks: {}, catalogVersion: 'new' });
-    expect(patch.notice).toContain('準備進度已重設');
+    expect(patch.notice).toContain('問答進度已重設');
     expect(old.stepDone).toEqual({ A: [0] });
   });
 

@@ -132,7 +132,7 @@ export function buildRoute(item: Subsidy, answers: Answers = {}): Route {
   if (documents.length === 0) missing.push('適用文件清單尚未確認，不代表免附文件。');
   // 資料沒有獨立的電話、地址欄位；不從原文推測是否已提供。
   missing.push('電話與地址請依受理窗口原文或來源網站確認。');
-  if (links.length === 0) missing.push('原文未提供可用的官方網址。');
+  if (links.length === 0) missing.push('資料未提供可用的說明或申請網址，請向承辦單位確認。');
   return {
     steps,
     splitFromArrow: split,
@@ -159,9 +159,9 @@ export const SOURCE_ROLE: Record<string, string> = {
 };
 
 export const STATUS_LABEL: Record<string, string> = {
-  verified: '資料原有狀態：已查核',
-  partial: '資料原有狀態：部分查核',
-  unverified: '資料原有狀態：未查核',
+  verified: '資料標示為已查核',
+  partial: '資料標示為部分查核',
+  unverified: '資料標示為未查核',
 };
 
 export type StuckReason = 'documents' | 'visit' | 'helper' | 'online' | 'understand';
@@ -186,20 +186,22 @@ export interface StuckAdvice {
 }
 
 /** 「這一步做不到」：只引用原文已列的替代方式；沒有就如實說明並給詢問文字。 */
-export function stuckAdvice(item: Subsidy, reason: StuckReason, stepText?: string): StuckAdvice {
+export function stuckAdvice(item: Subsidy, reason: StuckReason, stepText?: string, target: 'self' | 'other' = 'self'): StuckAdvice {
   const route = buildRoute(item);
   const methods = item.application?.methods ?? [];
   const found: string[] = [];
   const notFound: string[] = [];
   const where = route.channel || route.agency || '承辦單位';
   const step = stepText ? `「${stepText}」這一步` : '辦理';
+  const applicant = target === 'other' ? '對方' : '我';
+  const opening = target === 'other' ? '我正在幫家人或其他人詢問' : '我想申請';
   let ask = '';
   switch (reason) {
     case 'documents': {
       const withNotes = route.documents.filter((d) => text(d.notes) || text(d.condition));
       for (const d of withNotes) found.push(`${d.name}：${[text(d.condition), text(d.notes)].filter(Boolean).join('；')}`);
       if (withNotes.length === 0) notFound.push('原文未說明文件取得方式。');
-      ask = `您好，我想申請「${item.name}」，請問${route.documents.map((d) => d.name).join('、') || '需要的文件'}要去哪裡申請或取得？有沒有可以代替的文件？`;
+      ask = `您好，${opening}「${item.name}」，請問${route.documents.map((d) => d.name).join('、') || '需要的文件'}要去哪裡申請或取得？有沒有可以代替的文件？`;
       break;
     }
     case 'visit': {
@@ -207,26 +209,26 @@ export function stuckAdvice(item: Subsidy, reason: StuckReason, stepText?: strin
       const alt = methods.filter((m) => REMOTE_METHODS.includes(m));
       if (alt.length) found.push(`原文列出的方式：${alt.map((m) => METHOD_LABEL[m] ?? m).join('、')}（細節請向窗口確認）`);
       else notFound.push('原文未列出不需到場的辦理方式。');
-      ask = `您好，我想申請「${item.name}」，但不方便到現場。請問${step}可以用郵寄、線上或委託他人辦理嗎？需要準備什麼？`;
+      ask = `您好，${opening}「${item.name}」，但${applicant}不方便到現場。請問${step}可以用郵寄、線上或委託他人辦理嗎？需要準備什麼？`;
       break;
     }
     case 'helper': {
       if (methods.includes('agent')) found.push('原文列出可委託他人辦理，委託文件請向窗口確認。');
       else notFound.push('原文未說明可委託他人或到宅服務。');
-      ask = `您好，我想申請「${item.name}」，身邊沒有人可以協助。請問有沒有人可以協助我辦理，或可以用電話說明步驟？`;
+      ask = `您好，${opening}「${item.name}」，${applicant}需要辦理上的協助。請問有沒有人可以協助${applicant}辦理，或可以用電話說明步驟？`;
       break;
     }
     case 'online': {
       const alt = methods.filter((m) => OFFLINE_METHODS.includes(m));
       if (alt.length) found.push(`原文列出的非線上方式：${alt.map((m) => METHOD_LABEL[m] ?? m).join('、')}`);
       else notFound.push('原文未列出明確的非線上方式。');
-      ask = `您好，我想申請「${item.name}」，但不會使用網路申請。請問可以臨櫃或郵寄辦理嗎？`;
+      ask = `您好，${opening}「${item.name}」，但${applicant}不會使用網路申請。請問可以臨櫃或郵寄辦理嗎？`;
       break;
     }
     case 'understand': {
       const summary = text(item.eligibility?.raw_summary);
       if (summary) found.push(`適用對象原文：${summary}`);
-      ask = `您好，我想了解「${item.name}」。請問我是否符合申請資格？${step}具體要做什麼？`;
+      ask = `您好，我想了解「${item.name}」。請問${applicant}是否符合申請資格？${step}要怎麼做？`;
       break;
     }
   }

@@ -21,7 +21,7 @@ export function normalizeInput(input: string): string {
 
 const yesAliases = new Set(['是', '是的', '對', '對的', '沒錯', '有', '有的', 'yes']);
 const noAliases = new Set(['否', '不是', '不是的', '不對', '沒有', '沒有的', '無', 'no']);
-const clarifyChoice = '請選一個目前選項，或再說清楚你想找什麼。';
+const clarifyChoice = '請選下方的選項，或多說一點想找什麼。';
 const uncertain = /(?:不確定|不知道|不清楚|可能|也許|好像|應該|大概|或者|或是|還是|如果|假如|是否|能否|可否|不一定|不見得|不太確定)/u;
 const question = /[?？]|(?:嗎|呢|怎麼|如何|為何|為什麼|什麼|哪個|哪些|可不可以|能不能|有沒有)/u;
 
@@ -182,7 +182,7 @@ export function routeInput(input: string, context: InterpretationContext, catalo
   const raw = input.trim();
   if (!raw) return { kind: 'empty' };
   if (raw.length > 2000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u206f]/u.test(raw)) {
-    return { kind: 'clarify', message: '請用一般文字簡短描述需求，或選擇目前選項。' };
+    return { kind: 'clarify', message: '請簡短描述需要什麼幫忙，或選下方的選項。' };
   }
   const normalized = normalizeInput(raw);
   if (!normalized) return { kind: 'clarify', message: clarifyChoice };
@@ -194,7 +194,7 @@ export function routeInput(input: string, context: InterpretationContext, catalo
   const choice = matchCurrentChoice(input, context);
   if (choice) return choice;
   if (multipleChoices(raw, context) || /(?:或|還是)/u.test(raw) || (uncertain.test(raw) && !question.test(raw))) {
-    return { kind: 'clarify', message: '目前還不能確定你要選哪一項，請選一個選項，或補充你的情況。' };
+    return { kind: 'clarify', message: '我還不確定你要選哪一項，可以直接選下方選項，或再多說一點。' };
   }
   if (isSentence(raw)) return { kind: 'conversation' };
   // 「對」「沒有」等只有在當前布林題可作答；其他頁面不猜測其意思。
@@ -213,7 +213,7 @@ export function routeInput(input: string, context: InterpretationContext, catalo
   const namedProgram = /(?:補助|補貼|津貼|獎學金|助學金)[a-z\d]*$/iu.test(query);
   // 未知純英數字串無法判斷是否為名稱，避免把亂碼當成明確搜尋意圖。
   if (known || namedProgram || suggestSearchQueries(query, catalog).length > 0 || (explicit && /\p{Script=Han}/u.test(query))) return { kind: 'search', query };
-  return { kind: 'clarify', message: '請補充想找的補助名稱、生活需求，或選擇目前選項。' };
+  return { kind: 'clarify', message: '請補充補助名稱或需要什麼幫忙，也可以選下方的選項。' };
 }
 
 /** 零筆結果的提示候選，絕不自動替換 query。僅取實際名稱與 keywords。 */

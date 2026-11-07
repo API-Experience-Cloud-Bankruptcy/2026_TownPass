@@ -22,7 +22,7 @@ export type Interpretation =
   | { kind: 'clarify' | 'off_topic' };
 
 export class InvalidInterpretationError extends Error {
-  constructor() { super('模型回覆無法安全對應目前選項'); this.name = 'InvalidInterpretationError'; }
+  constructor() { super('無法確認這段內容對應哪個選項'); this.name = 'InvalidInterpretationError'; }
 }
 
 /** 全部拒絕額外欄位，避免模型的欄位推測繞過既有填答入口。 */

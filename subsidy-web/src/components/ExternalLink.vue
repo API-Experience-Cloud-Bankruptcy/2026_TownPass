@@ -30,5 +30,5 @@ function onClick(event: MouseEvent) {
       無法在 App 內開啟，請複製網址：<span class="selectable">{{ safe }}</span>
     </span>
   </span>
-  <span v-else class="muted">{{ label }}：網址無效或未提供，已略過</span>
+  <span v-else class="muted">{{ label }}：未提供可開啟的網址</span>
 </template>

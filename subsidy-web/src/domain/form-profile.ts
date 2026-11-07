@@ -33,13 +33,13 @@ export function validateProfileValue(key: ProfileKey, raw: string): string {
   const value = raw.trim();
   if (!value) return '';
   switch (key) {
-    case 'name': return value.length > 40 ? '姓名過長' : '';
-    case 'nationalId': return ID_PATTERN.test(value.toUpperCase()) ? '' : '格式不符（英文字母加 9 碼數字）';
+    case 'name': return value.length > 40 ? '姓名超過 40 字，請確認是否輸入正確' : '';
+    case 'nationalId': return ID_PATTERN.test(value.toUpperCase()) ? '' : '請填 1 個英文字母加 9 碼數字';
     case 'gender': return value === 'male' || value === 'female' ? '' : '請選擇男或女';
-    case 'mobile': return /^09\d{8}$/.test(normalizeMobile(value)) ? '' : '手機應為 10 碼，09 開頭';
-    case 'homePhone': return /^[\d\-()\s#]{6,20}$/.test(value) ? '' : '電話格式不符';
+    case 'mobile': return /^09\d{8}$/.test(normalizeMobile(value)) ? '' : '請填 09 開頭的 10 碼手機號碼';
+    case 'homePhone': return /^[\d\-()\s#]{6,20}$/.test(value) ? '' : '請確認電話號碼，可包含區碼、分機及連字號';
     case 'registeredAddress':
-    case 'contactAddress': return value.length < 6 ? '地址太短，請寫完整' : value.length > 120 ? '地址過長' : '';
+    case 'contactAddress': return value.length < 6 ? '請填完整地址，至少 6 字' : value.length > 120 ? '地址超過 120 字，請確認是否輸入正確' : '';
   }
 }
 

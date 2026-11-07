@@ -124,9 +124,9 @@ it('新規則的個資理由預設匯出不洩漏年齡、在學或家戶自述�
   const results=evaluateAll(items,{age:99,is_student:true,household_type:'general'},today);
   const input={meta:{catalogVersion:'test',sourceLabel:'test',generatedAt:new Date('2026-11-07T00:00:00Z')},target:'self' as const,items,results,docChecks:{},stepDone:{}};
   const hidden=buildPlanText({...input,conditions:[]});
-  for(const forbidden of ['目前實歲 99','自述目前在學','自述身分 general']) expect(hidden).not.toContain(forbidden);
+  for(const forbidden of ['填答年齡 99 歲','填答目前在學','填答：一般（未核定）']) expect(hidden).not.toContain(forbidden);
   const disclosed=buildPlanText({...input,conditions:[{field:'age',line:'年齡99歲'},{field:'is_student',line:'在學'},{field:'household_type',line:'一般'}]});
-  for(const value of ['目前實歲 99','自述目前在學','自述身分 general']) expect(disclosed).toContain(value);
+  for(const value of ['填答年齡 99 歲','填答目前在學','填答：一般（未核定）']) expect(disclosed).toContain(value);
 });
 
 it('工作需求不以青年泛詞納入文化藝術；全庫搜尋仍能取得',()=>{

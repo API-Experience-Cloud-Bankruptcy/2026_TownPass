@@ -27,7 +27,7 @@ async function closePreview() {
 watch(() => props.body, () => {
   previewOpen.value = false;
   showRaw.value = false;
-  status.value = '內容變了，請重新看全文';
+  status.value = '內容已更新，請重新確認全文。';
 });
 async function openPreview() {
   previewOpen.value = true;
@@ -44,7 +44,7 @@ function toggle(line: string) {
   included.value = included.value.includes(line)
     ? included.value.filter((l) => l !== line)
     : [...included.value, line];
-  status.value = '內容變了，分享前請再看一次全文';
+  status.value = '內容已更新，分享前請再確認一次全文。';
 }
 
 async function onCopy() {
@@ -91,12 +91,12 @@ function onPrint() {
 <template>
   <section class="share" :aria-labelledby="`${previewId}-h`">
     <h2 ref="settingsHeading" tabindex="-1" :id="`${previewId}-h`" class="stage-title">{{ title }}</h2>
-    <p class="muted">不含姓名、身分證、收入或住址；分享後由對方保存</p>
+    <p class="muted">不含姓名、身分證、收入或住址；分享後由對方保存。</p>
 
     <details v-if="hasConditions" class="more more--single">
       <summary>要不要附上填寫的條件</summary>
       <fieldset class="more__body">
-        <legend class="muted">預設不附上，勾選才會加入</legend>
+        <legend class="muted">預設不附上，勾選才會加入。</legend>
         <label v-for="line in conditions" :key="line" class="check">
           <input type="checkbox" :checked="included.includes(line)" @change="toggle(line)" />
           <span>{{ line }}</span>

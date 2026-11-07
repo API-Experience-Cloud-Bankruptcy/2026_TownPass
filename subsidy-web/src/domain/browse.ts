@@ -10,7 +10,7 @@ export const BROWSE_CATEGORIES = [
   { id: 'housing', label: '住宅與租屋', hint: '租金補貼、購屋、住屋修繕', pattern: /住宅|租屋/ },
   { id: 'health', label: '醫療與健康', hint: '醫療補助、健保、疫苗與篩檢', pattern: /醫療/ },
   { id: 'elder', label: '長者與長照', hint: '敬老福利、照顧與長照服務', pattern: /敬老|長者|長照|老人|高齡/ },
-  { id: 'disability', label: '身心障礙', hint: '身障福利、輔具與照顧支持', pattern: /身心障礙|身障/ },
+  { id: 'disability', label: '身心障礙', hint: '身障福利、輔具與照顧協助', pattern: /身心障礙|身障/ },
   { id: 'work', label: '就業與創業', hint: '求職、失業、職訓、職災與產業', pattern: /就業|失業|職訓|職業災害|勞工|創業|企業|青年|婦女/ },
   { id: 'transport', label: '交通與節能', hint: '交通優惠、車輛、節能設備', pattern: /交通|節能/ },
   { id: 'culture', label: '文化與休閒', hint: '藝文創作、運動與語言學習', pattern: /文化|體育/ },
@@ -65,5 +65,5 @@ export function browseStatusLabel(item: Subsidy, today: string): string {
   if (status === 'closed') return /^\d{4}-\d{2}-\d{2}$/.test(d.end ?? '') ? `已截止（${d.end}）` : '已截止';
   if (status === 'upcoming') return /^\d{4}-\d{2}-\d{2}$/.test(d.start ?? '') ? `尚未開放（${d.start} 起）` : '尚未開放';
   if (status === 'uncertain') return '受理時間待確認';
-  return d.type === 'rolling' ? '依個案期限申請' : '受理期間內・資格另審';
+  return d.type === 'rolling' ? '依個案期限申請' : '目前在受理期間，資格仍須審核';
 }
