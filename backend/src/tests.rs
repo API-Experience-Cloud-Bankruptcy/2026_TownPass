@@ -909,3 +909,134 @@ fn hidden_age_in_taipei_applicability_is_reviewed_and_asked() {
     );
     assert!(!r.warnings.iter().any(|w| w.contains("不據 scope 排除")));
 }
+
+fn elder_profile() -> Profile {
+    Profile {
+        age: Some(78.0),
+        region: Some("臺北市".into()),
+        monthly_income: Some(12000.0),
+        applicant_types: vec!["長者".into(), "中低收入戶".into()],
+        ..Default::default()
+    }
+}
+
+fn warns(r: &matcher::MatchResult, text: &str) -> bool {
+    r.warnings.iter().any(|w| w.contains(text))
+}
+
+#[tokio::test]
+async fn elder_mid_low_income_repro_has_no_likely_identity_gaps_or_closed_items() {
+    let st = state();
+    let matched = matcher::run_match_at(&st.entries, &elder_profile(), "2026-11-07");
+    let by_id: HashMap<_, _> = matched
+        .iter()
+        .map(|(e, r)| (e.subsidy.id.as_str(), r))
+        .collect();
+    assert_eq!(matched.len(), 37);
+    assert!(matched
+        .iter()
+        .all(|(_, r)| r.fit == Fit::Possible && r.closed_on.is_none()));
+    assert!(warns(by_id["CT-0034"], "農保被保險人"));
+    assert!(warns(by_id["CT-0099"], "榮民／退除役官兵"));
+    let region_only = by_id["CT-0003"];
+    assert!(region_only.reasons.is_empty());
+    assert!(warns(region_only, "身心障礙者"));
+    for id in ["WEL-0028", "WEL-0073", "WEL-0074", "WEL-0077"] {
+        assert!(!by_id.contains_key(id), "{id}");
+    }
+    // Declared mid-low income satisfies the low-income identity group.
+    assert!(!warns(by_id["CT-0104"], "低收入戶或中低收入戶"));
+    let (status, _) = request(
+        app(state()),
+        "POST",
+        "/api/match",
+        Some(r#"{"age":78,"region":"臺北市","household_type":"獨居"}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[test]
+fn identity_limited_items_warn_until_the_identity_is_declared() {
+    let today = "2026-11-07";
+    let farmer = entry("CT-0034");
+    let r = matcher::evaluate_at(&farmer, &elder_profile(), today);
+    assert_eq!(r.fit, Fit::Possible);
+    assert!(warns(&r, "可能限定身分，自述未提供：農保被保險人"));
+    let mut declared = elder_profile();
+    declared.applicant_types.push("農保被保險人".into());
+    assert!(!warns(
+        &matcher::evaluate_at(&farmer, &declared, today),
+        "可能限定身分"
+    ));
+    let low = entry("CT-0023");
+    assert!(warns(
+        &matcher::evaluate_at(&low, &Profile::default(), today),
+        "低收入戶或中低收入戶"
+    ));
+    let household = Profile {
+        household_type: Some("low_income".into()),
+        ..Default::default()
+    };
+    assert!(!warns(
+        &matcher::evaluate_at(&low, &household, today),
+        "可能限定身分"
+    ));
+}
+
+#[tokio::test]
+async fn closed_deadlines_are_hidden_by_default_and_marked_when_included() {
+    let e = entry("WEL-0028");
+    let open = matcher::evaluate_at(&e, &Profile::default(), "2026-09-30");
+    assert_eq!(open.closed_on, None);
+    let closed = matcher::evaluate_at(&e, &Profile::default(), "2026-10-01");
+    assert_eq!(closed.closed_on.as_deref(), Some("2026-09-30"));
+    assert_eq!(closed.fit, Fit::Possible);
+    assert!(warns(&closed, "已截止：申請期限 2026-09-30"));
+    let st = state();
+    let all = Profile {
+        include_ineligible: true,
+        ..Default::default()
+    };
+    let included = matcher::run_match_at(&st.entries, &all, "2026-11-07");
+    assert_eq!(included.len(), 217);
+    assert_eq!(
+        included
+            .iter()
+            .filter(|(_, r)| r.closed_on.is_some())
+            .count(),
+        25
+    );
+    assert!(included
+        .iter()
+        .skip_while(|(_, r)| r.closed_on.is_none())
+        .all(|(_, r)| r.closed_on.is_some()));
+    let default = matcher::run_match_at(&st.entries, &Profile::default(), "2026-11-07");
+    assert_eq!(default.len(), 192);
+    let (_, body) = request(
+        app(state()),
+        "POST",
+        "/api/match",
+        Some(r#"{"q":"感恩基金會","include_ineligible":true,"limit":200}"#),
+    )
+    .await;
+    let item = body["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["id"] == "WEL-0028")
+        .unwrap();
+    assert_eq!(item["match"]["closed_on"], "2026-09-30");
+    let (_, hidden) = request(
+        app(state()),
+        "POST",
+        "/api/match",
+        Some(r#"{"q":"感恩基金會","limit":200}"#),
+    )
+    .await;
+    assert!(!hidden["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|i| i["id"] == "WEL-0028"));
+}

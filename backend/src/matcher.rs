@@ -199,6 +199,61 @@ pub struct MatchResult {
     pub warnings: Vec<String>,
     pub blocked_by: Vec<String>,
     pub personal: Vec<PersonalNote>,
+    /// `application.deadline.end` when it is before the query date; such items are
+    /// hidden unless `include_ineligible` is set.
+    pub closed_on: Option<String>,
+}
+
+/// Identity groups a programme may be limited to; any member of a group satisfies it.
+const IDENTITIES: [(&[&str], &[&str]); 5] = [
+    (&["農保"], &["農保被保險人"]),
+    (&["榮民", "退除役"], &["榮民／退除役官兵"]),
+    (&["原住民"], &["原住民"]),
+    (&["身心障礙"], &["身心障礙者"]),
+    (&["低收入"], &["低收入戶", "中低收入戶"]),
+];
+
+/// Identity limits stated in the name, summary or structured employment/disability
+/// conditions that the profile does not declare.
+fn missing_identities(e: &Entry, p: &Profile) -> Vec<String> {
+    let s = &e.subsidy;
+    let el = &e.original["eligibility"];
+    let mut text = format!(
+        "{} {}",
+        s.name,
+        el["raw_summary"].as_str().unwrap_or_default()
+    );
+    for job in el["employment"].as_array().into_iter().flatten() {
+        for key in ["statuses", "insurance_types"] {
+            for v in job[key].as_array().into_iter().flatten() {
+                text.push(' ');
+                text.push_str(v.as_str().unwrap_or_default());
+            }
+        }
+    }
+    if !s.eligibility.disability.is_empty() {
+        text.push_str(" 身心障礙");
+    }
+    let mut declared = p.applicant_types.clone();
+    match p.household_type.as_deref() {
+        Some("low_income") => declared.push("低收入戶".into()),
+        Some("mid_low_income") => declared.push("中低收入戶".into()),
+        _ => {}
+    }
+    IDENTITIES
+        .iter()
+        .filter(|(keys, _)| keys.iter().any(|k| text.contains(k)))
+        .filter(|(_, labels)| !labels.iter().any(|l| declared.iter().any(|d| d == l)))
+        .map(|(_, labels)| labels.join("或"))
+        .collect()
+}
+
+/// End date of the application window if it has passed on `today` (both `YYYY-MM-DD`).
+fn closed_on(e: &Entry, today: &str) -> Option<String> {
+    let end = e.subsidy.application.deadline.get("end")?.as_str()?;
+    crate::reviewed_rules::date_parts(end)?;
+    crate::reviewed_rules::date_parts(today)?;
+    (end < today).then(|| end.to_string())
 }
 
 #[derive(Debug, Serialize)]
@@ -277,6 +332,17 @@ pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
                 .into(),
         );
     }
+    let missing = missing_identities(e, p);
+    if !missing.is_empty() {
+        warnings.push(format!(
+            "可能限定身分，自述未提供：{}；請備妥身分證明向機關確認",
+            missing.join("、")
+        ));
+    }
+    let closed = closed_on(e, today);
+    if let Some(end) = &closed {
+        warnings.push(format!("已截止：申請期限 {end}，請留意下一期公告"));
+    }
     for income in &s.eligibility.income {
         warnings.push(format!(
             "所得條件未評估（主體：{}；年度、期間及家戶口徑待核對）：{}",
@@ -318,10 +384,19 @@ pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
         warnings,
         blocked_by: blocked,
         personal,
+        closed_on: closed,
     }
 }
 
 pub fn run_match<'a>(entries: &'a [Entry], p: &Profile) -> Vec<(&'a Entry, MatchResult)> {
+    run_match_at(entries, p, &crate::reviewed_rules::taipei_today())
+}
+
+pub fn run_match_at<'a>(
+    entries: &'a [Entry],
+    p: &Profile,
+    today: &str,
+) -> Vec<(&'a Entry, MatchResult)> {
     let mut out: Vec<(u32, &Entry, MatchResult)> = entries
         .iter()
         .filter_map(|e| {
@@ -335,8 +410,8 @@ pub fn run_match<'a>(entries: &'a [Entry], p: &Profile) -> Vec<(&'a Entry, Match
                     return None;
                 }
             }
-            let r = evaluate(e, p);
-            if r.fit == Fit::Ineligible && !p.include_ineligible {
+            let r = evaluate_at(e, p, today);
+            if (r.fit == Fit::Ineligible || r.closed_on.is_some()) && !p.include_ineligible {
                 return None;
             }
             Some((score, e, r))
@@ -348,8 +423,8 @@ pub fn run_match<'a>(entries: &'a [Entry], p: &Profile) -> Vec<(&'a Entry, Match
         Fit::Ineligible => 2,
     };
     out.sort_by(|a, b| {
-        rank(a.2.fit)
-            .cmp(&rank(b.2.fit))
+        (a.2.closed_on.is_some(), rank(a.2.fit))
+            .cmp(&(b.2.closed_on.is_some(), rank(b.2.fit)))
             .then(b.0.cmp(&a.0))
             .then_with(|| a.1.subsidy.id.cmp(&b.1.subsidy.id))
     });
