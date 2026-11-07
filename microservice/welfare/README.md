@@ -41,6 +41,18 @@ This command will move the starter code to the **example** directory and create 
 - If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
 - Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
+## Deploy (Vercel)
+
+`app.json` sets `web.output` to `static`: `npx expo export --platform web` writes one HTML file per route to `dist/` (not committed). `vercel.json` builds it, serves `/list` from `list.html` (`cleanUrls`) and rewrites `/item/:id` to `item/[id].html`.
+
+One-time setup by a person with a Vercel account:
+
+1. Vercel → Add New → Project → import this GitHub repository.
+2. Root Directory: `microservice/welfare`. Framework Preset: Other. Leave build settings empty; `vercel.json` supplies them.
+3. Deploy, then copy the production domain (`https://<project>.vercel.app`) into the top of `docs/contracts/bridge.md`.
+
+Every push to `main` redeploys production; pull requests get preview URLs.
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
