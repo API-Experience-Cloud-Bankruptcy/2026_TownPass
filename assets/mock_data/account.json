@@ -4,12 +4,12 @@
   "reasonPhrase": "Indicates the successful completion of an operation",
   "data": {
     "id": "7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250",
-    "account": "wz7786",
-    "username": "Wesley",
-    "realName": "金大森",
+    "account": "welfare_demo",
+    "username": "福利測試者",
+    "realName": "陳福利（虛擬）",
     "idNo": "A123456789",
-    "email": "ist83903@bcaoo.com",
-    "phoneNo": "0932166777",
+    "email": "welfare-demo@example.test",
+    "phoneNo": "0900000000",
     "birthday": "1988/12/12",
     "memberType": "personal",
     "verifyLevel": "3",
@@ -19,13 +19,13 @@
         "city": "臺北市",
         "town": "中山區",
         "village": "正得里",
-        "street": "吉林路",
+        "street": "測試路1號（虛構）",
         "usageType": "0",
         "seq": 1,
         "priority": true
       }
     ],
-    "residentAddress": "臺北市中山區吉林路 69 號 4 樓",
+    "residentAddress": "臺北市中山區測試路1號（虛構）",
     "citizen": true,
     "nativePeople": false,
     "cityInternetUid": ""

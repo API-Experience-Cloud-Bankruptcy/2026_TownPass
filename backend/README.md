@@ -17,6 +17,8 @@ cargo run --locked --release
 | `HOST` | `127.0.0.1` | 綁定 IP；暴露外部服務前須另行配置部署安全措施 |
 | `PORT` | `8080` | 監聽埠 |
 | `FORMS_DIR` | 編譯時 `backend/data/forms` | 空白申請表 PDF 目錄；搬移執行檔或容器部署時須指定 |
+| `DEMO_MODE` | 未啟用 | 僅精確設為 `1` 才開啟固定虛構測試帳號及行動單 API |
+| `PLAN_DB_PATH` | 編譯時 `backend/var/welfare.sqlite3` | Demo SQLite 檔案；改路徑會使用另一份資料庫，相對路徑依程序工作目錄解析 |
 | `SUBSIDY_DATA` | 編譯內嵌 `data/subsidies.json` | 啟動時讀取的替代 JSON 路徑；相對路徑依程序工作目錄解析 |
 
 ```sh
@@ -25,7 +27,7 @@ HOST=127.0.0.1 PORT=8081 cargo run --locked --release
 SUBSIDY_DATA=./data/subsidies.json cargo run --locked --release
 ```
 
-資料於啟動時載入，不即時監看檔案；更新替代資料後須重啟。無效 JSON、不相容的索引欄位、重複／空白／缺少 ID 都會使啟動失敗。內嵌資料更新須重新編譯。現有 CORS 為 permissive，無帳號、資料庫、正式申辦或遠端部署設定；本機成功不代表已完成公開部署驗收。
+資料於啟動時載入，不即時監看檔案；更新替代資料後須重啟。無效 JSON、不相容的索引欄位、重複／空白／缺少 ID 都會使啟動失敗。內嵌資料更新須重新編譯。公開 catalog API 的 CORS 為 permissive；Demo 行動單 API 有獨立來源限制。沒有正式登入、正式申辦或遠端部署設定；本機成功不代表已完成公開部署驗收。
 
 ## 資料完整性與版本
 
@@ -97,6 +99,24 @@ curl -fsS http://127.0.0.1:8080/api/match \
 ```
 
 match 新增 `personal` 標記含自述資訊的 reasons／blocked_by，供匯出時按欄位同意移除；原 fit／reasons／warnings／blocked_by 介面保留。match 不儲存或記錄答案，錯誤不回顯提交值；但呼叫本身仍會將內容傳到伺服器，不可宣稱此 API 是裝置端處理。
+
+## 固定虛構帳號的行動單保存（明確選用）
+
+```sh
+DEMO_MODE=1 PLAN_DB_PATH=./var/welfare.sqlite3 cargo run --locked
+```
+
+macOS 常駐試用安裝時加上 `--demo`：`python3 scripts/install_macos_service.py --binary backend/target/release/townpass-backend --demo`。安裝工具將 SQLite 設在服務的持久 `data/` 目錄，與每次更換的 release 分開；不加 `--demo` 不啟用虛擬帳號保存。
+
+這是共用的虛構展示帳號，**不是正式登入或身分驗證**；能連線此服務的人共用同一份行動單。帳號資料由 `assets/mock_data/account.json` 的 `data` 編譯內嵌，`users` 表於啟動時更新該 seed，`action_plans` 表保存行動單及 revision。重啟沿用同一 SQLite 檔即可讀回；換版帳號 seed 須重新編譯。不接受前端指定 userId、profile、完整答案或聊天原句。
+
+- `GET /api/action-plan` 回 `{mode:"demo", profile:Account, plan:SavedPlan|null, revision:number}`；尚未儲存為 `plan:null, revision:0`。
+- `PUT /api/action-plan` 只接受 `{plan:SavedPlan, revision:number}`，成功回相同格式並將 revision 加一；過期 revision 回 `409 revision_conflict`，由使用者處理衝突，不覆蓋較新行動單。
+- `SavedPlan` 嚴格白名單：`{v:1,target:"self"|"other"|null,planIds:string[],docChecks:Record<string,boolean>,stepDone:Record<string,number[]>,catalogVersion:string|null,rulesVersion:string|null,engineVersion:string|null}`。空陣列及空物件可清除進度。最多217項、512個文件勾選；資源 ID、文件 key、步驟索引對照現有 catalog 及已綁定文件覆核，移除資源時須移除其殘留進度。版本字串最多256個 ASCII 字元，僅允許英數及 `-_/.:`；body 上限128 KiB。
+- `DEMO_MODE` 未精確設為 `1` 時，GET／PUT 均回 `503 demo_disabled`，且不建立資料庫。儲存錯誤回 `500 storage_unavailable`，不假裝成功；格式及白名單錯誤回 `400 invalid_input`，不回顯提交內容。
+- 所有行動單回應為 `Cache-Control: no-store`。只允許與請求 Host 相同的 HTTP(S) origin、`localhost`／`127.0.0.1` 的5173／4173開發預覽埠；其他 Origin（含 `null`）回403。無 Origin 的本機 curl 可用。此限制防止任意網站跨域讀寫，不是認證、不能阻止直接客戶端存取。
+
+不要對外公開此展示服務，亦不要在共用帳號輸入真實個資。SQLite 檔及側車檔不應納入 Git；部署或搬移前須明確規劃保存路徑與資料存取權限。
 
 ## 自適應題庫與探索
 

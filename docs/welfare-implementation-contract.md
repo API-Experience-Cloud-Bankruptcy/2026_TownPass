@@ -90,7 +90,7 @@ Question = {id:string, field:string, kind:'single'|'boolean'|'number', title:str
 
 行動單可多選資源，文件僅完整要求相同時合併，保留條件與用途。準備勾選不等於送件。求助內容預覽／可移除個人條件，分享取消與失敗區分，純文字下載／複製以及列印版需可用；PDF 若借瀏覽器另存明確標示「列印／另存 PDF」，不假裝原生檔案輸出已驗證。
 
-sessionStorage 保存本分頁工作階段的答案／進度，偏好使用 localStorage，提供清除與換人確認；不預設長期保存個人答案，也不保證所有 WebView 關閉後一定清除。無帳號必填，不套用 mock userinfo 到本人資格。輸出摘要附完整待確認事項、來源／日期／非核准聲明。
+sessionStorage 保存本分頁工作階段答案；行動單資源與勾選進度透過明確開啟的 Demo API 存入 SQLite，重開可還原。共用虛擬測試者，不宣稱已串接正式台北通登入；資格答案及聊天原句不送資料庫。偏好使用 localStorage，清除／換人仍先確認並同步清空行動單，開新對話保留行動單。不套用 mock userinfo 到本人資格；欄位與授權範圍見 [台北通資料說明](townpass-profile.md)。頂部Bar與底部輸入列固定、內容單獨捲動，返回找資源的續接提示不出現在初始招呼頁。輸出摘要保留完整待確認、來源／日期／非核准聲明。
 
 本次不接 LLM；提供 typed ModelAdapter 接口及 unavailable 實作，不呼叫雲端、不假裝模型已下載。題庫與資格均不依賴 AI。離線殼與快照可行時實作，不把單純 API fallback 稱為完整離線。
 

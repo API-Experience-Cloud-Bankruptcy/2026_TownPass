@@ -64,6 +64,7 @@ def main():
     parser.add_argument('--web-root', type=Path, default=Path('subsidy-web/dist'))
     parser.add_argument('--forms-root', type=Path, default=Path(__file__).resolve().parent.parent / 'backend/data/forms')
     parser.add_argument('--port', type=int, default=5173)
+    parser.add_argument('--demo', action='store_true', help='Enable the shared fictional tester and persistent SQLite action plan')
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('macOS only')
@@ -109,6 +110,12 @@ def main():
         'StandardOutPath': str(logs / 'service.log'),
         'StandardErrorPath': str(logs / 'error.log'),
     }
+    if args.demo:
+        config['EnvironmentVariables'].update({
+            'DEMO_MODE': '1',
+            # Keep progress outside immutable releases and content-addressed runtimes.
+            'PLAN_DB_PATH': str(base / 'data' / 'welfare.sqlite3'),
+        })
     plist.parent.mkdir(parents=True, exist_ok=True)
     if active:
         subprocess.run(['launchctl', 'bootout', target], check=True)

@@ -1,3 +1,4 @@
+mod action_plan;
 mod adaptive_rules;
 mod matcher;
 mod models;
@@ -31,6 +32,7 @@ pub struct AppState {
     version: String,
     questions: Vec<questions::Question>,
     forms_dir: std::path::PathBuf,
+    demo: Option<Arc<action_plan::DemoStore>>,
 }
 
 type Shared = Arc<AppState>;
@@ -46,7 +48,9 @@ fn is_form_file_name(name: &str) -> bool {
     let b = name.as_bytes();
     b.len() == 16
         && &b[12..] == b".pdf"
-        && b[..12].iter().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
+        && b[..12]
+            .iter()
+            .all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
 }
 
 fn load_state() -> Result<AppState, String> {
@@ -58,6 +62,14 @@ fn load_state() -> Result<AppState, String> {
     let mut state = state_from_str(&raw)?;
     if let Some(dir) = std::env::var_os("FORMS_DIR") {
         state.forms_dir = std::path::PathBuf::from(dir);
+    }
+    if std::env::var("DEMO_MODE").as_deref() == Ok("1") {
+        let path = std::env::var_os("PLAN_DB_PATH")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| {
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("var/welfare.sqlite3")
+            });
+        state.demo = Some(Arc::new(action_plan::DemoStore::open(&path)?));
     }
     Ok(state)
 }
@@ -91,6 +103,7 @@ fn state_from_str(raw: &str) -> Result<AppState, String> {
         version,
         questions,
         forms_dir: default_forms_dir(),
+        demo: None,
     })
 }
 
@@ -290,6 +303,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/match", post(match_profile))
         .route("/api/forms/{file}", get(form_file))
         .layer(CorsLayer::permissive())
+        .merge(action_plan::routes())
         .with_state(Arc::new(state))
 }
 

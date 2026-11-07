@@ -1,1 +1,6 @@
 /target
+
+# Local demo account progress (including SQLite sidecars)
+/var/
+*.sqlite3
+*.sqlite3-*
