@@ -258,7 +258,7 @@ onDeactivated(() => {
 const query = ref('');
 const typedAnswers = ref<Record<string, { value: string | number | boolean | undefined; text: string }>>({});
 const typedTarget = ref<{ target: string; text: string } | null>(null);
-const typedNeed = ref<{ situation: string | null; query: string; text: string } | null>(null);
+const typedNeed = ref<{ situation: string | null; query: string; text: string; reply?: string } | null>(null);
 /** at：送出時所在的那一步（home、needs、q:題目 id、results），對話紀錄依此排在那一步的位置。 */
 /** trail／outro：逐題追問完成後留在紀錄裡的問與答，以及最後的整理。 */
 const turns = ref<{ id: number; text: string; reply: string; hidden?: boolean; at: string; trail?: { key: string; q: string; a: string }[]; outro?: string }[]>([]);
@@ -559,7 +559,7 @@ async function applyAnswer(result: Extract<Interpretation, { kind: 'answer' }>, 
   if (id === 'rephrase') { document.getElementById('chat-search')?.focus(); return true; }
   if (id === 'target:self' || id === 'target:other') { const value = id === 'target:self' ? 'self' : 'other'; requestTarget(value); typedTarget.value = { target: value, text }; return true; }
   if (id.startsWith('need:')) { selectNeed(id.slice(5)); typedNeed.value = { situation: state.session.situation, query: state.session.query, text }; return true; }
-  if (id === 'explore') { discoverWithKnownAnswers(); typedNeed.value = { situation: null, query: '', text }; return true; }
+  if (id === 'explore') { startExplore(); typedNeed.value = { situation: null, query: '', text }; return true; }
   if (id === 'results') go('results');
   else if (id === 'needs') go('needs');
   else if (id === 'continue') continueQuestions();
@@ -639,9 +639,9 @@ function executeSearch(id: number, text: string, searchQuery: string) {
     return;
   }
   searchResources(searchQuery);
-  typedNeed.value = { situation: null, query: state.session.query, text };
+  typedNeed.value = { situation: null, query: state.session.query, text, reply: `找到 ${matches.length} 項名稱或內容相關的資源，接著確認${ask.value}的情況；找到相關資源還不代表符合資格。` };
   fallbackCount.value = 0;
-  if (t) t.reply = `找到 ${matches.length} 項名稱或內容相關的資源，接著確認${ask.value}的情況；找到相關資源還不代表符合資格。`;
+  if (t) t.hidden = true;
 }
 async function confirmAction(choiceId?: string) {
   const p = actionProposal.value;
@@ -660,7 +660,8 @@ async function confirmAction(choiceId?: string) {
     const t = turns.value.find(t => t.id === p.turnId);
     if (ok) {
       fallbackCount.value = 0;
-      if (t) t.reply = pendingSwitch.value ? '請先確認是否切換查詢對象。' : `好，已採用「${p.kind === 'number' ? p.label : choice!.label}」。`;
+      if (t && !pendingSwitch.value && ('numberValue' in answer || ('choiceId' in answer && /^(option:|skip$|target:|need:|explore$)/.test(answer.choiceId)))) t.hidden = true;
+      else if (t) t.reply = pendingSwitch.value ? '請先確認是否切換查詢對象。' : `好，已採用「${p.kind === 'number' ? p.label : choice!.label}」。`;
     } else showRecovery(p.turnId, p.text, '目前題目已改變，請依現在這題重新選擇。');
   } finally { applyingInput.value = false; }
 }
@@ -691,10 +692,21 @@ async function onInput() {
   const isYes = plainConfirmation && /^(對|是|是的|沒錯|正確|對的|對繼續|請繼續|確認|好|好的|ok|yes)$/u.test(normalized);
   const isNo = plainConfirmation && /^(不是|不對|否|不要|取消|先不要|不要了|算了|no)$/u.test(normalized);
   query.value = '';
+  const commandRoute = routeInput(text, { ...context.value, question: undefined, choices: [] }, []);
+  if (commandRoute.kind === 'command') {
+    if (commandRoute.command === 'cancel' && followup.value) { dropFollowup(); return; }
+    if (commandRoute.command === 'cancel' && actionProposal.value) { rejectAction(); return; }
+    cancelInput();
+    if (commandRoute.command === 'back') { rewind(currentStep()); back(); }
+    else if (commandRoute.command === 'restart') pendingSwitch.value = 'clear';
+    else if (commandRoute.command === 'help') showRecovery(addInputTurn(text), text, '你可以直接點選項，或輸入選項名稱與需求簡稱；輸入「返回」可回上一步。');
+    else addInputTurn(text, '已取消尚未確認的內容，原本資料仍保留。');
+    return;
+  }
   // 確認與修正永遠先於背景問題、名稱搜尋或模型。
   if (actionProposal.value) {
     const p = actionProposal.value;
-    if (isNo) { rejectAction(); addInputTurn(text, '好，維持原本進度。'); return; }
+    if (isNo) { rejectAction(); return; }
     if (p.kind === 'search' && !state.session.target) {
       const targetContext = { ...context.value, question: undefined, choices: [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }] };
       const selected = matchCurrentChoice(text, targetContext);
@@ -705,19 +717,19 @@ async function onInput() {
     if (isYes) {
       if (p.kind === 'choice' && p.choices.length !== 1) addInputTurn(text, '有幾個可能的選項，請選其中一個。');
       else if (p.kind === 'search' && !state.session.target) addInputTurn(text, '請先選這次要幫自己還是別人找。');
-      else { addInputTurn(text); await confirmAction(); }
+      else { await confirmAction(); }
       return;
     }
     if (p.kind === 'choice') {
       const selected = matchCurrentChoice(text, { ...context.value, question: undefined, choices: p.choices });
-      if (selected?.kind === 'answer' && 'choiceId' in selected.answer) { addInputTurn(text); await confirmAction(selected.answer.choiceId); return; }
+      if (selected?.kind === 'answer' && 'choiceId' in selected.answer) { await confirmAction(selected.answer.choiceId); return; }
       if (selected?.kind === 'confirm_choice' && selected.reason === 'ambiguous' && selected.choices.length === 1
         && p.choices.some(c => c.id === selected.choices[0]!.id)) {
-        addInputTurn(text); await confirmAction(selected.choices[0]!.id); return;
+        await confirmAction(selected.choices[0]!.id); return;
       }
-      // 分類精確字串本身仍會回確認，此處已經在確認中，唯一精確匹配才能採用。
+      // 確認中的完整候選只能唯一匹配，不能將模糊候選直接當成選擇。
       const exact = p.choices.filter(c => normalizeInput(c.label) === normalized);
-      if (plainConfirmation && exact.length === 1) { addInputTurn(text); await confirmAction(exact[0]!.id); return; }
+      if (plainConfirmation && exact.length === 1) { await confirmAction(exact[0]!.id); return; }
     }
   }
   // 逐題追問中：打字只用來回答目前這一題，不猜、不切到別的流程。
@@ -748,10 +760,6 @@ async function onInput() {
   cancelInput();
   const id = addInputTurn(text);
   if (route.kind === 'clarify') { showRecovery(id, text, route.message); return; }
-  // 還沒選需求時，完整打出需求名稱就等於點那個按鈕，不必再問一次「你是指…嗎」。
-  const typedNeedLabel = route.kind === 'confirm_choice' && route.choices.length === 1 && route.choices[0]!.id.startsWith('need:')
-    && normalizeInput(route.choices[0]!.label) === normalized && view.value === 'needs' && !state.session.situation && !state.session.query;
-  if (typedNeedLabel) { await applyAnswer({ kind: 'answer', choiceId: route.choices[0]!.id, evidence: text }, text); const t = turns.value.find(t => t.id === id); if (t) t.hidden = true; return; }
   if (route.kind === 'confirm_choice') { offerChoices(id, text, route.choices, route.reason === 'typo' ? '這句可能有個錯字。' : ''); return; }
   if (route.kind === 'search') {
     const matches = state.catalog ? filterCatalog(state.catalog.items, null, route.query) : [];
@@ -881,6 +889,8 @@ async function onInput() {
 
         <div v-if="past('needs') && isTyped(needKey)" data-flow class="chat-span">
             <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="修改需求" @edit="collapseFlow(() => { rewind('needs'); go('needs'); })" />
+
+            <BotMessage v-if="typedNeed?.reply && typedNeed.query === state.session.query && typedNeed.situation === state.session.situation" :msg-key="`search:${typedNeed.query}:${typedNeed.reply}`" :lines="[{ text: typedNeed.reply }]" />
 
             <!-- 3. 問答：同一題留在原地，後面的訊息收合離開 -->
             <template v-for="q in shownQuestions" :key="q.id">

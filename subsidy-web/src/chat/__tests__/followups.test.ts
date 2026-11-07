@@ -92,3 +92,13 @@ describe('打字回答目前這一題', () => {
     expect(matchFollowupChoice('我想找房租補助', yesNo)).toBeNull();
   });
 });
+
+it.each(['1', '2', '“對”', '‘對’', '對？'])('追問不將裸數字或引述 %s 當確認', text => {
+  const step = planFollowups(input({ target: 'self' }), {}).current!;
+  expect(matchFollowupChoice(text, step)).toBeNull();
+});
+it('法定身分不因包含字詞而採用另一身分', () => {
+  const step = { id: 'fact:household_type', prompt: '確認身分', choices: [{ id: 'yes', label: '已核定家戶身分：中低收入戶' }, { id: 'no', label: '先不填' }] };
+  expect(matchFollowupChoice('低收入戶', step)).toBeNull();
+  expect(matchFollowupChoice('已核定家戶身分：中低收入戶', step)).toBe('yes');
+});

@@ -340,3 +340,13 @@ describe('使用者確認的語意候選條件', () => {
     expect(state.session.seenQuestions).not.toContain('branch');
   });
 });
+
+// 切換搜尋與需求分類使用同一套穩定條件；改答案仍由 startQuestions 明確進入。
+it.each(['self', 'other'] as const)('搜尋切換保留 %s 的已確認條件且不重問', target => {
+  requestTarget(target);
+  state.session.answers = { age: 20, region: '臺北市', is_student: true };
+  searchResources('助學金');
+  expect(state.session.answers).toEqual({ age: 20, region: '臺北市', is_student: true });
+  expect(questions.value.some(q => ['age', 'region', 'is_student'].includes(q.field))).toBe(false);
+  expect(state.view).toBe('results');
+});

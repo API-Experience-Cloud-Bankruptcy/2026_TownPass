@@ -12,7 +12,7 @@ export type InputRoute =
   | { kind: 'search'; query: string }
   | { kind: 'conversation' }
   | { kind: 'clarify'; message: string }
-  | { kind: 'command'; command: 'back' | 'cancel' | 'restart' };
+  | { kind: 'command'; command: 'back' | 'cancel' | 'restart' | 'help' };
 
 /** 比對用字形；不改寫原始 evidence，也不把否定字或數字移除。 */
 export function normalizeInput(input: string): string {
@@ -30,11 +30,21 @@ function confirm(choices: readonly ChatChoice[], reason: 'typo' | 'ambiguous'): 
 }
 
 function select(choice: ChatChoice, input: string, match: 'exact' | 'alias' | 'ordinal'): ChoiceRoute {
-  // 需求切換需要沿用上層的確認流程，不能當作一般答案直接寫入。
-  return choice.id.startsWith('need:') || choice.id === 'needs'
-    ? confirm([choice], 'ambiguous')
-    : { kind: 'answer', answer: { kind: 'answer', choiceId: choice.id, evidence: input }, matchedLabel: choice.label, match };
+  return { kind: 'answer', answer: { kind: 'answer', choiceId: choice.id, evidence: input }, matchedLabel: choice.label, match };
 }
+
+/** 僅限畫面上可選的需求；完整短詞匹配，不從敘述句擷取關鍵字。 */
+export const NEED_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  living: ['生活費', '急難', '低收入'],
+  elder: ['長者', '敬老', '長照', '中高齡'],
+  study: ['就學', '學費', '學雜費', '助學金', '獎學金'],
+  family: ['育兒', '家庭', '生育', '托育', '兒少', '婦女'],
+  health: ['醫療', '健康', '健保', '篩檢', '醫療補助'],
+  disability: ['身障', '身障補助', '輔具'],
+  housing: ['住宅', '租屋', '租金補貼', '購屋', '修繕'],
+  community: ['文化', '社區', '藝文', '競賽', '公益', '環境'],
+  work: ['工作', '失業', '職訓', '職災', '創業'],
+};
 
 /** 僅解析標準的非負整數，拒絕約數、小數、範圍與混合數字。 */
 function integer(text: string): number | null {
@@ -95,7 +105,7 @@ function safeTypoPair(input: string, label: string): boolean {
 /** 只使用當下明列的選項；近似命中一律回傳候選，從不自動作答。 */
 export function matchCurrentChoice(input: string, context: InterpretationContext): ChoiceRoute | null {
   const text = normalizeInput(input);
-  if (!text || /[?？「」『』"'`]/u.test(input)) return null;
+  if (!text || /[?？「」『』“”‘’"'`]/u.test(input)) return null;
   // 數值／序號不可使用會移除標點的 label 正規化，避免 6.5 或 6-5 被讀成 65。
   const numericText = input.normalize('NFKC').trim().replace(/[。!！]$/u, '').trim().replace(/\s+歲$/u, '歲');
   if (/^[\d零〇一二兩三四五六七八九十百]+$/u.test(numericText) && context.question?.kind !== 'number') return null;
@@ -113,6 +123,11 @@ export function matchCurrentChoice(input: string, context: InterpretationContext
     if (skip) return select(skip, input, 'alias');
   }
   if (uncertain.test(text) || question.test(text)) return null;
+
+  const needs = context.choices.filter(choice => choice.id.startsWith('need:')
+    && NEED_ALIASES[choice.id.slice(5)]?.some(alias => normalizeInput(alias) === text));
+  if (needs.length === 1) return select(needs[0]!, input, 'alias');
+  if (needs.length > 1) return confirm(needs, 'ambiguous');
 
   const index = ordinal(numericText);
   if (index !== null) return index > 0 && context.choices[index - 1] ? select(context.choices[index - 1]!, input, 'ordinal') : null;
@@ -170,10 +185,11 @@ function nounQuery(input: string): boolean {
     && !/(?:或|以及|然後|請問|請幫|幫忙|告訴|解釋|忽略)/u.test(input);
 }
 
-const commands: Readonly<Record<string, 'back' | 'cancel' | 'restart'>> = {
+const commands: Readonly<Record<string, 'back' | 'cancel' | 'restart' | 'help'>> = {
   返回: 'back', 上一步: 'back', 回上一步: 'back',
   取消: 'cancel', 取消操作: 'cancel',
   重新開始: 'restart', 重來: 'restart',
+  幫助: 'help', 使用說明: 'help', 找人幫忙: 'help',
 };
 
 /** 純分類，不呼叫模型、搜尋、不改寫 context 或工作階段。上層負責執行與確認。 */

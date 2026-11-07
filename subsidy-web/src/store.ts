@@ -390,6 +390,10 @@ export function selectNeed(id: string): void {
   clearDiscoveryPreferences();
   state.session.situation = id;
   state.session.query = '';
+  startNeedQuestions();
+}
+
+function startNeedQuestions(): void {
   // 換需求不需要重新問已確認的基本資料；「改答案」仍明確從 startQuestions 進入。
   const known = (state.bank?.questions ?? []).filter(q => ['age', 'region', 'is_student', 'household_type'].includes(q.field) && answerOf(state.session.answers, q.field) !== undefined);
   for (const q of known) if (!state.session.seenQuestions.includes(q.id)) state.session.seenQuestions.push(q.id);
@@ -401,7 +405,7 @@ export function searchResources(query: string): void {
   clearDiscoveryPreferences();
   state.session.situation = null;
   state.session.query = query.trim().slice(0, 100);
-  startQuestions();
+  startNeedQuestions();
 }
 
 /** 僅接收使用者逐項確認、已選定主體的穩定欄位；整批驗證後才原子套用。 */

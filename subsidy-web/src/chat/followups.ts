@@ -138,7 +138,7 @@ const ORDINALS: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 
 
 /** 打字回答目前這一題：只接受完整選項、是非、對象別稱或序號；其他一律不猜。 */
 export function matchFollowupChoice(text: string, step: FollowupStep): string | null {
-  if (/[?？「」『』"'`]/u.test(text)) return null;
+  if (/[?？「」『』“”‘’"'`]/u.test(text)) return null;
   const input = normalizeInput(text);
   if (!input) return null;
   const exact = step.choices.filter(c => normalizeInput(c.label) === input);
@@ -147,9 +147,10 @@ export function matchFollowupChoice(text: string, step: FollowupStep): string | 
   if (step.no && NO.test(input)) return step.no;
   const alias = TARGET_ALIASES[input];
   if (alias && step.choices.some(c => c.id === alias)) return alias;
-  const ordinal = /^(?:第|選)?([一二三四五12345])(?:個|項)?$/u.exec(input);
+  const ordinal = /^(?:第|選)([一二三四五12345])(?:個|項)?$/u.exec(input);
   if (ordinal) return step.choices[ORDINALS[ordinal[1]!]! - 1]?.id ?? null;
-  // 選項文字的前段（例如只打「低收入戶」對上「已核定家戶身分：低收入戶」）只有唯一命中才採用。
+  // 法定身分與地點只接受完整選項；其他描述也必須唯一命中。
+  if (step.id === 'fact:household_type' || step.id === 'fact:region') return null;
   const partial = step.choices.filter(c => input.length >= 2 && normalizeInput(c.label).includes(input));
   return partial.length === 1 ? partial[0]!.id : null;
 }
