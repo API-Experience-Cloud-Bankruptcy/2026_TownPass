@@ -4,6 +4,12 @@ body {
   overflow-x: hidden;
 }
 
+/* Pressables without their own focus style otherwise get the thin browser default. */
+:focus-visible {
+  outline: 3px solid #0d6b5e;
+  outline-offset: 2px;
+}
+
 @media print {
   #app-header,
   #help-bar,

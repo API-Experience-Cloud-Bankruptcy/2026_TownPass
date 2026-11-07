@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
@@ -8,6 +8,7 @@ import type { Category } from '@/data/welfare-schema';
 import { useApp } from '@/lib/app-state';
 import { demoAnswers, isDemo } from '@/lib/demo';
 import { interpretSituation, type Interpretation } from '@/lib/intake';
+import { go } from '@/lib/nav';
 import { canListen, listen } from '@/lib/speech';
 
 export default function Home() {
@@ -31,12 +32,12 @@ export default function Home() {
     setCategories([]);
     setAnswers(demoAnswers());
     setChosen([]);
-    router.push('/results');
+    go('/results');
   }
 
   function start(categories: Category[]) {
     setCategories(categories);
-    router.push('/quiz');
+    go('/quiz');
   }
 
   function toggleMic() {
@@ -186,13 +187,13 @@ export default function Home() {
         onPress={() => start([])}
         hint="回答全部問題，看所有類別"
       />
-      <Btn label="福利項目一覽表" icon="≡" align="left" onPress={() => router.push('/list')} />
+      <Btn label="福利項目一覽表" icon="≡" align="left" onPress={() => go('/list')} />
       {chosen.length > 0 ? (
         <Btn
           label={`帶去臨櫃清單（${chosen.length} 項）`}
           icon="✓"
           align="left"
-          onPress={() => router.push('/checklist')}
+          onPress={() => go('/checklist')}
         />
       ) : null}
     </Screen>

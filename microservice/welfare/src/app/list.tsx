@@ -1,10 +1,10 @@
-import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Card, Screen, Section, T } from '@/components/ui-kit';
 import { CATEGORIES, WELFARE_ITEMS } from '@/data';
 import { useApp } from '@/lib/app-state';
+import { go } from '@/lib/nav';
 
 export default function List() {
   const { colors, scale } = useApp();
@@ -48,7 +48,7 @@ export default function List() {
                 key={i.id}
                 role="link"
                 aria-label={`${i.name}：${i.plain}`}
-                onPress={() => router.push(`/item/${i.id}`)}
+                onPress={() => go(`/item/${i.id}`)}
                 style={({ pressed }) => [
                   s.rowItem,
                   idx > 0 && { borderTopWidth: 1, borderColor: colors.border },
