@@ -57,6 +57,8 @@ launchctl kickstart -k gui/$(id -u)/org.townpass.local
 launchctl bootout gui/$(id -u)/org.townpass.local
 ```
 
+網頁更新會沿用內容相同的後端執行檔，優先使用本服務已獲 macOS 防火牆允許的路徑，不再為每次網頁更新複製新執行檔。新後端使用依 SHA-256 固定的 `runtimes/<hash>/townpass-backend`；真正更換後端版本時，仍可能需要在 macOS 提示中允許入站連線。安裝程式不會關閉或修改防火牆。舊 release 若仍提供執行中的後端，不能當作純網頁舊版本直接刪除。
+
 日誌位於 `~/Library/Logs/TownPassLocal/`。iPhone 的 `SUBSIDY_URL` 必須是這台 Mac 的區網位址與 5173 埠；不是 `localhost` 或只綁定 `127.0.0.1` 的預覽網址。Mac 須保持開機、未睡眠且使用者已登入，手機與 Mac 須同網路；IP 更換時需更新 App 建置網址或使用固定區網位址。這是區網測試服務，未配置公開 HTTPS，也不改動系統睡眠設定或防火牆；Mac 關機仍可使用需要另外部署。
 
 ## API
