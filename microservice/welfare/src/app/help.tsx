@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Btn, Card, Screen, T } from '@/components/ui-kit';
 import { useApp } from '@/lib/app-state';
 import { chosenItems } from '@/lib/chosen';
 import { describeProfile } from '@/lib/describe';
+import { call } from '@/lib/townpass';
 
 type Helper = 'family' | 'chief' | 'social' | 'hotline';
 
@@ -97,7 +98,7 @@ export default function Help() {
       {h ? (
         <>
           {helper === 'hotline' ? (
-            <Btn label="撥打 1999" icon="☎" variant="primary" role="link" onPress={() => Linking.openURL('tel:1999')} />
+            <Btn label="撥打 1999" icon="☎" variant="primary" role="link" onPress={() => call('1999')} />
           ) : null}
           <Card>
             <T weight="700">{helper === 'hotline' ? '電話裡可以這樣說' : '要給對方看的內容'}</T>

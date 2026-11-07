@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Linking, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { ApplyButtons, Bullets } from '@/components/item-card';
 import { Btn, Card, Screen, T } from '@/components/ui-kit';
@@ -7,6 +7,7 @@ import { CATEGORY_LABEL, WELFARE_ITEMS } from '@/data';
 import type { WelfareItem } from '@/data/welfare-schema';
 import { useApp } from '@/lib/app-state';
 import { matchItem } from '@/lib/match';
+import { openLink } from '@/lib/townpass';
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -92,7 +93,7 @@ export default function ItemDetail() {
         <T size="small" muted>
           資料查核日期：{item.checkedAt}
         </T>
-        <Btn label="看官方說明" variant="ghost" role="link" icon="↗" align="left" onPress={() => Linking.openURL(item.source)} />
+        <Btn label="看官方說明" variant="ghost" role="link" icon="↗" align="left" onPress={() => openLink(item.source)} />
       </View>
     </Screen>
   );
