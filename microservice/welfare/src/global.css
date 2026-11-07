@@ -1,0 +1,17 @@
+html,
+body {
+  background: #f7f4ee;
+  overflow-x: hidden;
+}
+
+@media print {
+  #app-header,
+  #help-bar,
+  #no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+}
