@@ -44,3 +44,5 @@ example
 
 # local screenshots and scratch output
 tmp/
+.vercel
+.env*

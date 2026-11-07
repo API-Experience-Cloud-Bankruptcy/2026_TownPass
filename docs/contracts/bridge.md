@@ -1,5 +1,7 @@
 # Town Pass bridge contract
 
+Production URL: https://2026-town-pass.vercel.app （部署：`cd microservice/welfare && npx vercel deploy --prod`；Town Pass 建置時以 `--dart-define=WELFARE_URL=https://2026-town-pass.vercel.app` 指定）
+
 The microservice page talks to Town Pass through the WebView message listener registered in `lib/util/web_message_handler/tp_web_message_listener.dart` (JS object `flutterObject`).
 
 ## Sending
