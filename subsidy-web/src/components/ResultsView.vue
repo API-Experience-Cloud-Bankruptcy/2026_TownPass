@@ -115,7 +115,7 @@ const exploring = computed(() => !state.session.situation && !state.session.quer
     </div>
 
     <button v-if="planItems.length" type="button" class="btn btn--block" @click="tab('plan')">
-      看行動單（{{ planItems.length }} 項）
+      {{ state.session.target === 'other' ? '製作 A4 檢核表' : '看行動單' }}（{{ planItems.length }} 項）
     </button>
   </div>
 </template>

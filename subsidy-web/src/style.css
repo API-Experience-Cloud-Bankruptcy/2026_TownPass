@@ -780,3 +780,36 @@ legend {
   font-size: 1rem;
   font-weight: 600;
 }
+
+/* 家人檢核表：可讀全文與實際 PDF 分開呈現，小螢幕不壓縮紙本字級。 */
+.checklist-paper {
+  padding: 20px 4px;
+  display: grid;
+  gap: 24px;
+  white-space: pre-wrap;
+}
+.checklist-paper__head,
+.checklist-paper__section {
+  display: grid;
+  gap: 12px;
+}
+.checklist-paper__section {
+  border-top: 1px solid var(--line-strong);
+  padding-top: 16px;
+}
+.checklist-paper a { color: var(--accent); text-underline-offset: 3px; }
+.paper-check { display: flex; align-items: flex-start; gap: 12px; }
+.paper-check__box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  margin-top: 4px;
+  border: 1px solid currentColor;
+  text-align: center;
+}
+.paper-notes { min-height: 72px; border-bottom: 1px solid var(--line); }
+.pdf-preview { width: 100%; height: 65vh; min-height: 320px; border: 1px solid var(--line); }
+@media print {
+  .checklist-view { display: none; }
+}
