@@ -857,7 +857,7 @@ legend {
   font-size: var(--fs-body);
 }
 .avatar .logo {
-  width: 86%;
+  width: 100%;
   color: var(--logo-ink);
 }
 /* 頁首的福利連：不用圓底，Logo 直接放大。 */
@@ -865,8 +865,8 @@ legend {
   flex: none;
   display: grid;
   place-items: center;
-  width: 60px;
-  height: 40px;
+  width: 54px;
+  height: 36px;
   color: var(--logo-ink);
 }
 .brand__logo .logo {
