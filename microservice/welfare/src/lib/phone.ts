@@ -5,9 +5,14 @@ function phoneParts(phone: string) {
   return { first, ext };
 }
 
-export function telHref(phone: string): string {
+/** Digits to dial, with `,ext` for an extension, e.g. 「1999,1609」. */
+export function dialNumber(phone: string): string {
   const { first, ext } = phoneParts(phone);
-  return `tel:${first.replace(/-/g, '')}${ext ? `,${ext}` : ''}`;
+  return `${first.replace(/-/g, '')}${ext ? `,${ext}` : ''}`;
+}
+
+export function telHref(phone: string): string {
+  return `tel:${dialNumber(phone)}`;
 }
 
 export function phoneLabel(phone: string): string {
