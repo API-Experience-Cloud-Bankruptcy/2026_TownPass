@@ -8,8 +8,16 @@
  *   陰影  tp_card.dart（0 4 12 #0000000A）
  *
  * 第二層語意 token（--bg、--accent、--fs-* …）：元件只用這一層。
- * 對比度（白底）：primary-500 僅 2.4:1、secondary-500 僅 1.8:1，不可當文字或白字底色；
- * 文字／主要按鈕用 primary-700（5.9:1），黃色只當底色或裝飾，上面用深色字。
+ *
+ * 配色依「2026 城市通入門指引」色票：主色 #5AB4C5 青藍、輔色 #F5BA4B 暖黃、底 #F7FAFA、字 #112629。
+ * 原則：大面積用淺青（50–200）與白，主色 500 當裝飾與進度，黃色標「進行中／提醒」。
+ * 不再用 primary-700 當大塊填色（看起來像墨綠，和城市通的亮青不搭）。
+ *
+ * 對比度（白底）：primary-500 2.4:1、secondary-500 1.8:1，不可當文字或白字底色。
+ *   文字、連結       primary-700（5.9:1）
+ *   主要按鈕填色     primary-600（白字 3.8:1，按鈕字一律 600 粗體 16px 以上）
+ *   完成狀態         primary-100 底＋primary-700 字（5.2:1）
+ *   進行中狀態       secondary-100 底＋secondary-800 字（6.9:1）
  */
 :root {
   /* ── Primary 主色 ── */
@@ -123,11 +131,28 @@
   --line-input: var(--tp-grayscale-500); /* 輸入框邊框需 ≥3:1（3.7:1） */
 
   /* 品牌／互動 */
-  --brand: var(--tp-primary-500);       /* 只當裝飾、圖示、大面積色塊 */
-  --accent: var(--tp-primary-700);      /* 文字連結、主要按鈕底色 */
-  --accent-press: var(--tp-primary-800);
+  --brand: var(--tp-primary-500);       /* 只當裝飾、圖示、進度、分頁底線 */
+  --brand-soft: var(--tp-primary-100);
+  --brand-line: var(--tp-primary-200);
+  --accent: var(--tp-primary-700);      /* 只當文字：連結、次要按鈕字、目前項目 */
   --accent-soft: var(--tp-primary-50);  /* 次要按鈕按下、選取列底色 */
+  --accent-fill: var(--tp-primary-600); /* 填色：主要按鈕、送出、目前步驟 */
+  --accent-press: var(--tp-primary-700);
+  --accent-shadow: 0 2px 8px rgb(70 141 155 / 28%);
   --on-accent: var(--tp-white);
+
+  /* 進度狀態 */
+  --done-bg: var(--tp-primary-100);
+  --done-line: var(--tp-primary-300);
+  --done-ink: var(--tp-primary-700);
+  --doing-bg: var(--tp-secondary-100);
+  --doing-line: var(--tp-secondary-400);
+  --doing-ink: var(--tp-secondary-800);
+  --doing-mark: var(--tp-secondary-500);
+  --waiting-bg: var(--tp-orange-50);
+  --waiting-ink: var(--tp-orange-700);
+  --progress: var(--tp-primary-500);
+  --progress-track: var(--tp-primary-50);
 
   /* 輔色：提醒、重點標記（黃底配深字） */
   --highlight: var(--tp-secondary-500);
@@ -175,11 +200,13 @@
   --shadow-sheet: var(--tp-shadow-sheet);
   --touch: var(--tp-touch-min);
 
-  /* 對話介面 */
-  --chat-bg: var(--tp-grayscale-50);
+  /* 對話介面：底色取自入門指引簡報的 #F7FAFA（帶一點青的白） */
+  --chat-bg: #f7fafa;
   --bubble-bot: var(--tp-white);
-  --bubble-user: var(--tp-primary-700);
-  --on-bubble-user: var(--tp-white);
+  --bubble-user: var(--tp-primary-100);
+  --on-bubble-user: var(--tp-primary-900);
+  --bubble-user-hint: rgb(255 255 255 / 70%);
+  --hero-bg: linear-gradient(160deg, var(--tp-primary-50) 0%, var(--tp-white) 70%);
   --avatar-bg: transparent;
   --on-avatar: var(--tp-white);
   /* 福利連 Logo 的筆色＝城市通主色；index.html 開場畫面寫死同一色值 */
@@ -205,8 +232,27 @@
   --line-strong: #000000;
   --line-input: #000000;
   --accent: #003c47;
+  --accent-fill: #003c47;
   --accent-press: #00262e;
+  --accent-shadow: none;
   --accent-soft: #ffffff;
+  --brand: #003c47;
+  --brand-soft: #ffffff;
+  --brand-line: #000000;
+  --doing-mark: #000000;
+  --done-bg: #ffffff;
+  --done-line: #000000;
+  --done-ink: #000000;
+  --doing-bg: #ffffff;
+  --doing-line: #000000;
+  --doing-ink: #000000;
+  --waiting-bg: #ffffff;
+  --waiting-ink: #000000;
+  --progress: #003c47;
+  --progress-track: #ffffff;
+  --on-bubble-user: #ffffff;
+  --bubble-user-hint: rgb(255 255 255 / 18%);
+  --hero-bg: #ffffff;
   --raised: #ffffff;
   --surface-brand: #ffffff;
   --surface-highlight: #ffffff;

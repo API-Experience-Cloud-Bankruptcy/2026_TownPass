@@ -9,6 +9,8 @@
   color: var(--text);
   background: var(--bg-page);
   -webkit-text-size-adjust: 100%;
+  /* 關掉 WebView 點擊時的系統灰黑色高亮框，點擊回饋交給各元件的 :active／:focus-visible */
+  -webkit-tap-highlight-color: transparent;
   color-scheme: light;
 }
 
@@ -21,6 +23,7 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -77,7 +80,7 @@ li + li {
   top: -100px;
   z-index: 100;
   padding: 12px 16px;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--on-accent);
   border-radius: var(--radius);
 }
@@ -131,9 +134,10 @@ li + li {
   grid-template-columns: repeat(3, 1fr);
 }
 .tabs__item {
+  position: relative;
   min-height: var(--touch);
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   background: none;
   font: inherit;
   font-weight: var(--fw-medium);
@@ -143,11 +147,21 @@ li + li {
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 .tabs__item[aria-current='page'] {
-  color: var(--text);
-  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: var(--fw-bold);
+  border-bottom-color: var(--brand);
 }
 .tabs__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4rem;
   margin-left: 4px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-soft);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  line-height: 1.5;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
 }
@@ -276,13 +290,15 @@ li + li {
   flex: none;
 }
 .dot--on {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
   color: var(--on-accent);
+  box-shadow: 0 0 0 3px var(--brand-soft);
 }
 .dot--done {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--done-line);
+  background: var(--done-bg);
+  color: var(--done-ink);
 }
 
 /* 按鈕：觸控目標至少 48px */
@@ -310,12 +326,14 @@ li + li {
   background: var(--accent-soft);
 }
 .btn--primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
   color: var(--on-accent);
+  box-shadow: var(--accent-shadow);
 }
 .btn--primary:active {
   background: var(--accent-press);
+  border-color: var(--accent-press);
 }
 .btn--text {
   border-color: transparent;
@@ -334,6 +352,7 @@ li + li {
   background: var(--disabled-bg);
   border-color: var(--disabled-bg);
   color: var(--disabled-text);
+  box-shadow: none;
   cursor: not-allowed;
 }
 .actions {
@@ -432,6 +451,15 @@ li + li {
   background: var(--bg);
   color: var(--text);
 }
+.input:focus {
+  border-color: var(--accent-fill);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+  outline: none;
+}
+.input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
 .input[aria-invalid='true'] {
   border-color: var(--danger);
 }
@@ -448,7 +476,7 @@ li + li {
   width: 24px;
   height: 24px;
   margin: 2px 0 0;
-  accent-color: var(--accent);
+  accent-color: var(--accent-fill);
 }
 .check__body {
   display: grid;
@@ -578,6 +606,16 @@ legend {
   color: var(--accent);
   font-weight: var(--fw-medium);
   text-underline-offset: 3px;
+}
+.inline-link {
+  color: var(--accent);
+  font-weight: var(--fw-medium);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+  /* 行內連結維持在文字行內；上下加大點擊範圍但不推開排版 */
+  padding: 10px 0;
+  margin: -10px 0;
 }
 .ext__fallback {
   font-size: var(--fs-small);
@@ -1047,7 +1085,7 @@ legend {
 }
 .bubble--edit:active {
   transform: scale(0.98);
-  filter: brightness(0.9);
+  filter: brightness(0.96);
 }
 .bubble__hint {
   display: inline-flex;
@@ -1056,7 +1094,8 @@ legend {
   margin-top: 2px;
   padding: 2px 10px;
   border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 0.18);
+  background: var(--bubble-user-hint);
+  color: var(--accent);
   font-size: var(--fs-small);
   font-weight: var(--fw-bold);
 }
@@ -1152,6 +1191,7 @@ legend {
   min-height: 64px;
   padding: var(--space-3);
   border: 1px solid var(--line);
+  border-left: 4px solid var(--brand-line);
   border-radius: var(--radius);
   background: var(--bg);
 }
@@ -1237,9 +1277,10 @@ legend {
   font-size: var(--fs-caption);
 }
 .reply--primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
   color: var(--on-accent);
+  box-shadow: var(--accent-shadow);
 }
 .reply--primary .reply__sub {
   color: var(--on-accent);
@@ -1247,6 +1288,7 @@ legend {
 }
 .reply--primary:active {
   background: var(--accent-press);
+  border-color: var(--accent-press);
 }
 .reply--center {
   text-align: center;
@@ -1374,6 +1416,15 @@ li.wheel__item + li.wheel__item {
   color: var(--text);
   font: inherit;
 }
+.composer__input:focus {
+  border-color: var(--accent-fill);
+  box-shadow: 0 0 0 3px var(--brand-soft), var(--shadow-card);
+  outline: none;
+}
+.composer__input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
 .composer__input::placeholder {
   color: var(--muted);
 }
@@ -1385,12 +1436,13 @@ li.wheel__item + li.wheel__item {
   height: var(--touch);
   border: 0;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: var(--shadow-card);
+  background: var(--accent-fill);
+  box-shadow: var(--accent-shadow);
   color: var(--on-accent);
   cursor: pointer;
 }
 .composer__send:disabled {
+  box-shadow: var(--shadow-card);
   background: var(--disabled-bg);
   color: var(--disabled-text);
   cursor: not-allowed;
@@ -1429,6 +1481,7 @@ li.wheel__item + li.wheel__item {
 .app-main--page .card--hero {
   gap: var(--space-2);
   padding: var(--space-5) var(--space-4);
+  background: var(--hero-bg);
 }
 .app-main--page > .muted,
 .app-main--page > .status-line {
@@ -1470,9 +1523,9 @@ li.wheel__item + li.wheel__item {
   border-bottom: 0;
 }
 .app-main--page .next__head .dot {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--on-avatar);
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 /* 卡片裡的清單列 */
 .app-main--page .card .rows {
@@ -1509,7 +1562,10 @@ li.wheel__item + li.wheel__item {
   background: var(--bg);
 }
 .app-main--page .dot--on {
-  background: var(--accent);
+  background: var(--accent-fill);
+}
+.app-main--page .dot--done {
+  background: var(--done-bg);
 }
 
 /* 回到對話 */
@@ -1589,8 +1645,22 @@ li.wheel__item + li.wheel__item {
 .plan-card:active {
   background: var(--accent-soft);
 }
-.plan-card--doing {
-  border-color: var(--reply-line);
+/* 左側色條標出狀態：進行中黃、完成青、其餘不畫 */
+.plan-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: transparent;
+}
+.plan-card--doing::before {
+  background: var(--doing-mark);
+}
+.plan-card--done::before {
+  background: var(--brand);
 }
 .plan-card__top {
   display: flex;
@@ -1618,18 +1688,18 @@ li.wheel__item + li.wheel__item {
 }
 .plan-card--doing .plan-card__badge,
 .task-head__badge--doing {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--doing-bg);
+  color: var(--doing-ink);
 }
 .plan-card--done .plan-card__badge,
 .task-head__badge--done {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--done-bg);
+  color: var(--done-ink);
 }
 .plan-card--no-steps .plan-card__badge,
 .task-head__badge--no-steps {
-  background: var(--highlight-soft);
-  color: var(--on-highlight);
+  background: var(--waiting-bg);
+  color: var(--waiting-ink);
 }
 .task-head__badge {
   justify-self: start;
@@ -1673,7 +1743,7 @@ li.wheel__item + li.wheel__item {
   display: block;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--line);
+  background: var(--progress-track);
   overflow: hidden;
 }
 .progress--lg {
@@ -1683,7 +1753,7 @@ li.wheel__item + li.wheel__item {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
+  background: var(--progress);
   transition: width var(--dur) var(--ease);
 }
 
@@ -1715,7 +1785,7 @@ li.wheel__item + li.wheel__item {
   background: var(--line-strong);
 }
 .task-step.is-done:not(:last-child)::before {
-  background: var(--accent);
+  background: var(--done-line);
 }
 .task-step__mark {
   display: grid;
@@ -1733,13 +1803,15 @@ li.wheel__item + li.wheel__item {
   transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 .task-step.is-current .task-step__mark {
-  border-color: var(--accent);
+  border-color: var(--accent-fill);
+  background: var(--accent-soft);
   color: var(--accent);
+  box-shadow: 0 0 0 4px var(--brand-soft);
 }
 .task-step.is-done .task-step__mark {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--on-accent);
+  border-color: var(--done-line);
+  background: var(--done-bg);
+  color: var(--done-ink);
 }
 .task-step__body {
   display: grid;
@@ -1789,7 +1861,8 @@ li.wheel__item + li.wheel__item {
   justify-items: start;
   padding: var(--space-4);
   border-radius: var(--radius);
-  background: var(--accent-soft);
+  background: var(--hero-bg);
+  border: 1px solid var(--brand-line);
 }
 .task-done__title {
   font-weight: var(--fw-bold);
