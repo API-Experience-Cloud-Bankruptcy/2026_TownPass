@@ -80,6 +80,19 @@ fn canonical(value: &Value) -> String {
     }
 }
 pub fn source_fingerprint(value: &Value) -> String {
+    // `application.form_fields` is derived form-layout metadata (PDF field boxes). It never
+    // affects eligibility, so it must not invalidate eligibility reviews bound to the record.
+    let stripped;
+    let value = if value["application"].get("form_fields").is_some() {
+        let mut v = value.clone();
+        if let Some(app) = v["application"].as_object_mut() {
+            app.remove("form_fields");
+        }
+        stripped = v;
+        &stripped
+    } else {
+        value
+    };
     let hash = canonical(value)
         .bytes()
         .fold(0xcbf29ce484222325_u64, |h, b| {

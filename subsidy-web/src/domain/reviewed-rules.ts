@@ -41,7 +41,17 @@ export function canonical(value: unknown): string {
   }
   return JSON.stringify(value) ?? 'null';
 }
-export const sourceFingerprint = (item: unknown): string => fnv1a64(canonical(item));
+// application.form_fields 是衍生的表單版面資訊（PDF 欄位座標），不影響資格判斷，
+// 不納入指紋，否則新增／更新欄位會讓已審核的資格規則失效。與後端 source_fingerprint 一致。
+const withoutFormFields = (item: unknown): unknown => {
+  const app = (item as { application?: Record<string, unknown> } | null)?.application;
+  if (app && typeof app === 'object' && 'form_fields' in app) {
+    const { form_fields: _omit, ...rest } = app;
+    return { ...(item as object), application: rest };
+  }
+  return item;
+};
+export const sourceFingerprint = (item: unknown): string => fnv1a64(canonical(withoutFormFields(item)));
 export const REVIEW_VERSION = `${manifest.version}-${sourceFingerprint(manifest)}`;
 export const reviewedRecords = manifest.records as ReviewedRecord[];
 const reviews = new Map(reviewedRecords.map(r => [r.id, r]));

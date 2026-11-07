@@ -264,6 +264,154 @@
                   ]
                 }
               }
+            },
+            "form_fields": {
+              "type": "object",
+              "description": "Analysis of the downloadable application form (application.urls.form). Optional; absent when the record has no form URL.",
+              "required": [
+                "source_url",
+                "status",
+                "fields"
+              ],
+              "properties": {
+                "source_url": {
+                  "type": "string"
+                },
+                "content_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Detected from file magic bytes: pdf | zip(odt/ods) | html | unknown | error"
+                },
+                "http_status": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "analyzed",
+                    "no_fillable_form",
+                    "scanned_image_pdf",
+                    "odf_not_analyzed",
+                    "web_page_not_pdf",
+                    "download_failed"
+                  ]
+                },
+                "local_file": {
+                  "type": "string",
+                  "description": "PDF path relative to the data directory"
+                },
+                "coordinate_system": {
+                  "type": "string"
+                },
+                "pages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "page",
+                      "width",
+                      "height"
+                    ],
+                    "properties": {
+                      "page": {
+                        "type": "integer"
+                      },
+                      "width": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "type",
+                      "label",
+                      "key",
+                      "prefill",
+                      "box"
+                    ],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "text",
+                          "date",
+                          "checkbox",
+                          "signature"
+                        ]
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "key": {
+                        "type": "string"
+                      },
+                      "prefill": {
+                        "type": "boolean",
+                        "description": "true when the value can be filled from the user's profile"
+                      },
+                      "prefill_key": {
+                        "type": "string",
+                        "enum": [
+                          "name",
+                          "national_id",
+                          "gender",
+                          "phone",
+                          "mobile",
+                          "address"
+                        ]
+                      },
+                      "variant": {
+                        "type": "string"
+                      },
+                      "options": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "box": {
+                        "type": "object",
+                        "required": [
+                          "page",
+                          "x",
+                          "y",
+                          "w",
+                          "h"
+                        ],
+                        "properties": {
+                          "page": {
+                            "type": "integer"
+                          },
+                          "x": {
+                            "type": "number"
+                          },
+                          "y": {
+                            "type": "number"
+                          },
+                          "w": {
+                            "type": "number"
+                          },
+                          "h": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         },

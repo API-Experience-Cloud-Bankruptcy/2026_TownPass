@@ -114,6 +114,8 @@ pub struct Application {
     pub deadline: Value,
     #[serde(default)]
     pub urls: Value,
+    #[serde(default, skip_serializing_if = "Value::is_null")]
+    pub form_fields: Value,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
