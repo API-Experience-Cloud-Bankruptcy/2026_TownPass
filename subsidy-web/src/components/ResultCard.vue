@@ -20,7 +20,7 @@ const added = computed(() => state.session.target === 'self' && inPlan(props.ite
     <span class="row__main">
       <span class="row__title">{{ item.name }}</span>
       <span v-if="sub" class="row__sub">{{ sub }}</span>
-      <span v-if="plain" class="row__sub">白話導讀：{{ plain.support }}</span>
+      <span v-if="plain" class="row__sub">{{ plain.summary }}</span>
       <span v-else-if="item.benefit.raw" class="row__sub">內容節錄：{{ sourceExcerpt(item.benefit.raw, 72) }}</span>
       <span v-for="f in flags" :key="f" class="row__flag">{{ f }}</span>
       <span v-if="added" class="row__mark">已在行動單</span>

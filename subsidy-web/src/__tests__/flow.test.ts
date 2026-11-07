@@ -8,7 +8,7 @@ import {
   startQuestions, state, tab,
   pendingResume, continueConversation, newConversation, conversationEpoch,
   openDetail, togglePlan, toggleStep, planResults, detailAnswers, clearAllData,
-  openPlanItem, removeFromPlan, resetSteps,
+  openPlanItem, openStepHelp, removeFromPlan, resetSteps,
 } from '../store';
 
 beforeEach(() => {
@@ -66,6 +66,25 @@ describe('逐頁找資源', () => {
     openDetail('housing'); expect(state.view).toBe('detail'); expect(state.detailTarget).toBe('self');
     openPlanItem('housing'); expect(state.view).toBe('planItem'); expect(state.history).toEqual(['plan']);
     back(); expect(state.view).toBe('plan');
+  });
+  it('步驟協助獨立換頁，返回原步驟且不修改進度，切分頁不殘留返回焦點', () => {
+    state.personalPlan.planIds = ['housing'];
+    tab('plan'); openPlanItem('housing');
+    const before = JSON.stringify(state.personalPlan);
+    openStepHelp('housing', '準備文件');
+    expect(state.view).toBe('stepHelp');
+    expect(state.history).toEqual(['plan', 'planItem']);
+    expect(state.helpStep).toBe('準備文件');
+    back();
+    expect(state.view).toBe('planItem');
+    expect(state.helpReturnId).toBe('step-help-housing-0');
+    expect(JSON.stringify(state.personalPlan)).toBe(before);
+    tab('browse');
+    expect(state.helpReturnId).toBeNull();
+    openStepHelp('study', '準備文件');
+    expect(state.view).toBe('browse');
+    openStepHelp('housing', '已失效的步驟');
+    expect(state.view).toBe('browse');
   });
   it('沒有返回紀錄時從單張行動單返回列表；未加入的不能打開', () => {
     openPlanItem('housing'); expect(state.view).toBe('home');

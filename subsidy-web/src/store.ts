@@ -1,6 +1,8 @@
 // 全域狀態：資料、題庫、本機答案與資料庫行動單。資格答案只在本機評估與保存。
 
 import { computed, reactive, ref, watch } from 'vue';
+import { buildRoute } from './domain/route';
+import { completedStepDocumentKeys } from './domain/step-documents';
 import { loadCatalog } from './domain/catalog';
 import { loadAppData, migrateSession } from './domain/bootstrap';
 import type { ConditionEntry } from './domain/export';
@@ -31,9 +33,9 @@ import { validFactValue, type CandidateFact } from './chat/interpretation';
 import { ActionPlanSync, savedPlan } from './domain/action-plan';
 import { forgetTyped, resetTyped } from './chat/typing';
 
-export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'planItem' | 'browse';
-/** 本人行動單的頁面：列表與單張行動單。 */
-export const PLAN_VIEWS: View[] = ['plan', 'planItem'];
+export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'planItem' | 'stepHelp' | 'browse';
+/** 本人行動單的頁面：列表、單張行動單與步驟協助。 */
+export const PLAN_VIEWS: View[] = ['plan', 'planItem', 'stepHelp'];
 
 interface State {
   view: View;
@@ -41,6 +43,8 @@ interface State {
   detailId: string | null;
   /** 正在看的單張行動單（補助 id） */
   planItemId: string | null;
+  helpStep: string | null;
+  helpReturnId: string | null;
   catalog: LoadedCatalog | null;
   bank: QuestionBank | null;
   loading: boolean;
@@ -62,6 +66,8 @@ export const state = reactive<State>({
   history: [],
   detailId: null,
   planItemId: null,
+  helpStep: null,
+  helpReturnId: null,
   catalog: null,
   bank: null,
   loading: true,
@@ -232,15 +238,21 @@ export function go(view: View): void {
 }
 
 export function back(): void {
+  if (state.view === 'stepHelp' && state.planItemId && state.helpStep !== null) {
+    const item = itemsById.value.get(state.planItemId);
+    const index = item ? buildRoute(item).steps.indexOf(state.helpStep) : -1;
+    state.helpReturnId = item ? `step-help-${state.planItemId}-${index}` : null;
+  }
   if (state.view === 'questions' && state.qIndex > 0) {
     state.qIndex -= 1;
     return;
   }
-  state.view = state.history.pop() ?? (state.view === 'planItem' ? 'plan' : 'home');
+  state.view = state.history.pop() ?? (PLAN_VIEWS.includes(state.view) ? 'plan' : 'home');
 }
 
 /** 直接切換主要分頁，清掉返回紀錄。 */
 export function tab(view: View): void {
+  state.helpReturnId = null;
   if (PLAN_VIEWS.includes(view) && state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
   // 回到進行中的對話：先切回原本那一步，畫面進場後再問要不要接著（見 App.vue）。
   const resume = view === 'home' && !CHAT_VIEWS.includes(state.view) && lastChatView !== 'home';
@@ -524,6 +536,18 @@ export function openPlanItem(id: string): void {
   go('planItem');
 }
 
+/** 只開啟目前行動單中仍存在的步驟，不更動完成紀錄。 */
+export function openStepHelp(id: string, step: string): void {
+  const item = itemsById.value.get(id);
+  if (!inPlan(id) || !item) return;
+  const steps = buildRoute(item).steps;
+  if (!steps.includes(step) && !(step === '' && steps.length === 0)) return;
+  state.planItemId = id;
+  state.helpStep = step;
+  state.helpReturnId = null;
+  go('stepHelp');
+}
+
 /** 從單張行動單移除後回到列表。 */
 export function removeFromPlan(id: string): void {
   if (inPlan(id)) togglePlan(id);
@@ -553,6 +577,16 @@ export function toggleStep(id: string, index: number): void {
   if (!inPlan(id)) return;
   const done = new Set(state.personalPlan.stepDone[id] ?? []);
   if (done.has(index)) done.delete(index);
-  else done.add(index);
+  else {
+    done.add(index);
+    const item = itemsById.value.get(id);
+    if (item) {
+      const keys = completedStepDocumentKeys(item, index, state.personalPlan.answers);
+      state.personalPlan.docChecks = {
+        ...state.personalPlan.docChecks,
+        ...Object.fromEntries(keys.map(key => [key, true])),
+      };
+    }
+  }
   state.personalPlan.stepDone = { ...state.personalPlan.stepDone, [id]: [...done].sort((a, b) => a - b) };
 }

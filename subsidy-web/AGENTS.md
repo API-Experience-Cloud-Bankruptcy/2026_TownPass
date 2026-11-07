@@ -263,14 +263,14 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 行動單持久化：`domain/action-plan.ts` 透過 `/api/personal-action-plan` 讀寫 SQLite 的 `personal_action_plans`，本人行動單狀態為 `state.personalPlan`，與查詢 `state.session` 分開，舊 `/api/action-plan` 及資料表保留相容，僅保存資源與準備進度，不傳資格答案／聊天原句。後端須明確啟用 `DEMO_MODE=1`；App、瀏覽器與 DB 共用 `assets/mock_data/account.json` 的虛擬測試者，非正式台北通登入。資料欄位與限制見 `../docs/townpass-profile.md`。保存狀態以後端回覆為準，revision 衝突不得靜默覆寫。`../scripts/install_macos_service.py --demo` 將 DB 放在 release 以外的持久目錄。
 
-行動單畫面：`PlanView.vue` 只列方框，一張行動單＝一筆補助，依進行中／還沒開始／待問窗口／已完成排序，底部可匯出全部。點進去是 `PlanItemView.vue`（view `planItem`、`state.planItemId`）：各自的辦理步驟（逐步完成、可取消、焦點移到下一步）、該筆文件勾選、去哪裡辦、申請表、單張匯出與移除；「看補助詳細內容」才開 `DetailView`，兩頁互相返回不疊層。進度計算在 `domain/plan-progress.ts`。詳情頁的步驟是唯讀；步驟進度只記在本人行動單，移除行動單會一併清除該筆步驟進度。
+行動單畫面：`PlanView.vue` 只列方框，一張行動單＝一筆補助，依進行中／還沒開始／待問窗口／已完成排序，底部可匯出全部。點進去是 `PlanItemView.vue`（view `planItem`、`state.planItemId`）：各自的辦理步驟（逐步完成、可取消、焦點移到下一步）、該筆文件勾選、去哪裡辦、申請表、單張匯出與移除；「看補助詳細內容」才開 `DetailView`，兩頁互相返回不疊層。進度計算在 `domain/plan-progress.ts`。 步驟完成後的文件同步由 `domain/step-documents.ts` 讀取 `content/step-document-completion.json`：每筆方案、每步分別指定文件索引及原名，並綁定來源指紋；不可直接用協助頁相關文件或關鍵字推定。資料變更須逐筆重核對應，未確認的條件分支保留手動勾選。只有步驟由未完成變完成時同步，文件操作與步驟取消／重設皆不反向連動。詳情頁的步驟是唯讀；步驟進度只記在本人行動單，移除行動單會一併清除該筆步驟進度。
 
 
 連結處理：App 的 WebView 不會自己處理 `target="_blank"`、`tel:`、`mailto:`，所以 `main.ts` 安裝 `townpass/links.ts` 的全域點擊攔截（只在城市通內生效）。外部網頁走 `open_link`，電話走 `phone_call`，其他協定走 `launch_map`。同頁錨點、`download`、blob 交還給 WebView。新增連結直接寫 `<a href>` 即可，不要自己呼叫 `postMessage`。受理窗口與步驟原文經 `LinkedText.vue`（`domain/channel-text.ts`）把網址、電話變成可點連結，原文不改寫。App 內不顯示 blob 的「下載／開啟 PDF」（WKWebView 無法使用），改用「儲存／分享 PDF」。Flutter 端 `tp_web_view.dart` 也處理新視窗、非網頁協定與檔案下載（交給系統瀏覽器）；改完要重新建置 App。地圖依競賽規則只能用開源方案，目前不提供。
 
 頂部品牌／分頁與底部對話輸入列不參與內容捲動；對話在 `.chat__log` 捲動，一般頁在 `.app-main` 捲動。返回找資源時提供續接選擇，初始招呼頁除外；開新對話保留行動單，換人只清除查詢；清除全部才清除本人行動單。
 
-白話導讀：`src/content/plain-language-*.json` 逐筆整理誰可先了解、給付、第一步與注意事項，與官方原文分開顯示，詳情、清單及匯出共用。`domain/plain-language.ts` 依來源指紋防止資料更新後誤用舊導讀；新增或更新資料須逐筆回讀並更新導讀與指紋，不可只刷新指紋繞過檢查。導讀不參與資格判斷。
+白話導讀：`src/content/plain-language-*.json` 逐筆整理誰可先了解、給付、第一步與注意事項，與官方原文分開顯示。總覽及結果卡只顯示逐筆客製的 `summary`（最多 60 字，說明方案內容與幫助）；`support` 詳細給付、對象、第一步及注意事項留在詳情與匯出，不可用字串截斷代替摘要。`domain/plain-language.ts` 依來源指紋防止資料更新後誤用舊導讀；新增或更新資料須逐筆回讀並更新導讀與指紋，不可只刷新指紋繞過檢查。導讀不參與資格判斷。
 
 UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊查詢答案，保留獨立的本人行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。
 

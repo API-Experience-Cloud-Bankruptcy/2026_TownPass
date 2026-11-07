@@ -3,6 +3,7 @@ import { createSSRApp } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import StepHelp from '../../components/StepHelp.vue';
 import { buildStepHelp } from '../step-help';
+import { stepGuideFor, stepGuides } from '../step-guide';
 import { buildRoute } from '../route';
 import { loadSnapshot } from '../catalog';
 import { makeSubsidy } from './fixtures';
@@ -55,8 +56,54 @@ describe('目前步驟的處理協助', () => {
     const item = makeSubsidy();
     const html = await renderToString(createSSRApp(StepHelp, { item, step: '準備文件' }));
     expect(html).toContain('這一步做不到');
-    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('開啟步驟協助頁');
+    expect(html).not.toContain('aria-expanded');
     expect(html).not.toContain('這一步卡在哪裡');
     expect(await renderToString(createSSRApp(StepHelp, { item, step: '不存在' }))).not.toContain('這一步做不到');
   });
+  it('每個收錄方案的專屬教學對應所有原文步驟，文件只能引用該方案資料', async () => {
+    const { items } = await loadSnapshot();
+    expect(Object.keys(stepGuides).sort()).toEqual(items.map(item => item.id).sort());
+    for (const item of items) {
+      const route = buildRoute(item);
+      const entry = stepGuides[item.id]!;
+      expect(entry.process, item.id).toBe(item.application.process_text);
+      expect(entry.steps.map(g => g.step), item.id).toEqual(route.steps);
+      for (const step of route.steps) {
+        const guide = stepGuideFor(item, step);
+        expect(guide, `${item.id}: ${step}`).not.toBeNull();
+        expect(guide!.actions.length).toBeGreaterThanOrEqual(2);
+        expect(guide!.actions.every(action => action.trim().length > 10)).toBe(true);
+        for (const name of guide!.documentNames) {
+          expect(item.application.required_documents.some(doc => doc.name === name), `${item.id}: ${name}`).toBe(true);
+        }
+        const help = buildStepHelp(item, step)!;
+        expect(help.documents.every(doc => guide!.documentNames.includes(doc.name))).toBe(true);
+        if (help.primaryLink) expect(route.links).toContainEqual(help.primaryLink);
+      }
+    }
+  });
+  it('來源、文件或流程更新後，不沿用舊的客製教學', async () => {
+    const { items } = await loadSnapshot();
+    const item = items.find(item => buildRoute(item).steps.length)!;
+    const step = buildRoute(item).steps[0]!;
+    expect(stepGuideFor(item, step)).not.toBeNull();
+    const changed = JSON.parse(JSON.stringify(item));
+    changed.application.channel_text = '更新後的窗口';
+    expect(stepGuideFor(changed, step)).toBeNull();
+    expect(buildStepHelp(changed, step)?.documents).toEqual([]);
+    expect(stepGuideFor(item, '不存在的步驟')).toBeNull();
+  });
+
+  it('無流程方案提供確認方向，不憑空建立完成步驟', async () => {
+    const { items } = await loadSnapshot();
+    for (const item of items.filter(item => !buildRoute(item).steps.length)) {
+      const help = buildStepHelp(item, '')!;
+      expect(help.stepNumber).toBe(0);
+      expect(help.route.steps).toEqual([]);
+      expect(help.guide?.actions.length).toBeGreaterThanOrEqual(2);
+      expect(help.askText(help.suggested[0]!)).toContain('找不到完整辦理流程');
+    }
+  });
+
 });

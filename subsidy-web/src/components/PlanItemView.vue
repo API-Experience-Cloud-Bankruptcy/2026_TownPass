@@ -9,7 +9,7 @@ import { PLAN_STATUS_LABEL, planProgress } from '../domain/plan-progress';
 import { buildRoute } from '../domain/route';
 import { applicationStatusAlert, benefitLabel, progressText, sourceExcerpt } from '../presentation';
 import {
-  itemsById, openDetail, planConditions, planItems, planResults,
+  itemsById, openDetail, openStepHelp, planConditions, planItems, planResults,
   removeFromPlan, resetSteps, state, toggleDoc, toggleStep,
 } from '../store';
 import ConfirmDialog from './ConfirmDialog.vue';
@@ -215,7 +215,8 @@ const planText = computed(() => item.value ? buildPlanText({
       </template>
 
       <template v-else>
-        <p>原文沒有列出辦理步驟，請先問承辦窗口。</p>
+        <p>原文沒有列出辦理步驟，先確認從哪裡開始。</p>
+        <button :id="`step-help-${item.id}--1`" type="button" class="btn btn--block" @click="openStepHelp(item.id, '')">不知道怎麼開始 →</button>
       </template>
     </section>
 

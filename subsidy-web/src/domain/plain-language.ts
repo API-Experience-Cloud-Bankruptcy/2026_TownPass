@@ -8,6 +8,8 @@ import { fnv1a64 } from './catalog';
 import type { Subsidy } from './types';
 
 export interface PlainLanguage {
+  /** 清單專用短介：方案內容與幫助；詳細給付及限制留在詳情。 */
+  summary: string;
   audience: string;
   support: string;
   firstStep: string;

@@ -1,0 +1,6704 @@
+{
+  "WEL-0001": {
+    "sourceFingerprint": "258f7ae5daeb069b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查校內公告",
+        "documents": []
+      },
+      {
+        "step": "備身分與家庭資料申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "校內申請表"
+          },
+          {
+            "index": 1,
+            "name": "戶籍資料"
+          },
+          {
+            "index": 2,
+            "name": "在學及成績資料"
+          }
+        ]
+      },
+      {
+        "step": "學校查核所得財產／成績",
+        "documents": []
+      },
+      {
+        "step": "核定助學金於下學期繳費扣減；生活或紓困另洽學校",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0002": {
+    "sourceFingerprint": "5bdf29789b78fcc2",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "完成宿舍申請",
+        "documents": []
+      },
+      {
+        "step": "一般生繳費單自動扣抵",
+        "documents": []
+      },
+      {
+        "step": "弱勢、軍人子女或婚育加碼者補證明",
+        "documents": []
+      },
+      {
+        "step": "繳差額",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0003": {
+    "sourceFingerprint": "106749e195d4aadd",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "學校依學籍核定",
+        "documents": []
+      },
+      {
+        "step": "註冊繳費單直接減免",
+        "documents": []
+      },
+      {
+        "step": "有其他補助者向學校辦理擇優或放棄",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0004": {
+    "sourceFingerprint": "c250dbc54d45f01d",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "學期初向學校申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "低收入戶證明"
+          },
+          {
+            "index": 1,
+            "name": "學生證／在學證明"
+          },
+          {
+            "index": 2,
+            "name": "成績單及當期申請表"
+          }
+        ]
+      },
+      {
+        "step": "學校彙整資格與成績",
+        "documents": []
+      },
+      {
+        "step": "送承辦中心審核",
+        "documents": []
+      },
+      {
+        "step": "學校全額轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0005": {
+    "sourceFingerprint": "a8926cf1bd2fb67e",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "學生／家長向學校提出",
+        "documents": []
+      },
+      {
+        "step": "備事故與家庭文件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "事故／診斷／住院／死亡／非自願離職等適用證明"
+          }
+        ]
+      },
+      {
+        "step": "學校送學產基金系統審核",
+        "documents": []
+      },
+      {
+        "step": "核定撥款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0006": {
+    "sourceFingerprint": "8e16fca3ce23cf31",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認校內名額及期限",
+        "documents": []
+      },
+      {
+        "step": "繳申請表、身分與成績證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "114學年度成績含操行"
+          },
+          {
+            "index": 2,
+            "name": "A類資格證明或B類家庭經濟／變故證明"
+          }
+        ]
+      },
+      {
+        "step": "學校審查推薦",
+        "documents": []
+      },
+      {
+        "step": "按月核發，資格異動應通報",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0007": {
+    "sourceFingerprint": "ba95aafbc51c277a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "依校期填減免申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          }
+        ]
+      },
+      {
+        "step": "繳身障、戶籍文件",
+        "documents": [
+          {
+            "index": 1,
+            "name": "身障證明或手冊"
+          },
+          {
+            "index": 2,
+            "name": "含記事戶籍謄本或戶口名簿"
+          }
+        ]
+      },
+      {
+        "step": "學校查核所得／資格",
+        "documents": []
+      },
+      {
+        "step": "註冊費扣減",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0008": {
+    "sourceFingerprint": "5565d7a008d76a97",
+    "reviewNote": "成績排名與競賽證明為不同申請路線，完成繳件不推定兩者都已備妥；該步文件保留手動確認。",
+    "steps": [
+      {
+        "step": "向學校資源教室／承辦申請",
+        "documents": []
+      },
+      {
+        "step": "查適用新舊制",
+        "documents": []
+      },
+      {
+        "step": "繳成績排名或競賽證明",
+        "documents": []
+      },
+      {
+        "step": "審查後核發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0009": {
+    "sourceFingerprint": "2089b4e9f5f78de2",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "依校內公告提出",
+        "documents": []
+      },
+      {
+        "step": "教師推薦或附競賽證明",
+        "documents": [
+          {
+            "index": 3,
+            "name": "推薦或競賽研究證明"
+          }
+        ]
+      },
+      {
+        "step": "學校審核造冊",
+        "documents": []
+      },
+      {
+        "step": "教育局核發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0010": {
+    "sourceFingerprint": "21a0499c7cfc7b43",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0011": {
+    "sourceFingerprint": "65b63bb7dd6c261e",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0012": {
+    "sourceFingerprint": "36b232a3aaa91fd5",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0013": {
+    "sourceFingerprint": "f6fa549934d76d49",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0014": {
+    "sourceFingerprint": "881733b563a76744",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0015": {
+    "sourceFingerprint": "d0096d5a21d445c7",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0016": {
+    "sourceFingerprint": "8397fcb995112ca3",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0017": {
+    "sourceFingerprint": "b271fb33defce354",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0018": {
+    "sourceFingerprint": "63836bed6396854c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0019": {
+    "sourceFingerprint": "275e181ce318cd57",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0020": {
+    "sourceFingerprint": "359c344327449950",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0021": {
+    "sourceFingerprint": "455f51eae0a904f0",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0022": {
+    "sourceFingerprint": "ac3a61d4ec268c0e",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0023": {
+    "sourceFingerprint": "ce8530a1100baa93",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0024": {
+    "sourceFingerprint": "af200c391063080b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0025": {
+    "sourceFingerprint": "4e6a794dc8d99fef",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0026": {
+    "sourceFingerprint": "ffc69d2c38185b35",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0027": {
+    "sourceFingerprint": "27cb5fd3cf71924b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選項並填專用表",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請表"
+          }
+        ]
+      },
+      {
+        "step": "附成績及指定資格證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "個資同意"
+          },
+          {
+            "index": 2,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 3,
+            "name": "114全學年成績單"
+          },
+          {
+            "index": 4,
+            "name": "該項指定資格證明"
+          }
+        ]
+      },
+      {
+        "step": "學校初審擇優",
+        "documents": []
+      },
+      {
+        "step": "用印函送基金會",
+        "documents": []
+      },
+      {
+        "step": "公布並由學校轉發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0028": {
+    "sourceFingerprint": "e589a1e905abe170",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選擇一項獎助學金",
+        "documents": []
+      },
+      {
+        "step": "備妥表單、成績與證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "專用申請表"
+          },
+          {
+            "index": 1,
+            "name": "學生證或在學證明"
+          },
+          {
+            "index": 2,
+            "name": "全學年成績單"
+          },
+          {
+            "index": 3,
+            "name": "服務單位核章時數證明"
+          },
+          {
+            "index": 5,
+            "name": "400字以上自傳與用途／生涯規劃"
+          },
+          {
+            "index": 6,
+            "name": "個資同意書"
+          }
+        ]
+      },
+      {
+        "step": "交學校初審核章",
+        "documents": []
+      },
+      {
+        "step": "依公告送基金會複審",
+        "documents": []
+      },
+      {
+        "step": "公告獲獎及領款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0029": {
+    "sourceFingerprint": "323232045ab93f3d",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選擇一項獎助學金",
+        "documents": []
+      },
+      {
+        "step": "備妥表單、成績與證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "學生證／在學證明"
+          },
+          {
+            "index": 2,
+            "name": "全學年成績單"
+          },
+          {
+            "index": 3,
+            "name": "志工時數證明"
+          },
+          {
+            "index": 4,
+            "name": "400字以上自傳含服務心得與用途規劃"
+          },
+          {
+            "index": 5,
+            "name": "個資同意書"
+          }
+        ]
+      },
+      {
+        "step": "交學校初審核章",
+        "documents": []
+      },
+      {
+        "step": "依公告送基金會複審",
+        "documents": []
+      },
+      {
+        "step": "公告獲獎及領款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0030": {
+    "sourceFingerprint": "1ff60a4b73586626",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選擇一項獎助學金",
+        "documents": []
+      },
+      {
+        "step": "備妥表單、成績與證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "專用申請表"
+          },
+          {
+            "index": 1,
+            "name": "在學證明"
+          },
+          {
+            "index": 2,
+            "name": "全學年成績單"
+          },
+          {
+            "index": 3,
+            "name": "400字以上自傳與生涯／獎金規劃及醫療救濟看法"
+          },
+          {
+            "index": 4,
+            "name": "師長推薦函"
+          },
+          {
+            "index": 5,
+            "name": "個資同意"
+          }
+        ]
+      },
+      {
+        "step": "交學校初審核章",
+        "documents": []
+      },
+      {
+        "step": "依公告送基金會複審",
+        "documents": []
+      },
+      {
+        "step": "公告獲獎及領款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0031": {
+    "sourceFingerprint": "d4b201050442ee5c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認學校／課程及資格",
+        "documents": []
+      },
+      {
+        "step": "備文件並找配偶以外保證人",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請人及保證人身分證／印章"
+          },
+          {
+            "index": 1,
+            "name": "護照"
+          },
+          {
+            "index": 2,
+            "name": "3個月內完整戶籍謄本"
+          },
+          {
+            "index": 3,
+            "name": "所得稅核定資料"
+          },
+          {
+            "index": 4,
+            "name": "國內學歷"
+          },
+          {
+            "index": 5,
+            "name": "入學或在學證明"
+          },
+          {
+            "index": 6,
+            "name": "學校認可資料"
+          },
+          {
+            "index": 7,
+            "name": "未重複申貸切結"
+          }
+        ]
+      },
+      {
+        "step": "銀行徵信對保",
+        "documents": []
+      },
+      {
+        "step": "核貸撥款",
+        "documents": []
+      },
+      {
+        "step": "定期提供在學及資格資料並依約還款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0032": {
+    "sourceFingerprint": "6df25c668c4bafaa",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "線上報名",
+        "documents": []
+      },
+      {
+        "step": "下載繳費單繳費",
+        "documents": []
+      },
+      {
+        "step": "上傳學經歷、入學、推薦函及指定資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "依年度簡章備身分"
+          },
+          {
+            "index": 1,
+            "name": "學歷"
+          },
+          {
+            "index": 2,
+            "name": "入學或在學"
+          },
+          {
+            "index": 3,
+            "name": "推薦函"
+          },
+          {
+            "index": 4,
+            "name": "研究及其他資料"
+          }
+        ]
+      },
+      {
+        "step": "資格及書面審查",
+        "documents": []
+      },
+      {
+        "step": "錄取後簽行政契約／辦理請款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0033": {
+    "sourceFingerprint": "1ff07e66b59248f4",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查校內公告與合作學校／實習計畫",
+        "documents": []
+      },
+      {
+        "step": "校內甄選及備件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "校內申請表"
+          },
+          {
+            "index": 1,
+            "name": "學籍"
+          },
+          {
+            "index": 2,
+            "name": "成績"
+          },
+          {
+            "index": 3,
+            "name": "外語能力"
+          },
+          {
+            "index": 4,
+            "name": "研修／實習計畫"
+          },
+          {
+            "index": 5,
+            "name": "入學或邀請資料"
+          }
+        ]
+      },
+      {
+        "step": "學校薦送",
+        "documents": []
+      },
+      {
+        "step": "核定簽約",
+        "documents": []
+      },
+      {
+        "step": "出國研修或實習",
+        "documents": []
+      },
+      {
+        "step": "繳成果及核銷",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0034": {
+    "sourceFingerprint": "bd4798c0df049a99",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查校內公告與合作學校／實習計畫",
+        "documents": []
+      },
+      {
+        "step": "校內甄選及備件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "校內申請表"
+          },
+          {
+            "index": 1,
+            "name": "學籍"
+          },
+          {
+            "index": 2,
+            "name": "成績"
+          },
+          {
+            "index": 3,
+            "name": "外語能力"
+          },
+          {
+            "index": 4,
+            "name": "研修／實習計畫"
+          },
+          {
+            "index": 5,
+            "name": "入學或邀請資料"
+          }
+        ]
+      },
+      {
+        "step": "學校薦送",
+        "documents": []
+      },
+      {
+        "step": "核定簽約",
+        "documents": []
+      },
+      {
+        "step": "出國研修或實習",
+        "documents": []
+      },
+      {
+        "step": "繳成果及核銷",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0035": {
+    "sourceFingerprint": "47faa4c92df6388a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查校內公告與合作學校／實習計畫",
+        "documents": []
+      },
+      {
+        "step": "校內甄選及備件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "校內申請表"
+          },
+          {
+            "index": 1,
+            "name": "學籍"
+          },
+          {
+            "index": 2,
+            "name": "成績"
+          },
+          {
+            "index": 3,
+            "name": "外語能力"
+          },
+          {
+            "index": 4,
+            "name": "研修／實習計畫"
+          },
+          {
+            "index": 5,
+            "name": "入學或邀請資料"
+          }
+        ]
+      },
+      {
+        "step": "學校薦送",
+        "documents": []
+      },
+      {
+        "step": "核定簽約",
+        "documents": []
+      },
+      {
+        "step": "出國研修或實習",
+        "documents": []
+      },
+      {
+        "step": "繳成果及核銷",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0036": {
+    "sourceFingerprint": "4b1a4ed88e39c4fd",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查校內公告與合作學校／實習計畫",
+        "documents": []
+      },
+      {
+        "step": "校內甄選及備件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "校內申請表"
+          },
+          {
+            "index": 1,
+            "name": "學籍"
+          },
+          {
+            "index": 2,
+            "name": "成績"
+          },
+          {
+            "index": 3,
+            "name": "外語能力"
+          },
+          {
+            "index": 4,
+            "name": "研修／實習計畫"
+          },
+          {
+            "index": 5,
+            "name": "入學或邀請資料"
+          }
+        ]
+      },
+      {
+        "step": "學校薦送",
+        "documents": []
+      },
+      {
+        "step": "核定簽約",
+        "documents": []
+      },
+      {
+        "step": "出國研修或實習",
+        "documents": []
+      },
+      {
+        "step": "繳成果及核銷",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0037": {
+    "sourceFingerprint": "baea58e46238aabf",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選招租基地",
+        "documents": []
+      },
+      {
+        "step": "線上填表上傳或紙本送件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "戶籍資料（含分戶配偶等）"
+          }
+        ]
+      },
+      {
+        "step": "財稅及資格審查",
+        "documents": []
+      },
+      {
+        "step": "抽籤／評點",
+        "documents": []
+      },
+      {
+        "step": "選屋簽約入住",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0038": {
+    "sourceFingerprint": "8064ce25a6eb3e93",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認中央核准",
+        "documents": []
+      },
+      {
+        "step": "填市府加碼申請並附身分證影本",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "申請人身分證正反面"
+          }
+        ]
+      },
+      {
+        "step": "資格審查",
+        "documents": []
+      },
+      {
+        "step": "按中央核定期數及實際資格發放",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0039": {
+    "sourceFingerprint": "077c237479edd1ff",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備妥申請資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "年度申請表"
+          },
+          {
+            "index": 1,
+            "name": "戶籍及身分資料"
+          },
+          {
+            "index": 2,
+            "name": "家庭所得／財產查調同意"
+          }
+        ]
+      },
+      {
+        "step": "於期限內線上或郵寄",
+        "documents": []
+      },
+      {
+        "step": "政府資格及評點審查",
+        "documents": []
+      },
+      {
+        "step": "獲補貼證明",
+        "documents": []
+      },
+      {
+        "step": "向配合金融機構申貸並通過徵信",
+        "documents": [
+          {
+            "index": 4,
+            "name": "各貸款另需銀行文件"
+          }
+        ]
+      },
+      {
+        "step": "按規定補息",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0040": {
+    "sourceFingerprint": "e6cf701afc998426",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備妥申請資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "年度申請表"
+          },
+          {
+            "index": 1,
+            "name": "戶籍及身分資料"
+          },
+          {
+            "index": 2,
+            "name": "家庭所得／財產查調同意"
+          }
+        ]
+      },
+      {
+        "step": "於期限內線上或郵寄",
+        "documents": []
+      },
+      {
+        "step": "政府資格及評點審查",
+        "documents": []
+      },
+      {
+        "step": "獲補貼證明",
+        "documents": []
+      },
+      {
+        "step": "向配合金融機構申貸並通過徵信",
+        "documents": [
+          {
+            "index": 4,
+            "name": "各貸款另需銀行文件"
+          }
+        ]
+      },
+      {
+        "step": "按規定補息",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0041": {
+    "sourceFingerprint": "b2a6b10d9df69572",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "填國宅育兒補貼申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          }
+        ]
+      },
+      {
+        "step": "附全戶戶籍及承辦指定文件",
+        "documents": [
+          {
+            "index": 1,
+            "name": "全戶戶籍謄本"
+          }
+        ]
+      },
+      {
+        "step": "審核家庭兒童數",
+        "documents": []
+      },
+      {
+        "step": "每月租金帳單折抵",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0042": {
+    "sourceFingerprint": "316bdb42bd6c300d",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備資料郵寄",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "1個月內全戶戶籍謄本記事不省略（含分戶配偶）"
+          },
+          {
+            "index": 2,
+            "name": "家庭全國財產歸戶清單"
+          },
+          {
+            "index": 4,
+            "name": "實際表另列國民身分證"
+          },
+          {
+            "index": 5,
+            "name": "住宅土地建物權狀或謄本／測量圖"
+          },
+          {
+            "index": 6,
+            "name": "現況照片"
+          }
+        ]
+      },
+      {
+        "step": "都發局審資格、業者審自宅",
+        "documents": []
+      },
+      {
+        "step": "選屋配屋",
+        "documents": []
+      },
+      {
+        "step": "簽約公證及繳款",
+        "documents": []
+      },
+      {
+        "step": "起租1個月內辦原自宅包租代管",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0043": {
+    "sourceFingerprint": "e9e66014033d579d",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "住戶整合及專業評估",
+        "documents": []
+      },
+      {
+        "step": "取得同意與設計／建照",
+        "documents": [
+          {
+            "index": 1,
+            "name": "所有權人同意清冊"
+          },
+          {
+            "index": 3,
+            "name": "建照"
+          }
+        ]
+      },
+      {
+        "step": "檢具申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請及檢核表"
+          },
+          {
+            "index": 2,
+            "name": "會議或代表推選文件"
+          },
+          {
+            "index": 4,
+            "name": "設計／施工／電梯契約及估價"
+          },
+          {
+            "index": 5,
+            "name": "位置照片"
+          },
+          {
+            "index": 6,
+            "name": "權屬"
+          },
+          {
+            "index": 7,
+            "name": "分攤比例與切結"
+          }
+        ]
+      },
+      {
+        "step": "審查核定",
+        "documents": []
+      },
+      {
+        "step": "依核准進度施工",
+        "documents": []
+      },
+      {
+        "step": "完工查核請款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0044": {
+    "sourceFingerprint": "1b348a21e0948d80",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認更新單元",
+        "documents": []
+      },
+      {
+        "step": "組織住戶同意",
+        "documents": [
+          {
+            "index": 3,
+            "name": "所有權人清冊及同意書"
+          }
+        ]
+      },
+      {
+        "step": "規劃估價及申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請函"
+          },
+          {
+            "index": 1,
+            "name": "檢核表"
+          },
+          {
+            "index": 2,
+            "name": "申請表"
+          },
+          {
+            "index": 4,
+            "name": "費用分攤"
+          },
+          {
+            "index": 5,
+            "name": "事業計畫"
+          },
+          {
+            "index": 6,
+            "name": "設計圖說／估價"
+          },
+          {
+            "index": 7,
+            "name": "利益衝突切結"
+          },
+          {
+            "index": 8,
+            "name": "簡報等"
+          }
+        ]
+      },
+      {
+        "step": "書面及專業審查／補正",
+        "documents": []
+      },
+      {
+        "step": "核定後施工與請款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0045": {
+    "sourceFingerprint": "1c7dff9583638642",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "社區決議",
+        "documents": []
+      },
+      {
+        "step": "完成符合起算日期之修繕",
+        "documents": []
+      },
+      {
+        "step": "備前後照片與支出憑證",
+        "documents": [
+          {
+            "index": 4,
+            "name": "修繕前後照片"
+          },
+          {
+            "index": 5,
+            "name": "發票或收據正本"
+          }
+        ]
+      },
+      {
+        "step": "期限內申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "管理組織報備證明"
+          },
+          {
+            "index": 2,
+            "name": "會議紀錄"
+          },
+          {
+            "index": 3,
+            "name": "使用執照"
+          },
+          {
+            "index": 7,
+            "name": "帳戶封面"
+          }
+        ]
+      },
+      {
+        "step": "審查及核撥",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0046": {
+    "sourceFingerprint": "6740e8340127827a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "社區決議及設備規劃",
+        "documents": []
+      },
+      {
+        "step": "確認合格項目及經費",
+        "documents": []
+      },
+      {
+        "step": "依要點完成設備與憑證",
+        "documents": [
+          {
+            "index": 3,
+            "name": "統一發票或收據"
+          },
+          {
+            "index": 4,
+            "name": "非營利電動車充電設備設置項目明細表"
+          },
+          {
+            "index": 5,
+            "name": "設置位置示意圖及設置前後照片"
+          }
+        ]
+      },
+      {
+        "step": "備件送審",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "檢核表"
+          },
+          {
+            "index": 2,
+            "name": "管理組織及決議證明"
+          }
+        ]
+      },
+      {
+        "step": "補正／核定",
+        "documents": []
+      },
+      {
+        "step": "領據請款",
+        "documents": [
+          {
+            "index": 6,
+            "name": "領據及指定帳戶資料"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0047": {
+    "sourceFingerprint": "d56c0a34b0558cdc",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "評估社區及設備",
+        "documents": []
+      },
+      {
+        "step": "取得網站序號",
+        "documents": []
+      },
+      {
+        "step": "送計畫、概算及決議",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請計畫書"
+          },
+          {
+            "index": 1,
+            "name": "基本資料及概算／廠商報價"
+          },
+          {
+            "index": 2,
+            "name": "權屬或管委會登記"
+          },
+          {
+            "index": 3,
+            "name": "會議決議或符合規定同意書"
+          },
+          {
+            "index": 4,
+            "name": "切結"
+          },
+          {
+            "index": 6,
+            "name": "近6個月非營業電費單"
+          }
+        ]
+      },
+      {
+        "step": "依核准規定施工",
+        "documents": []
+      },
+      {
+        "step": "成果報告與憑證核銷",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0048": {
+    "sourceFingerprint": "5b64ee234d6dfc6e",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認設備、權屬及同意",
+        "documents": []
+      },
+      {
+        "step": "取得網站序號",
+        "documents": []
+      },
+      {
+        "step": "提出計畫與估價",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請計畫書"
+          },
+          {
+            "index": 1,
+            "name": "基本資料及概算／廠商報價"
+          },
+          {
+            "index": 2,
+            "name": "權屬或管委會登記"
+          },
+          {
+            "index": 3,
+            "name": "會議決議或符合規定同意書"
+          },
+          {
+            "index": 4,
+            "name": "切結"
+          },
+          {
+            "index": 6,
+            "name": "近6個月非營業電費單"
+          }
+        ]
+      },
+      {
+        "step": "核定後依規定設置",
+        "documents": []
+      },
+      {
+        "step": "成果核銷",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0049": {
+    "sourceFingerprint": "c0c2929936c2f049",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先確認產品及房東同意",
+        "documents": []
+      },
+      {
+        "step": "網站取得資格序號",
+        "documents": []
+      },
+      {
+        "step": "依規定施作備憑證",
+        "documents": [
+          {
+            "index": 3,
+            "name": "載型號之發票／收據"
+          },
+          {
+            "index": 4,
+            "name": "施作照片"
+          },
+          {
+            "index": 5,
+            "name": "產品條件證明"
+          }
+        ]
+      },
+      {
+        "step": "紙本送件審查",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "ID或社區登記"
+          },
+          {
+            "index": 2,
+            "name": "近半年電費單"
+          },
+          {
+            "index": 6,
+            "name": "本人帳戶"
+          }
+        ]
+      },
+      {
+        "step": "帳戶撥款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0050": {
+    "sourceFingerprint": "6de6c5194f9a0f9b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認低收與設備",
+        "documents": []
+      },
+      {
+        "step": "網站取得序號",
+        "documents": []
+      },
+      {
+        "step": "汰換及索取回收聯單",
+        "documents": [
+          {
+            "index": 3,
+            "name": "型號發票／交易明細"
+          },
+          {
+            "index": 4,
+            "name": "舊機回收聯單"
+          }
+        ]
+      },
+      {
+        "step": "送申請與證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "ID"
+          },
+          {
+            "index": 1,
+            "name": "低收入戶證明"
+          },
+          {
+            "index": 2,
+            "name": "近半年電費單"
+          },
+          {
+            "index": 5,
+            "name": "本人存摺"
+          }
+        ]
+      },
+      {
+        "step": "審查匯款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0051": {
+    "sourceFingerprint": "00f7e4754c68444b",
+    "reviewNote": "雲端發票可免附影本，保固卡亦非必要；完成保留憑證或線上送件不能推定紙本影本備妥。",
+    "steps": [
+      {
+        "step": "查機型能源等級",
+        "documents": []
+      },
+      {
+        "step": "保留購買憑證與機身資料",
+        "documents": []
+      },
+      {
+        "step": "線上填報或郵寄",
+        "documents": []
+      },
+      {
+        "step": "國稅局審核",
+        "documents": []
+      },
+      {
+        "step": "核准後退稅",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0052": {
+    "sourceFingerprint": "60041d97f9a16b6a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認車籍與歷次補助",
+        "documents": []
+      },
+      {
+        "step": "購車／合法報廢回收",
+        "documents": []
+      },
+      {
+        "step": "下載領據切結",
+        "documents": []
+      },
+      {
+        "step": "線上填申請人、舊車、新車及帳戶",
+        "documents": []
+      },
+      {
+        "step": "上傳證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "ID／居留及戶籍證明"
+          },
+          {
+            "index": 1,
+            "name": "新車發票行照"
+          },
+          {
+            "index": 2,
+            "name": "舊車報廢回收證明"
+          },
+          {
+            "index": 3,
+            "name": "領據切結"
+          },
+          {
+            "index": 4,
+            "name": "銀行帳戶"
+          }
+        ]
+      },
+      {
+        "step": "審查撥款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0053": {
+    "sourceFingerprint": "a9237d62eff711ca",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先確認人車資格",
+        "documents": []
+      },
+      {
+        "step": "合法報廢及回收",
+        "documents": [
+          {
+            "index": 3,
+            "name": "報廢回收證明"
+          }
+        ]
+      },
+      {
+        "step": "選擇獎勵金或月票",
+        "documents": []
+      },
+      {
+        "step": "依系統指定類別備證明送件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請及切結"
+          },
+          {
+            "index": 1,
+            "name": "身分戶籍"
+          },
+          {
+            "index": 2,
+            "name": "行照／車籍"
+          },
+          {
+            "index": 4,
+            "name": "帳戶"
+          }
+        ]
+      },
+      {
+        "step": "審核後領款／依購票規定請領",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0054": {
+    "sourceFingerprint": "69c14bc5b2c0d1a6",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先確認駕訓班補助名額",
+        "documents": []
+      },
+      {
+        "step": "報名繳學費",
+        "documents": [
+          {
+            "index": 1,
+            "name": "課程報名資料"
+          }
+        ]
+      },
+      {
+        "step": "完成指定訓練與考照",
+        "documents": []
+      },
+      {
+        "step": "交身分及請領資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "身分證明"
+          },
+          {
+            "index": 2,
+            "name": "考照或結訓證明"
+          },
+          {
+            "index": 3,
+            "name": "請領領據與帳戶等以班方規定"
+          }
+        ]
+      },
+      {
+        "step": "依班方流程領補助",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0055": {
+    "sourceFingerprint": "65687a703ea793d6",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先確認駕訓班補助名額",
+        "documents": []
+      },
+      {
+        "step": "報名繳學費",
+        "documents": [
+          {
+            "index": 1,
+            "name": "課程報名資料"
+          }
+        ]
+      },
+      {
+        "step": "完成指定訓練與考照",
+        "documents": []
+      },
+      {
+        "step": "交身分及請領資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "身分證明"
+          },
+          {
+            "index": 2,
+            "name": "考照或結訓證明"
+          },
+          {
+            "index": 3,
+            "name": "請領領據與帳戶等以班方規定"
+          }
+        ]
+      },
+      {
+        "step": "依班方流程領補助",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0056": {
+    "sourceFingerprint": "4e7df22c6a18b701",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備合格卡片",
+        "documents": []
+      },
+      {
+        "step": "購票設定",
+        "documents": [
+          {
+            "index": 1,
+            "name": "持合格票卡及付款"
+          }
+        ]
+      },
+      {
+        "step": "首次使用啟用",
+        "documents": []
+      },
+      {
+        "step": "期限內搭乘／到期續購",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0057": {
+    "sourceFingerprint": "ff7145bcf350c643",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "記名與登錄",
+        "documents": [
+          {
+            "index": 0,
+            "name": "票卡／支付帳號及身分驗證資料"
+          }
+        ]
+      },
+      {
+        "step": "有效搭乘累積",
+        "documents": []
+      },
+      {
+        "step": "次月查詢回饋",
+        "documents": []
+      },
+      {
+        "step": "票卡指定設備領取或電子支付入帳",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0058": {
+    "sourceFingerprint": "d5d2a486e0272bbc",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "下載App",
+        "documents": []
+      },
+      {
+        "step": "註冊及身分驗證",
+        "documents": [
+          {
+            "index": 0,
+            "name": "身分／居留驗證及手機"
+          }
+        ]
+      },
+      {
+        "step": "領點",
+        "documents": []
+      },
+      {
+        "step": "合格藝文店家掃碼消費",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0059": {
+    "sourceFingerprint": "a541fd8d256268e3",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "期限內填資料登記",
+        "documents": [
+          {
+            "index": 0,
+            "name": "線上身分資料與能接收簡訊之手機"
+          }
+        ]
+      },
+      {
+        "step": "抽籤",
+        "documents": []
+      },
+      {
+        "step": "中籤者登入我的運動幣並簡訊驗證",
+        "documents": []
+      },
+      {
+        "step": "取得動態QR碼",
+        "documents": []
+      },
+      {
+        "step": "指定商家抵用",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0060": {
+    "sourceFingerprint": "09f8c5555cfc0c53",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "收到合格證書",
+        "documents": []
+      },
+      {
+        "step": "下載申請表及領據切結",
+        "documents": []
+      },
+      {
+        "step": "附戶籍證書帳戶",
+        "documents": [
+          {
+            "index": 2,
+            "name": "本人或法代帳戶"
+          },
+          {
+            "index": 3,
+            "name": "戶籍謄本或戶口名簿"
+          },
+          {
+            "index": 4,
+            "name": "合格證書影本"
+          }
+        ]
+      },
+      {
+        "step": "期限內送件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "領據切結"
+          }
+        ]
+      },
+      {
+        "step": "審查匯款；未滿18歲法代共同簽章",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0061": {
+    "sourceFingerprint": "63eefc833c24f504",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "選一類型與項目",
+        "documents": []
+      },
+      {
+        "step": "備計畫書與預算",
+        "documents": [
+          {
+            "index": 2,
+            "name": "活動計畫"
+          },
+          {
+            "index": 3,
+            "name": "經費預算及附件"
+          }
+        ]
+      },
+      {
+        "step": "期限內送件取得編號",
+        "documents": [
+          {
+            "index": 0,
+            "name": "年度申請表"
+          },
+          {
+            "index": 1,
+            "name": "個人／團體資格"
+          }
+        ]
+      },
+      {
+        "step": "書面初審及專家複審",
+        "documents": []
+      },
+      {
+        "step": "核定執行",
+        "documents": []
+      },
+      {
+        "step": "成果及經費核銷",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0062": {
+    "sourceFingerprint": "db63160b3c028648",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認本人／扶養資格",
+        "documents": []
+      },
+      {
+        "step": "查調扣除額與備證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "身分及扶養資料"
+          }
+        ]
+      },
+      {
+        "step": "報稅時列入相應特別扣除欄",
+        "documents": []
+      },
+      {
+        "step": "國稅局核定；漏報或更正洽國稅局",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0063": {
+    "sourceFingerprint": "0479d51c741555ad",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認本人／扶養資格",
+        "documents": []
+      },
+      {
+        "step": "查調扣除額與備證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "繳費收據或學費證明"
+          }
+        ]
+      },
+      {
+        "step": "報稅時列入相應特別扣除欄",
+        "documents": []
+      },
+      {
+        "step": "國稅局核定；漏報或更正洽國稅局",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0064": {
+    "sourceFingerprint": "4c0ce1f4b36cf36c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認本人／扶養資格",
+        "documents": []
+      },
+      {
+        "step": "查調扣除額與備證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "身障證明或合格診斷書影本"
+          }
+        ]
+      },
+      {
+        "step": "報稅時列入相應特別扣除欄",
+        "documents": []
+      },
+      {
+        "step": "國稅局核定；漏報或更正洽國稅局",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0065": {
+    "sourceFingerprint": "8ae116f372c5b66b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認本人／扶養資格",
+        "documents": []
+      },
+      {
+        "step": "查調扣除額與備證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "長照失能／服務等符合公告身分證明"
+          }
+        ]
+      },
+      {
+        "step": "報稅時列入相應特別扣除欄",
+        "documents": []
+      },
+      {
+        "step": "國稅局核定；漏報或更正洽國稅局",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0066": {
+    "sourceFingerprint": "9fdac0c49ac9eac9",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認本人／扶養資格",
+        "documents": []
+      },
+      {
+        "step": "查調扣除額與備證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "租賃契約"
+          },
+          {
+            "index": 1,
+            "name": "付款證明及自住／無自有住宅等證明"
+          }
+        ]
+      },
+      {
+        "step": "報稅時列入相應特別扣除欄",
+        "documents": []
+      },
+      {
+        "step": "國稅局核定；漏報或更正洽國稅局",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0067": {
+    "sourceFingerprint": "0139c6e5171f0aeb",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "聯絡承辦業者",
+        "documents": []
+      },
+      {
+        "step": "檢核家庭資格",
+        "documents": []
+      },
+      {
+        "step": "媒合房屋",
+        "documents": []
+      },
+      {
+        "step": "審查簽約",
+        "documents": [
+          {
+            "index": 0,
+            "name": "承租申請"
+          },
+          {
+            "index": 1,
+            "name": "身分戶籍"
+          },
+          {
+            "index": 2,
+            "name": "所得財產／查調授權"
+          }
+        ]
+      },
+      {
+        "step": "申請合格公證費及中央租補",
+        "documents": []
+      },
+      {
+        "step": "管理服務",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0068": {
+    "sourceFingerprint": "2c385c0bf26177f0",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "屋主洽業者",
+        "documents": []
+      },
+      {
+        "step": "屋況及文件審查",
+        "documents": [
+          {
+            "index": 0,
+            "name": "房屋權狀／合法建築及住宅使用證明"
+          },
+          {
+            "index": 1,
+            "name": "身分"
+          }
+        ]
+      },
+      {
+        "step": "媒合簽約",
+        "documents": [
+          {
+            "index": 2,
+            "name": "契約"
+          }
+        ]
+      },
+      {
+        "step": "符合期間修繕／投保／公證",
+        "documents": []
+      },
+      {
+        "step": "憑證由業者代送",
+        "documents": [
+          {
+            "index": 4,
+            "name": "前後照片"
+          },
+          {
+            "index": 5,
+            "name": "發票／收據"
+          }
+        ]
+      },
+      {
+        "step": "審核補助及稅務認定",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0069": {
+    "sourceFingerprint": "4cbb7aaf7f0a7aa5",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認系所名額及期限",
+        "documents": []
+      },
+      {
+        "step": "依校內辦法送件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "各校申請表"
+          },
+          {
+            "index": 1,
+            "name": "在學與成績證明"
+          },
+          {
+            "index": 2,
+            "name": "研究計畫及研究成果"
+          }
+        ]
+      },
+      {
+        "step": "學院／學校評選",
+        "documents": []
+      },
+      {
+        "step": "核定後由校方請款按月發給",
+        "documents": []
+      },
+      {
+        "step": "依規定繳評量與成果資料",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0070": {
+    "sourceFingerprint": "b507c690890468e4",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "向系所確認核配名額與企業配合",
+        "documents": []
+      },
+      {
+        "step": "送申請與研究資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "校內申請書"
+          },
+          {
+            "index": 1,
+            "name": "在學／學籍"
+          },
+          {
+            "index": 2,
+            "name": "成績及研究資料"
+          }
+        ]
+      },
+      {
+        "step": "系所學院推薦、校級核定",
+        "documents": []
+      },
+      {
+        "step": "按月領取並配合成果評量",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0071": {
+    "sourceFingerprint": "ad3a5020f7f3da53",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "找指導教授並研擬計畫",
+        "documents": []
+      },
+      {
+        "step": "線上製作申請書與教授資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "大專學生研究計畫申請書"
+          },
+          {
+            "index": 1,
+            "name": "教授初評意見"
+          },
+          {
+            "index": 2,
+            "name": "教授個人資料及近5年著作"
+          }
+        ]
+      },
+      {
+        "step": "校內審核函送",
+        "documents": [
+          {
+            "index": 3,
+            "name": "學生歷年成績證明"
+          }
+        ]
+      },
+      {
+        "step": "國科會評審核定",
+        "documents": []
+      },
+      {
+        "step": "執行研究、按月領款",
+        "documents": []
+      },
+      {
+        "step": "結案成果評選",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0072": {
+    "sourceFingerprint": "af9e56ab8b4e3580",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "下載申請書",
+        "documents": []
+      },
+      {
+        "step": "備戶籍及114學年成績、115註冊證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "戶籍謄本正本或戶口名簿影本"
+          },
+          {
+            "index": 2,
+            "name": "上下學期成績正本或學校認證影本"
+          },
+          {
+            "index": 3,
+            "name": "操行證明"
+          },
+          {
+            "index": 4,
+            "name": "已註冊學生證／在學證明／繳費單"
+          }
+        ]
+      },
+      {
+        "step": "期限內送人文課",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          }
+        ]
+      },
+      {
+        "step": "委員會評審",
+        "documents": []
+      },
+      {
+        "step": "公布及通知領獎",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0073": {
+    "sourceFingerprint": "35a76b0b2a69978a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "填申請書與個資同意書",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "個資同意書"
+          }
+        ]
+      },
+      {
+        "step": "備戶籍及上下學期成績",
+        "documents": [
+          {
+            "index": 2,
+            "name": "戶籍謄本正本／戶口名簿影本"
+          },
+          {
+            "index": 3,
+            "name": "上下學期百分制成績正本／學校認證影本"
+          }
+        ]
+      },
+      {
+        "step": "向公所送件",
+        "documents": []
+      },
+      {
+        "step": "排序審查",
+        "documents": []
+      },
+      {
+        "step": "公告通知領獎",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0074": {
+    "sourceFingerprint": "cb2f1e69933cd8ba",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "取得當期辦法及申請書",
+        "documents": []
+      },
+      {
+        "step": "備成績與戶籍等附件",
+        "documents": [
+          {
+            "index": 1,
+            "name": "114學年度第2學期成績單正本"
+          },
+          {
+            "index": 2,
+            "name": "身分證影本"
+          },
+          {
+            "index": 3,
+            "name": "學生證影本"
+          },
+          {
+            "index": 4,
+            "name": "最近3個月內戶籍謄本影本"
+          }
+        ]
+      },
+      {
+        "step": "期限內向人文課提出（郵寄以郵戳為憑）",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎學金申請書"
+          }
+        ]
+      },
+      {
+        "step": "資格與成績評選",
+        "documents": []
+      },
+      {
+        "step": "依通知領獎",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0075": {
+    "sourceFingerprint": "fe2c49b71bb2d7e4",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認組別及戶籍低收條件",
+        "documents": []
+      },
+      {
+        "step": "填表備成績",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "戶口名簿影本"
+          },
+          {
+            "index": 2,
+            "name": "低收入戶證明"
+          },
+          {
+            "index": 3,
+            "name": "註冊學生證／在學證明"
+          },
+          {
+            "index": 4,
+            "name": "成績單正本"
+          }
+        ]
+      },
+      {
+        "step": "國中校內推薦或高中大專自行送件",
+        "documents": []
+      },
+      {
+        "step": "審查排序",
+        "documents": []
+      },
+      {
+        "step": "依公所公告領獎",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0076": {
+    "sourceFingerprint": "46ff13a1cca21d1c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "下載申請表及同意書",
+        "documents": []
+      },
+      {
+        "step": "備原始成績、3個月內戶籍謄本",
+        "documents": [
+          {
+            "index": 1,
+            "name": "上下學期成績單正本"
+          },
+          {
+            "index": 2,
+            "name": "3個月內個人戶籍謄本正本（記事勿省略）"
+          }
+        ]
+      },
+      {
+        "step": "依序裝訂送件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表及個資同意書"
+          }
+        ]
+      },
+      {
+        "step": "資格及成績評選",
+        "documents": []
+      },
+      {
+        "step": "公布後通知頒獎",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0077": {
+    "sourceFingerprint": "a0d61d2c296cda26",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "戶長資料登記並上傳在學證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "註冊學生證或在學證明"
+          }
+        ]
+      },
+      {
+        "step": "抽籤及資格審查",
+        "documents": []
+      },
+      {
+        "step": "收到正取通知才購置／領電腦",
+        "documents": []
+      },
+      {
+        "step": "憑發票及領據請款",
+        "documents": [
+          {
+            "index": 1,
+            "name": "請款需實體統一發票／合格收據正本"
+          },
+          {
+            "index": 2,
+            "name": "個人領據"
+          },
+          {
+            "index": 3,
+            "name": "最新郵局或台北富邦銀行存摺"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0078": {
+    "sourceFingerprint": "5391385c9a45ec14",
+    "reviewNote": "整合意願、確認適用及評估條件不等於申請、土地與檢核文件已備齊。",
+    "steps": [
+      {
+        "step": "社區整合意願",
+        "documents": []
+      },
+      {
+        "step": "洽北水處確認適用",
+        "documents": []
+      },
+      {
+        "step": "評估工程及土地條件",
+        "documents": []
+      },
+      {
+        "step": "核定補助及自付額",
+        "documents": []
+      },
+      {
+        "step": "社區給付應付工程費",
+        "documents": []
+      },
+      {
+        "step": "北水處代施工",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0079": {
+    "sourceFingerprint": "e8b4812e6a04a658",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "完成寵物登記與有效疫苗",
+        "documents": []
+      },
+      {
+        "step": "獸醫執行絕育並填證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請證明書含獸醫簽章"
+          }
+        ]
+      },
+      {
+        "step": "備表及證件送件",
+        "documents": [
+          {
+            "index": 1,
+            "name": "身分證／居留證正反影本"
+          },
+          {
+            "index": 2,
+            "name": "本人金融帳戶"
+          }
+        ]
+      },
+      {
+        "step": "審核通過30日內匯入本人帳戶並簡訊通知",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0080": {
+    "sourceFingerprint": "0bfc2ccb5cd25ab0",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先確認組別及預算",
+        "documents": []
+      },
+      {
+        "step": "符合登記、絕育、疫苗條件後投保",
+        "documents": []
+      },
+      {
+        "step": "備申請書與保費收據保單",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "身分證／居留證影本"
+          },
+          {
+            "index": 2,
+            "name": "保費收據及保單影本（含晶片號）"
+          },
+          {
+            "index": 4,
+            "name": "本人帳戶"
+          }
+        ]
+      },
+      {
+        "step": "送動保處審核",
+        "documents": []
+      },
+      {
+        "step": "依核定撥補",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0081": {
+    "sourceFingerprint": "bee34e2fc6b20064",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查2027年類別、項目與期程",
+        "documents": []
+      },
+      {
+        "step": "註冊及填計畫",
+        "documents": [
+          {
+            "index": 0,
+            "name": "各類申請表"
+          }
+        ]
+      },
+      {
+        "step": "上傳預算與作品等附件",
+        "documents": [
+          {
+            "index": 1,
+            "name": "計畫內容及預算"
+          },
+          {
+            "index": 4,
+            "name": "作品、經歷及各項目指定附件"
+          }
+        ]
+      },
+      {
+        "step": "資格審查及會議評選",
+        "documents": []
+      },
+      {
+        "step": "董事會核定",
+        "documents": []
+      },
+      {
+        "step": "依規定執行、結案及撥款。線上申請須於截止日23:59前送出；郵寄以中華郵政郵戳為憑並附電子檔；親送或其他遞送以收文登錄日為憑，截止日下午6時後不受理。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0082": {
+    "sourceFingerprint": "f98cff81d97832b4",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "進入116年度方案",
+        "documents": []
+      },
+      {
+        "step": "填線上申請資料",
+        "documents": []
+      },
+      {
+        "step": "上傳計畫書PDF（原則15頁內）及聲明同意附件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "計畫概述及計畫書"
+          },
+          {
+            "index": 1,
+            "name": "原創聲明等切結"
+          },
+          {
+            "index": 2,
+            "name": "個人資料同意"
+          }
+        ]
+      },
+      {
+        "step": "確認送件及收到電子郵件",
+        "documents": []
+      },
+      {
+        "step": "依評選結果核定執行",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0083": {
+    "sourceFingerprint": "82327b6aa351da61",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認文山戶籍、弱勢類別、學籍及全學年度成績",
+        "documents": []
+      },
+      {
+        "step": "填寫申請書並備妥證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "獎助學金申請書"
+          },
+          {
+            "index": 1,
+            "name": "114學年度上、下學期成績單"
+          }
+        ]
+      },
+      {
+        "step": "於115年9月1日至9月30日親送或郵寄",
+        "documents": []
+      },
+      {
+        "step": "委員會依學業成績高低擇優審查。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0084": {
+    "sourceFingerprint": "91bffe504d26633c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "醫師確認傷病類別",
+        "documents": []
+      },
+      {
+        "step": "備診斷及病歷",
+        "documents": [
+          {
+            "index": 1,
+            "name": "30日內診斷證明（含ICD碼）"
+          },
+          {
+            "index": 3,
+            "name": "病歷摘要／檢查報告"
+          }
+        ]
+      },
+      {
+        "step": "填申請書及身分資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 2,
+            "name": "身分證明正反面或未滿14歲戶口名簿"
+          }
+        ]
+      },
+      {
+        "step": "送健保署審查",
+        "documents": []
+      },
+      {
+        "step": "核准登錄健保卡；屆期依類別換發",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0085": {
+    "sourceFingerprint": "0d14831e067156a4",
+    "reviewNote": "提出經濟困難認定申請不等於取得證明；到填妥貸款送件才同步該證明。",
+    "steps": [
+      {
+        "step": "向戶籍公所申請經濟困難認定",
+        "documents": []
+      },
+      {
+        "step": "備身分與欠費證明",
+        "documents": [
+          {
+            "index": 2,
+            "name": "身分證及印章"
+          }
+        ]
+      },
+      {
+        "step": "填貸款申請書交健保署",
+        "documents": [
+          {
+            "index": 0,
+            "name": "貸款申請書"
+          },
+          {
+            "index": 1,
+            "name": "經濟困難證明"
+          }
+        ]
+      },
+      {
+        "step": "核准直接清償欠費",
+        "documents": []
+      },
+      {
+        "step": "1年後按約還款",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0086": {
+    "sourceFingerprint": "3fcfd73607638c8b",
+    "reviewNote": "線上與臨櫃為替代路徑；完成登入或首期繳款不能推定臨櫃證件及印章已備妥。",
+    "steps": [
+      {
+        "step": "核對欠費與移送狀態",
+        "documents": []
+      },
+      {
+        "step": "註冊健保卡或App綁定",
+        "documents": []
+      },
+      {
+        "step": "保費相關作業／簡易分期申請",
+        "documents": []
+      },
+      {
+        "step": "選擇系統可用方案並繳首期；不符網路條件改洽臨櫃",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0087": {
+    "sourceFingerprint": "9299d720e5ed26d6",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "線上通報或臨櫃陳述困難",
+        "documents": []
+      },
+      {
+        "step": "補戶籍及急難／病況資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "戶口名簿或戶籍謄本"
+          },
+          {
+            "index": 1,
+            "name": "特殊境遇／急難救助證明"
+          }
+        ]
+      },
+      {
+        "step": "健保署查核並轉介",
+        "documents": []
+      },
+      {
+        "step": "受轉介單位核定是否支援欠費",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0088": {
+    "sourceFingerprint": "45020c820b3da3c5",
+    "reviewNote": "病種、事前報審、居家器材與醫院申報為不同分支，未記錄選擇時不自動勾選。",
+    "steps": [
+      {
+        "step": "由醫師確認公告病種與項目",
+        "documents": []
+      },
+      {
+        "step": "事前報審（適用項目）",
+        "documents": []
+      },
+      {
+        "step": "接受治療／使用器材",
+        "documents": []
+      },
+      {
+        "step": "備費用與診斷資料申請",
+        "documents": []
+      },
+      {
+        "step": "核定撥付；電話02-2545-9066",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0089": {
+    "sourceFingerprint": "3c7a6186d593547a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認設籍／年齡／低收身分",
+        "documents": []
+      },
+      {
+        "step": "預約指定院所",
+        "documents": []
+      },
+      {
+        "step": "攜證明由醫師評估",
+        "documents": [
+          {
+            "index": 0,
+            "name": "健保卡"
+          },
+          {
+            "index": 1,
+            "name": "身分證"
+          },
+          {
+            "index": 2,
+            "name": "有效低收入戶或中低收入戶證明"
+          }
+        ]
+      },
+      {
+        "step": "接種並按醫師安排完成後續劑次",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0090": {
+    "sourceFingerprint": "459266efbbfd85c3",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查合約院所及存量",
+        "documents": []
+      },
+      {
+        "step": "攜健保及身分／高風險資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "健保卡及身分證明"
+          }
+        ]
+      },
+      {
+        "step": "醫師核對接種紀錄及資格",
+        "documents": []
+      },
+      {
+        "step": "接種",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0091": {
+    "sourceFingerprint": "4cfad387b8e9811a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "學校核對年級與名冊",
+        "documents": []
+      },
+      {
+        "step": "學生及家長簽同意書",
+        "documents": [
+          {
+            "index": 0,
+            "name": "接種同意書"
+          }
+        ]
+      },
+      {
+        "step": "校園接種；缺席持通知或接種紀錄至合約院所補種；特殊外籍先向衛生局申請核定",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0092": {
+    "sourceFingerprint": "27daf6248fe49a28",
+    "reviewNote": "文件欄僅為待確認說明，沒有明確文件項目。",
+    "steps": [
+      {
+        "step": "洽出生或合約醫療院所",
+        "documents": []
+      },
+      {
+        "step": "核對出生與健保身分",
+        "documents": []
+      },
+      {
+        "step": "完成篩檢及結果紀錄",
+        "documents": []
+      },
+      {
+        "step": "異常依醫囑轉介確診",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0093": {
+    "sourceFingerprint": "6b5d8c5fa8cb1bb0",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "依最新兒童健康手冊年齡時程預約",
+        "documents": []
+      },
+      {
+        "step": "家長記錄孩子健康狀況及問題",
+        "documents": []
+      },
+      {
+        "step": "攜健保卡與手冊接受檢查衛教",
+        "documents": [
+          {
+            "index": 0,
+            "name": "健保卡"
+          },
+          {
+            "index": 1,
+            "name": "兒童健康手冊"
+          }
+        ]
+      },
+      {
+        "step": "有異常再轉介",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0094": {
+    "sourceFingerprint": "549fd045e44caeb3",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "找認可院所預約",
+        "documents": []
+      },
+      {
+        "step": "攜兒童手冊與健保卡",
+        "documents": [
+          {
+            "index": 0,
+            "name": "健保卡"
+          },
+          {
+            "index": 1,
+            "name": "兒童健康手冊（必要）"
+          }
+        ]
+      },
+      {
+        "step": "醫師進行動作、語言、認知、社會發展篩檢",
+        "documents": []
+      },
+      {
+        "step": "蓋章紀錄",
+        "documents": []
+      },
+      {
+        "step": "疑似異常轉介聯合評估",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0095": {
+    "sourceFingerprint": "2a234b4fb2c0f1f2",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查合約牙科或社區巡迴",
+        "documents": []
+      },
+      {
+        "step": "確認距上次施作已滿規定間隔",
+        "documents": []
+      },
+      {
+        "step": "持健保卡接受塗氟",
+        "documents": [
+          {
+            "index": 0,
+            "name": "兒童健保卡"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0096": {
+    "sourceFingerprint": "b46e18102d50d418",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "學校發同意書",
+        "documents": []
+      },
+      {
+        "step": "家長填妥回交",
+        "documents": [
+          {
+            "index": 0,
+            "name": "家長塗氟同意書"
+          }
+        ]
+      },
+      {
+        "step": "到校集體施作；不在學校接受者攜口腔檢查紀錄表至特約院所",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0097": {
+    "sourceFingerprint": "32fd9073d8843fd3",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先致電合約牙科確認",
+        "documents": []
+      },
+      {
+        "step": "持健保卡就醫",
+        "documents": [
+          {
+            "index": 0,
+            "name": "兒童健保卡"
+          }
+        ]
+      },
+      {
+        "step": "牙醫評估並封填",
+        "documents": []
+      },
+      {
+        "step": "依6及12個月時程回診追蹤",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0098": {
+    "sourceFingerprint": "fc82e344d2219744",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查可提供掛號費補助之合約牙科",
+        "documents": []
+      },
+      {
+        "step": "帶健保卡及就學相關資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "兒童健保卡"
+          }
+        ]
+      },
+      {
+        "step": "院所核驗、提供封填並減免適用掛號費",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0099": {
+    "sourceFingerprint": "b0aa7c4ab2b209f1",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "查可提供服務院所",
+        "documents": []
+      },
+      {
+        "step": "由院所查驗資格及既往公費紀錄",
+        "documents": [
+          {
+            "index": 0,
+            "name": "健保卡及身分資料"
+          }
+        ]
+      },
+      {
+        "step": "採檢",
+        "documents": []
+      },
+      {
+        "step": "取得報告，陽性依醫師安排後續處理",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0100": {
+    "sourceFingerprint": "da1701956fede251",
+    "reviewNote": "確認風險及完成檢體不直接證明文件已備妥；口腔篩檢文件也非本流程必備。",
+    "steps": [
+      {
+        "step": "確認年齡與家族史",
+        "documents": []
+      },
+      {
+        "step": "洽特約院所領取採便工具及說明",
+        "documents": []
+      },
+      {
+        "step": "完成檢體繳回",
+        "documents": []
+      },
+      {
+        "step": "取得結果，異常轉介後續診治",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0101": {
+    "sourceFingerprint": "c1c7325494c1026e",
+    "reviewNote": "資格核對可能由院所查詢，不能推定已備紙本；口腔篩檢文件也非本流程必備。",
+    "steps": [
+      {
+        "step": "洽辦理LDCT公費篩檢醫院",
+        "documents": []
+      },
+      {
+        "step": "填風險與家族史、由醫院核對資格",
+        "documents": []
+      },
+      {
+        "step": "預約檢查",
+        "documents": []
+      },
+      {
+        "step": "結果追蹤及異常轉介",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0102": {
+    "sourceFingerprint": "ccbe6637cfa44a2b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "找提供口腔篩檢院所",
+        "documents": []
+      },
+      {
+        "step": "出示健保及必要原住民證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "健保卡"
+          }
+        ]
+      },
+      {
+        "step": "說明檳榔／吸菸史",
+        "documents": []
+      },
+      {
+        "step": "口腔檢查",
+        "documents": []
+      },
+      {
+        "step": "依結果轉介",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0103": {
+    "sourceFingerprint": "7359e6fff1ff504f",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先取得適用助聽器補助核定",
+        "documents": []
+      },
+      {
+        "step": "期限內購置",
+        "documents": []
+      },
+      {
+        "step": "配戴滿1至3個月完成效益檢測",
+        "documents": []
+      },
+      {
+        "step": "與助聽器核銷一併送件",
+        "documents": [
+          {
+            "index": 2,
+            "name": "輔具評估報告書格式25"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0104": {
+    "sourceFingerprint": "0b2a8f284fa54f79",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先向客服登記乘車資格及障別",
+        "documents": []
+      },
+      {
+        "step": "申請免費者補低收入證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "申請免費者身障證明正反面及有效低收入戶證明"
+          }
+        ]
+      },
+      {
+        "step": "依等級時段預約",
+        "documents": []
+      },
+      {
+        "step": "確認派車",
+        "documents": []
+      },
+      {
+        "step": "乘車及適用付費；低收資格依要求更新",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0105": {
+    "sourceFingerprint": "b8d421555a8a5d2a",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "持有效社福卡",
+        "documents": [
+          {
+            "index": 0,
+            "name": "有效臺北市敬老卡／愛心卡"
+          }
+        ]
+      },
+      {
+        "step": "向合作車隊表明需悠遊卡支付",
+        "documents": []
+      },
+      {
+        "step": "乘車刷卡折抵",
+        "documents": []
+      },
+      {
+        "step": "支付超過補助之餘額",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0106": {
+    "sourceFingerprint": "21183341d813b992",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認115分組與財務門檻",
+        "documents": []
+      },
+      {
+        "step": "由本人或社工備最新申請文件",
+        "documents": [
+          {
+            "index": 1,
+            "name": "申請表"
+          },
+          {
+            "index": 2,
+            "name": "癌症重大傷病與身分"
+          }
+        ]
+      },
+      {
+        "step": "紙本／電子送基金會",
+        "documents": []
+      },
+      {
+        "step": "補件審核",
+        "documents": []
+      },
+      {
+        "step": "核定後直接給付治療醫療單位",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0107": {
+    "sourceFingerprint": "7eaf6ff086dc3156",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "求職登記",
+        "documents": []
+      },
+      {
+        "step": "就業諮詢",
+        "documents": []
+      },
+      {
+        "step": "取得推介卡並確認交通補助資格",
+        "documents": []
+      },
+      {
+        "step": "依指定方式申請、檢附資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "官網提供求職交通補助金申請書"
+          },
+          {
+            "index": 1,
+            "name": "就促申請表及領據"
+          }
+        ]
+      },
+      {
+        "step": "審核核發。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0108": {
+    "sourceFingerprint": "93140b50d1f69a3e",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "求職登記",
+        "documents": []
+      },
+      {
+        "step": "諮詢及推介",
+        "documents": []
+      },
+      {
+        "step": "機構評估臨時工作資格",
+        "documents": []
+      },
+      {
+        "step": "安排至核定用人單位",
+        "documents": []
+      },
+      {
+        "step": "出勤及按月核發。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0109": {
+    "sourceFingerprint": "56df984f84931860",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "持身分證及無工作切結書登記",
+        "documents": [
+          {
+            "index": 0,
+            "name": "身分證"
+          },
+          {
+            "index": 1,
+            "name": "無工作切結書"
+          }
+        ]
+      },
+      {
+        "step": "就服機構審認災區及失業條件",
+        "documents": []
+      },
+      {
+        "step": "分派核定災後工作",
+        "documents": []
+      },
+      {
+        "step": "依出勤按月核發。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0110": {
+    "sourceFingerprint": "8ad117e295672930",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "加入台灣就業通會員、完成履歷",
+        "documents": []
+      },
+      {
+        "step": "職業心理測驗",
+        "documents": []
+      },
+      {
+        "step": "至公立就服機構申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "參加計畫申請書"
+          },
+          {
+            "index": 1,
+            "name": "身分證正本及影本"
+          },
+          {
+            "index": 2,
+            "name": "最高學歷畢業／肄業證書正本及影本"
+          }
+        ]
+      },
+      {
+        "step": "深度諮詢及求職輔導",
+        "documents": []
+      },
+      {
+        "step": "90日內就業",
+        "documents": []
+      },
+      {
+        "step": "穩定90日後依期限申請獎勵。",
+        "documents": [
+          {
+            "index": 4,
+            "name": "獎勵另需獎勵金申請書及領據等"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0111": {
+    "sourceFingerprint": "3f32c841419eec26",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "註冊並完成履歷、測驗及文件上傳",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書及同意查詢社會保險資料"
+          },
+          {
+            "index": 1,
+            "name": "身分證影本"
+          },
+          {
+            "index": 2,
+            "name": "最高學歷畢業／肄業證書影本"
+          },
+          {
+            "index": 3,
+            "name": "本人國內金融機構存摺封面影本"
+          }
+        ]
+      },
+      {
+        "step": "核定參加",
+        "documents": []
+      },
+      {
+        "step": "依各30日階段完成求職次數與諮詢／推介",
+        "documents": []
+      },
+      {
+        "step": "按期申領尋職津貼",
+        "documents": []
+      },
+      {
+        "step": "就業且持續受僱30／90／180日等條件後申領獎勵。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0112": {
+    "sourceFingerprint": "e86df486beafb6ee",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "攜文件辦求職登記、失業認定及諮詢",
+        "documents": [
+          {
+            "index": 0,
+            "name": "失業（再）認定及失業給付申請書"
+          },
+          {
+            "index": 1,
+            "name": "給付收據"
+          },
+          {
+            "index": 2,
+            "name": "離職證明書或定期契約"
+          },
+          {
+            "index": 3,
+            "name": "身分證明影本"
+          },
+          {
+            "index": 4,
+            "name": "本人國內金融機構存摺封面影本"
+          }
+        ]
+      },
+      {
+        "step": "14日內未獲推介就業或職訓",
+        "documents": []
+      },
+      {
+        "step": "就服機構完成認定送勞保局",
+        "documents": []
+      },
+      {
+        "step": "按月再認定並提出至少2次求職紀錄。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0113": {
+    "sourceFingerprint": "9a746d1e4956e072",
+    "reviewNote": "紙本與線上為替代路徑，同帳戶得免附，不一律勾選紙本書件。",
+    "steps": [
+      {
+        "step": "再受僱並加保滿3個月",
+        "documents": []
+      },
+      {
+        "step": "備妥申請書及收據或登入線上系統",
+        "documents": []
+      },
+      {
+        "step": "勞保局審核",
+        "documents": []
+      },
+      {
+        "step": "核定後匯入本人帳戶。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0114": {
+    "sourceFingerprint": "4d0c50cf2dba2f11",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備申請文件親自求職登記",
+        "documents": [
+          {
+            "index": 0,
+            "name": "職訓生活津貼申請書及收據"
+          },
+          {
+            "index": 1,
+            "name": "離職證明或定期契約"
+          },
+          {
+            "index": 2,
+            "name": "身分證明"
+          }
+        ]
+      },
+      {
+        "step": "公立就服機構安排全日制職訓",
+        "documents": []
+      },
+      {
+        "step": "開訓當日訓練單位線上申報勞保局",
+        "documents": []
+      },
+      {
+        "step": "按月核發；離退訓停止。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0115": {
+    "sourceFingerprint": "2c975a765242ca4b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "完成失業給付或職訓生活津貼申請",
+        "documents": []
+      },
+      {
+        "step": "核定後依相關資料認定補助月份與眷屬",
+        "documents": []
+      },
+      {
+        "step": "有疑義洽勞保局或健保署。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0116": {
+    "sourceFingerprint": "8081242a124ab5d4",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "向公立就業服務機構辦理求職登記及接受就業諮詢",
+        "documents": []
+      },
+      {
+        "step": "由機構推介距原日常居住處所30公里以上之工作",
+        "documents": []
+      },
+      {
+        "step": "依申請項目具備交通往返、搬遷或租屋事實並連續受僱同一雇主30日",
+        "documents": []
+      },
+      {
+        "step": "在各項法定期限內向就業當地轄區公立就業服務機構檢具申請書及證明文件。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "對應項目之補助金申請書（含查詢投保資料及居住／租賃事實同意書、切結與領據）"
+          },
+          {
+            "index": 1,
+            "name": "本人名義之國內金融機構存摺封面影本"
+          },
+          {
+            "index": 2,
+            "name": "本人身分證影本或有效期間居留證明文件"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0117": {
+    "sourceFingerprint": "cd0e8c3a4551a856",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "核對當期資格",
+        "documents": []
+      },
+      {
+        "step": "取得申請書及簡章",
+        "documents": []
+      },
+      {
+        "step": "線上以自然人憑證或身分證號加健保卡號驗證，或紙本填寫",
+        "documents": []
+      },
+      {
+        "step": "檢附學籍、戶籍、帳戶與加成證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "子女正式學籍證明"
+          },
+          {
+            "index": 2,
+            "name": "戶籍與本人帳戶資料"
+          }
+        ]
+      },
+      {
+        "step": "期限內送件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書及同意查詢保險／戶籍資料"
+          }
+        ]
+      },
+      {
+        "step": "補件審查及核撥。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0118": {
+    "sourceFingerprint": "d841cc8aa4caf2df",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認事業單位歇業／清算／破產及積欠債權",
+        "documents": []
+      },
+      {
+        "step": "向雇主請求未獲清償並取得歇業、債權及薪資／年資佐證",
+        "documents": [
+          {
+            "index": 4,
+            "name": "債權證明文件"
+          }
+        ]
+      },
+      {
+        "step": "同一雇主之勞工原則一次共同申請並選任1名勞工代表",
+        "documents": []
+      },
+      {
+        "step": "填具申請及切結書、名冊、每位申請人的收據及勞工代表委託書",
+        "documents": [
+          {
+            "index": 0,
+            "name": "積欠工資墊償基金墊償申請及切結書"
+          },
+          {
+            "index": 1,
+            "name": "積欠工資墊償基金墊償名冊"
+          },
+          {
+            "index": 2,
+            "name": "積欠工資墊償基金墊償收據及勞工代表委託書"
+          }
+        ]
+      },
+      {
+        "step": "郵寄或送件至勞保局審查。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0119": {
+    "sourceFingerprint": "28dc90c05226eeeb",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認適用身分",
+        "documents": []
+      },
+      {
+        "step": "報名並經錄訓",
+        "documents": []
+      },
+      {
+        "step": "向訓練單位提交生活津貼申請及身分證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "匯款申請單"
+          },
+          {
+            "index": 2,
+            "name": "本人存摺封面"
+          },
+          {
+            "index": 3,
+            "name": "身分證正反面及各身分證明"
+          }
+        ]
+      },
+      {
+        "step": "依出席、訓練及審核結果核發。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0120": {
+    "sourceFingerprint": "39dff777d15cf911",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "求職登記",
+        "documents": []
+      },
+      {
+        "step": "評估就業障礙及適用性",
+        "documents": []
+      },
+      {
+        "step": "媒合核定用人單位",
+        "documents": []
+      },
+      {
+        "step": "進行職場學習、輔導及考核",
+        "documents": []
+      },
+      {
+        "step": "依核定計畫申領。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0121": {
+    "sourceFingerprint": "94583e936312ff6c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "求職登記與諮詢",
+        "documents": []
+      },
+      {
+        "step": "取得五五推介卡",
+        "documents": []
+      },
+      {
+        "step": "推介次日起7日內回復就業情形",
+        "documents": []
+      },
+      {
+        "step": "受僱及投保",
+        "documents": []
+      },
+      {
+        "step": "滿規定期間檢具文件申領。雇主另提職場支持計畫。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "就業獎勵申請書及收據"
+          },
+          {
+            "index": 1,
+            "name": "身分或居留證明"
+          },
+          {
+            "index": 2,
+            "name": "工資證明"
+          },
+          {
+            "index": 3,
+            "name": "本人存摺"
+          },
+          {
+            "index": 4,
+            "name": "同意查詢社會保險資料及其他指定文件"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0122": {
+    "sourceFingerprint": "4a013475e00d2d88",
+    "reviewNote": "確認適用計畫及活動文件要求不代表已填妥意願書或備齊身分證明，文件保留手動確認。",
+    "steps": [
+      {
+        "step": "聯繫就服機構",
+        "documents": []
+      },
+      {
+        "step": "接受就業與就學需求評估",
+        "documents": []
+      },
+      {
+        "step": "確認適用計畫及監護人等文件",
+        "documents": []
+      },
+      {
+        "step": "媒合職場體驗與輔導。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0123": {
+    "sourceFingerprint": "2d757062bb540c95",
+    "reviewNote": "自主訓練與再就業的文件不同，未選分支時保留手動確認。",
+    "steps": [
+      {
+        "step": "確認退出職場期間",
+        "documents": []
+      },
+      {
+        "step": "依類別先送自主訓練計畫或辦求職登記、報名",
+        "documents": []
+      },
+      {
+        "step": "完成核定訓練／穩定就業",
+        "documents": []
+      },
+      {
+        "step": "備證明及領據",
+        "documents": []
+      },
+      {
+        "step": "向原承辦機構申請；雇主另辦求才及職場支持申請。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0124": {
+    "sourceFingerprint": "9cb228bea7d7193c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "雇主求才登記",
+        "documents": []
+      },
+      {
+        "step": "就服評估勞工並發推介卡",
+        "documents": []
+      },
+      {
+        "step": "僱用、投保及發薪滿30日",
+        "documents": []
+      },
+      {
+        "step": "依期限檢具文件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "官網提供僱用獎助申請書及相關表件"
+          },
+          {
+            "index": 1,
+            "name": "完整工資"
+          },
+          {
+            "index": 2,
+            "name": "僱用及保險證明須依所轄機構清單"
+          }
+        ]
+      },
+      {
+        "step": "審核後按規定申領。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0125": {
+    "sourceFingerprint": "a98ee5e31be40373",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "完成創業研習及諮詢",
+        "documents": []
+      },
+      {
+        "step": "備計畫與證明送分署窗口",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書及創業貸款計畫書"
+          },
+          {
+            "index": 1,
+            "name": "登記及稅籍證明"
+          },
+          {
+            "index": 2,
+            "name": "切結書"
+          },
+          {
+            "index": 3,
+            "name": "負責人身分證"
+          },
+          {
+            "index": 4,
+            "name": "近3個月事業及負責人聯徵信用報告"
+          },
+          {
+            "index": 5,
+            "name": "3年內創業研習證明"
+          }
+        ]
+      },
+      {
+        "step": "審查通過",
+        "documents": []
+      },
+      {
+        "step": "3個月內向銀行申貸及信用審核",
+        "documents": []
+      },
+      {
+        "step": "核貸與補息。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0126": {
+    "sourceFingerprint": "95940227c48c9d4b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認資格及完成認可課程",
+        "documents": []
+      },
+      {
+        "step": "編寫計畫、檢具公司及負責人資料",
+        "documents": [
+          {
+            "index": 0,
+            "name": "創業貸款計畫書或150萬元以下申請表"
+          },
+          {
+            "index": 1,
+            "name": "設立登記"
+          },
+          {
+            "index": 2,
+            "name": "負責人身分及持股證明"
+          },
+          {
+            "index": 4,
+            "name": "財務及用途資料"
+          }
+        ]
+      },
+      {
+        "step": "向銀行申貸",
+        "documents": []
+      },
+      {
+        "step": "信用、用途與還款能力審查",
+        "documents": []
+      },
+      {
+        "step": "核貸及必要信用保證。150萬元以下得用申請表取代計畫書。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0127": {
+    "sourceFingerprint": "3568304ca908919c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "核對失業及子女資格、確認未重複領補助",
+        "documents": []
+      },
+      {
+        "step": "填申請及切結",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書及已簽切結書"
+          }
+        ]
+      },
+      {
+        "step": "備失業、戶籍、繳費及帳戶證明",
+        "documents": [
+          {
+            "index": 1,
+            "name": "最近失業認定收執聯或非自願離職證明"
+          },
+          {
+            "index": 2,
+            "name": "含記事戶口名簿或近3月全戶電子謄本（不同戶配偶子女併附）"
+          },
+          {
+            "index": 3,
+            "name": "115學年度第1學期繳款單及已繳證明"
+          },
+          {
+            "index": 4,
+            "name": "申請人存摺"
+          }
+        ]
+      },
+      {
+        "step": "於期限線上或掛號送件",
+        "documents": []
+      },
+      {
+        "step": "審核撥款。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0128": {
+    "sourceFingerprint": "a68462650f4585c0",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "閱讀該組簡章及選定機會或自提企劃",
+        "documents": []
+      },
+      {
+        "step": "下載申請文件",
+        "documents": []
+      },
+      {
+        "step": "註冊、填資料及上傳",
+        "documents": [
+          {
+            "index": 0,
+            "name": "依各組簡章及報名文件準備申請書／企劃及指定證明"
+          }
+        ]
+      },
+      {
+        "step": "收到確認信才算完成",
+        "documents": []
+      },
+      {
+        "step": "書審、面談",
+        "documents": []
+      },
+      {
+        "step": "錄取後依期繳行政契約與請款文件",
+        "documents": []
+      },
+      {
+        "step": "執行及成果核結。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0129": {
+    "sourceFingerprint": "1b9e4935d2f7df68",
+    "reviewNote": "本人車輛可主動核定免申請，不推定上傳或臨櫃文件已備。",
+    "steps": [
+      {
+        "step": "本人所有車輛由地方稅機關主動通知核定，免另申請；其他情形線上輸入資料並上傳身障證明，或持證明臨櫃申請。核准後條件不變免逐年重辦。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0130": {
+    "sourceFingerprint": "cff09b63f3fa3aec",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "繳回名下所有駕照並簽個資同意書",
+        "documents": [
+          {
+            "index": 0,
+            "name": "名下所有駕照"
+          },
+          {
+            "index": 1,
+            "name": "個資授權同意書"
+          }
+        ]
+      },
+      {
+        "step": "確認敬老／愛心卡有效",
+        "documents": [
+          {
+            "index": 2,
+            "name": "持有效敬老／愛心卡搭乘"
+          }
+        ]
+      },
+      {
+        "step": "資格生效後持卡搭乘",
+        "documents": []
+      },
+      {
+        "step": "次月25日起靠卡領取回饋。僅計生效後的搭乘，不回溯當月1日。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0131": {
+    "sourceFingerprint": "d743417be9bf0d69",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備齊申請與租約付款證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 2,
+            "name": "本人車籍行照及同車種有效駕照影本"
+          },
+          {
+            "index": 3,
+            "name": "停車位租約影本"
+          },
+          {
+            "index": 4,
+            "name": "本人臺北富邦銀行或郵局存簿封面"
+          },
+          {
+            "index": 5,
+            "name": "最近一期租金繳納證明"
+          }
+        ]
+      },
+      {
+        "step": "向臺北市政府社會局提出（官方表單建議掛號郵寄）",
+        "documents": []
+      },
+      {
+        "step": "社會局原則於文件備齊後1個月內完成調查、審查及核定並書面通知",
+        "documents": []
+      },
+      {
+        "step": "核准自文件備齊當月起補助；期滿續領須重新申請。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0132": {
+    "sourceFingerprint": "998a14f18efebf50",
+    "reviewNote": "流程同時包含路邊、路外、汽車及機車等分支；現場查驗完成不代表各分支文件皆已備妥，文件保留手動確認。",
+    "steps": [
+      {
+        "step": "依規定放置識別證或持證",
+        "documents": []
+      },
+      {
+        "step": "路邊於繳費期限內、路外於出場前至現場查驗",
+        "documents": []
+      },
+      {
+        "step": "填申請表（可請服務人員代填）",
+        "documents": []
+      },
+      {
+        "step": "索取收執聯保留6個月。就醫無法到場者依規定附同行政區醫療證明。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0133": {
+    "sourceFingerprint": "d6fa4fbae6b3e9ea",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "取得醫師診斷或物理治療、職能治療、聽力、語言治療等專業評估",
+        "documents": [
+          {
+            "index": 1,
+            "name": "必須使用輔助器具之診斷證明或專業評估證明"
+          }
+        ]
+      },
+      {
+        "step": "依現行法規第三條附表確認器具項目、個別上限與最低使用年限",
+        "documents": []
+      },
+      {
+        "step": "於診斷／評估文件開立日或所載需要日起6個月內購買或租賃",
+        "documents": []
+      },
+      {
+        "step": "檢附單據及未重複補助聲明向職安署申請。表外器具須先專案核定，再於核定後6個月內購租及核銷。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "器具補助申請書及補助收據"
+          },
+          {
+            "index": 3,
+            "name": "未領取相同項目器具補助或給付之聲明書"
+          }
+        ]
+      }
+    ]
+  },
+  "WEL-0134": {
+    "sourceFingerprint": "2acceb1be97683b4",
+    "reviewNote": "住院與失能兩分支使用不同申請書及附件，未選分支時保留手動確認。",
+    "steps": [
+      {
+        "step": "確認已請領相應職災給付及照護資格",
+        "documents": []
+      },
+      {
+        "step": "住院案取得醫院照護需求診斷證明；失能案確認已核定給付類別與失能等級",
+        "documents": []
+      },
+      {
+        "step": "提交對應照護補助申請書及補助收據與指定附件",
+        "documents": []
+      },
+      {
+        "step": "勞保局審查核付。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0135": {
+    "sourceFingerprint": "035f08bbe426ea3f",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先確認不能領職災保險給付及法定未加保身分",
+        "documents": []
+      },
+      {
+        "step": "取得失能診斷與職災工作證據",
+        "documents": [
+          {
+            "index": 1,
+            "name": "本保險失能診斷書"
+          },
+          {
+            "index": 3,
+            "name": "從事勞務／受僱單位名稱"
+          },
+          {
+            "index": 4,
+            "name": "雇主姓名地址"
+          },
+          {
+            "index": 5,
+            "name": "工作性質內容及職災證據"
+          }
+        ]
+      },
+      {
+        "step": "備申請書收據及證明送勞保局",
+        "documents": [
+          {
+            "index": 0,
+            "name": "失能補助申請書及收據"
+          },
+          {
+            "index": 2,
+            "name": "檢查報告與影像"
+          }
+        ]
+      },
+      {
+        "step": "審查失能等級及因果關係。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0136": {
+    "sourceFingerprint": "5c8065b7534a7140",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認法定未加保身分、事故及不能領職災保險給付",
+        "documents": []
+      },
+      {
+        "step": "確認遺屬順位",
+        "documents": []
+      },
+      {
+        "step": "備死亡、戶籍、工作職災及扶養證明申請",
+        "documents": [
+          {
+            "index": 0,
+            "name": "死亡補助申請書及收據"
+          },
+          {
+            "index": 3,
+            "name": "載死亡日期全戶戶籍謄本（養子女須載收養登記"
+          }
+        ]
+      },
+      {
+        "step": "勞保局審查核定。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0137": {
+    "sourceFingerprint": "02272dd5d3ea7110",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "確認年齡、戶籍及公司年限",
+        "documents": []
+      },
+      {
+        "step": "完成20小時課程",
+        "documents": []
+      },
+      {
+        "step": "選簡易或一般貸、備計畫與證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "貸款申請書及事業計畫書（簡易貸免填第十一項經營計畫）"
+          },
+          {
+            "index": 1,
+            "name": "代表人身分證及近3月電子戶籍謄本"
+          },
+          {
+            "index": 2,
+            "name": "切結書"
+          },
+          {
+            "index": 3,
+            "name": "登記資料"
+          },
+          {
+            "index": 4,
+            "name": "近2年財報及近1年營業稅資料"
+          },
+          {
+            "index": 5,
+            "name": "課程證明"
+          },
+          {
+            "index": 6,
+            "name": "聯徵授權書"
+          }
+        ]
+      },
+      {
+        "step": "送青年局",
+        "documents": []
+      },
+      {
+        "step": "資格及信用審查",
+        "documents": []
+      },
+      {
+        "step": "依核定辦理銀行貸款。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0138": {
+    "sourceFingerprint": "3e02023796c9414c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備申請資料送產業局",
+        "documents": [
+          {
+            "index": 0,
+            "name": "貸款申請書"
+          },
+          {
+            "index": 1,
+            "name": "負責人身分證明"
+          },
+          {
+            "index": 2,
+            "name": "事業計畫"
+          },
+          {
+            "index": 3,
+            "name": "切結書"
+          },
+          {
+            "index": 4,
+            "name": "稅籍／公司／商業／有限合夥登記資料"
+          },
+          {
+            "index": 5,
+            "name": "申請人及負責人與配偶聯徵授權書"
+          }
+        ]
+      },
+      {
+        "step": "現場訪視與銀行徵信",
+        "documents": []
+      },
+      {
+        "step": "貸款審查小組審議",
+        "documents": []
+      },
+      {
+        "step": "核定通知",
+        "documents": []
+      },
+      {
+        "step": "3個月內向承貸銀行辦貸及信用保證。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0139": {
+    "sourceFingerprint": "7ebc308fc20d09f8",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "核對資格、研發階段及自籌需求",
+        "documents": []
+      },
+      {
+        "step": "Phase 1準備簡報，Phase 2／2+準備計畫書",
+        "documents": []
+      },
+      {
+        "step": "線上填申請表並上傳證明",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表及簡報／計畫書"
+          },
+          {
+            "index": 1,
+            "name": "最近一年損益及稅額計算表（新創未滿1年可用近期營業稅申報）"
+          },
+          {
+            "index": 2,
+            "name": "近期研發人員投保名冊及投保人數"
+          },
+          {
+            "index": 3,
+            "name": "近1月國稅及地方稅無違章欠稅查復表"
+          },
+          {
+            "index": 4,
+            "name": "相關人員個資同意書"
+          },
+          {
+            "index": 5,
+            "name": "自我檢查表"
+          }
+        ]
+      },
+      {
+        "step": "文件檢查（通知補正原則5工作天）",
+        "documents": []
+      },
+      {
+        "step": "技術及財務審查、簡報",
+        "documents": []
+      },
+      {
+        "step": "核定簽約",
+        "documents": []
+      },
+      {
+        "step": "執行、查核及分期撥款。",
+        "documents": []
+      }
+    ]
+  },
+  "WEL-0140": {
+    "sourceFingerprint": "16d159e64246cb39",
+    "reviewNote": "創業與研發為不同申請文件，未選分支時保留手動確認。",
+    "steps": [
+      {
+        "step": "選創業或研發類別並確認年限",
+        "documents": []
+      },
+      {
+        "step": "準備計畫、經費及證明",
+        "documents": []
+      },
+      {
+        "step": "線上或向產業局送件",
+        "documents": []
+      },
+      {
+        "step": "文件補正、初審與簡報審議",
+        "documents": []
+      },
+      {
+        "step": "核定後修正計畫並請領第一期",
+        "documents": []
+      },
+      {
+        "step": "執行、查核及會計師簽證結案",
+        "documents": []
+      },
+      {
+        "step": "核實請領第二期。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0003": {
+    "sourceFingerprint": "ebb044df4d62ee93",
+    "reviewNote": "既有案補正與重新申請不同，加碼申請也有條件，不一律勾選兩張申請書。",
+    "steps": [
+      {
+        "step": "追溯自115年1月1日起每月補助；今（9/14）起受理申請。114年度已核有補助資格且115年度持續入住原機構、資格未變更者，原則免重新申請，但須使用新版申請書送機構所在地縣市政府辦理資料補正。114年有4種情形須重新申請（新增身障住宿加碼、更換戶籍、更換機構、資格類別轉換）。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0012": {
+    "sourceFingerprint": "055dd55fb9b0a9e3",
+    "reviewNote": "未提供辦理步驟，保留文件手動勾選。",
+    "steps": []
+  },
+  "CT-0018": {
+    "sourceFingerprint": "dcbb8a50dde90b8b",
+    "reviewNote": "流程只有發票補記與期限疑義，不能確認所有申請文件已備齊。",
+    "steps": [
+      {
+        "step": "發票或收銀機發票無法登錄申請獎勵者姓名及牌照號碼時，應由開立發票之公司或經銷商以人工手寫並加蓋發票章。辦法第5條原文為「應於113年1月10日前提出申請，逾期不予受理」，與本項目115年名稱及法規最近修正日期（115年9月7日）不一致，需再確認現行期限。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0019": {
+    "sourceFingerprint": "724e01c932518cbf",
+    "reviewNote": "舊戶可自動帶入，不能推定另備新申請書、租約或指定身分文件。",
+    "steps": [
+      {
+        "step": "採隨到隨辦。線上申請為主（115年1/1上午9點至12/31下午5點）；郵寄依郵戳日期；臨櫃依各縣市受理時段。114年舊戶（114年8–12月有撥款紀錄，或114/9/1–12/31提出並合格）系統直接帶入，但須經縣市重新審查，且租約消滅3個月內須檢附新租約。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0020": {
+    "sourceFingerprint": "85a5681b7010b8e0",
+    "reviewNote": "未提供辦理步驟，保留文件手動勾選。",
+    "steps": []
+  },
+  "CT-0023": {
+    "sourceFingerprint": "cfa7727a537acce7",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "依衛生福利部關懷弱勢加發生活補助及擴大獨居老人服務補助辦法辦理。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0024": {
+    "sourceFingerprint": "96cf68967b88ff61",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "官方頁面：115年配合行政院關懷弱勢加發，依辦法規定，符合資格兒少每人每月加發500元（每月10號匯入指定帳戶；10號後通過者次月合併補發）。已接受政府其他生活補助者不得再領緊急生活扶助，但加發制度另以辦法規定。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0025": {
+    "sourceFingerprint": "89320d106147d34b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "線上申請前請備妥身分證、護照或居留證、申請人帳戶存摺等照片檔（依官方線上申請頁）。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "身分證、護照或居留證"
+          },
+          {
+            "index": 1,
+            "name": "申請人帳戶存摺封面"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0027": {
+    "sourceFingerprint": "32cc6ee57edab8df",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "符合資格者請洽公股銀行依一般房貸申請程序，並指定適用本項貸款條件辦理。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0028": {
+    "sourceFingerprint": "73f5d37d3653ff04",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "官方：115年度公費流感及新冠疫苗自10月1日起正式開打。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0029": {
+    "sourceFingerprint": "2d6dba59ae137d05",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "線上申請：輸入幼兒基本資料、申請人身分證號、驗證申請人身分資料、填列申請資料並上傳文件後送出。紙本：填具申請表並檢附應備物品，向幼兒現戶籍所在地提出。",
+        "documents": [
+          {
+            "index": 1,
+            "name": "幼兒及申請人（雙親雙方或監護人）之身分證明文件（身分證影本、戶口名簿影本）"
+          },
+          {
+            "index": 2,
+            "name": "幼兒或申請人（雙親其中一方或監護人）之金融機構帳戶影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0031": {
+    "sourceFingerprint": "33c694dc822e060e",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "由申請人(雙親雙方或監護人)檢具申請書及相關證明文件，於托育事實發生之日起15日內親送受理窗口；申辦頁另提供線上申辦入口。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "未滿二歲兒童托育準公共化服務費用申報表"
+          },
+          {
+            "index": 1,
+            "name": "詳細記事戶口名簿"
+          },
+          {
+            "index": 2,
+            "name": "簽訂之托育服務契約書"
+          },
+          {
+            "index": 3,
+            "name": "申請人其中一方或兒童郵局(或地方政府指定之金融機構)帳戶存摺封面"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0032": {
+    "sourceFingerprint": "bdfe33f04f59f671",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "民眾無須另行申請；核給生育給付時一併加發",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0033": {
+    "sourceFingerprint": "b527b2dbb4c489b5",
+    "reviewNote": "未提供辦理步驟，保留文件手動勾選。",
+    "steps": []
+  },
+  "CT-0034": {
+    "sourceFingerprint": "8700f070402f48be",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "符合資格當月，攜帶國民身分證、印章及存摺，至所屬農、漁會填具老農津貼申請書辦理申請。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "老農津貼申請書"
+          },
+          {
+            "index": 1,
+            "name": "國民身分證（本人）"
+          },
+          {
+            "index": 2,
+            "name": "印章"
+          },
+          {
+            "index": 3,
+            "name": "存摺（農、漁會信用部或接管該信用部之銀行或郵局帳戶）"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0035": {
+    "sourceFingerprint": "c464c3a7a264cba2",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "新生：到校註冊時，檢具相關證明文件向學校提出申請。舊生：於上學期末向學校提出申請，並於下學期註冊繳費單中逕予減免。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "低收入戶或中低收入戶證明正本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0036": {
+    "sourceFingerprint": "eb652fe4b40f521b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "符合補助資格者由各補助單位（直轄市、縣市政府）主動報送，保險對象不需向健保署提出申請（健保署頁面摘要；2026-11-07 搜尋摘要再次確認「左列各項補助資格，保險對象不需向本署提出申請」）",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0037": {
+    "sourceFingerprint": "54342cb600c84c04",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "向戶籍所在地直轄市、縣（市）主管機關提出申請並檢附應備文件；經核定後，現金給付者於核定通知送達後6個月內檢附購買或付費憑證申請撥付，實物給付者向主管機關特約輔具供應單位領取；未先經核定即購買者不予補助（身心障礙者輔具費用補助辦法）",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 2,
+            "name": "附表所定各補助項目三個月內有效之診斷證明書或輔具評估報告書"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0038": {
+    "sourceFingerprint": "479949531f8f5463",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "由兒少之法定代理人（監護人）代為申請，填具申請書，擇定每月自存款金額（500元、1,000元、1,250元擇一），向開戶人戶籍所在地之直轄市、縣（市）政府提出，經審查核准後列冊報衛生福利部；衛福部官網線上申辦頁已列出線上申請入口（2026-11-07 已讀取）",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0041": {
+    "sourceFingerprint": "4ea96d69de44c871",
+    "reviewNote": "線上驗證與紙本申請不同，未選申辦方式時不勾選另一條路徑的資料。",
+    "steps": [
+      {
+        "step": "線上：雙親可至衛福部社會及家庭署指定網站辦理，需讀卡機及自然人憑證或健保卡（擇一）。臨櫃或郵寄：請檢具申請表及相關證明文件，親送或郵寄至兒童戶籍地鄉（鎮、市、區）公所，由申請人（雙親雙方或監護人）提出。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0042": {
+    "sourceFingerprint": "dcd8aa4ef9d9b175",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "一、利用行動電話認證或自然人憑證等方式線上申請（須備妥投保單位開立之育嬰留職停薪證明）；二、單人申辦或批次（多人）申辦（2026-11-07 勞保局請領手續頁）",
+        "documents": [
+          {
+            "index": 1,
+            "name": "育嬰留職停薪證明（應載明育嬰留職停薪起訖期間）"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0047": {
+    "sourceFingerprint": "9c23992905607d92",
+    "reviewNote": "地方文件及個案差異未確認，不能將全部縣市附件視為已備妥。",
+    "steps": [
+      {
+        "step": "提出申請後，照管專員到府評估、確認等級及給付額度，與個案管理員擬定照顧計畫，再由特約單位提供服務。各縣市申請文件依所在地窗口規定；所列新北市及宜蘭縣文件不得視為全國一致規定。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0060": {
+    "sourceFingerprint": "4fb5dd05636204ec",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "學校應於學期註冊前公告或通知辦理方式；學生於註冊前向承貸銀行申請並辦理對保，註冊時向學校申請暫予緩繳學雜費（高級中等以上學校學生就學貸款辦法）",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0061": {
+    "sourceFingerprint": "6fbedd70681e93b4",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "家長或學生不用向學校申請，由學生就讀學校審定學生資格後，直接在註冊單減免學費。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0066": {
+    "sourceFingerprint": "b425e9eaa75ccb67",
+    "reviewNote": "來源明示完整程序未擷取，不由不完整步驟推定文件完成。",
+    "steps": [
+      {
+        "step": "依勞保局書表頁：申請生育給付暨加給補助，無須檢附戶籍謄本（搜尋摘要）；完整申請程序未擷取",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0067": {
+    "sourceFingerprint": "f3f57093af2346e9",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "下載或至辦事處索取申請書，填妥姓名、出生日期、身分證統一編號、通訊地址及匯入帳戶並簽名或蓋章，黏貼存簿封面影本；符合財產扣除情況者另附證明後掛號郵寄或送件。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "國民年金老年基本保證年金申請書及給付收據"
+          },
+          {
+            "index": 1,
+            "name": "金融機構存簿封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0068": {
+    "sourceFingerprint": "ba96693c4d34484f",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "填妥申請書並簽名或蓋章，貼妥本人存簿封面及身心障礙證明正背面影本；如受監護宣告，由監護人副署並附證明；財產扣除另附相關文件。未符合視為無工作能力條件者，持身心障礙證明及工作能力綜合評量表至指定醫療機構評估，醫療機構評估後5日內直接寄表至勞保局。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "國民年金身心障礙（基本保證）年金給付申請書及給付收據"
+          },
+          {
+            "index": 1,
+            "name": "被保險人本人存簿封面影本"
+          },
+          {
+            "index": 2,
+            "name": "身心障礙證明正面及背面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0069": {
+    "sourceFingerprint": "d1f80ab7508b4b67",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "在年滿55歲當月向勞保局申請，逾期不能追溯補發（勞保局頁摘要）；申請書可至勞保局下載（原住民行政頁摘要）",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0073": {
+    "sourceFingerprint": "f64900ead1888a0d",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "雇主於勞工請畢婚假或請畢前終止契約、並給付婚假工資後，擇一線上或書面申請；線上路徑：雇主補助及獎勵申辦作業/各項薪資補助申辦/婚假工資補助申辦（2026-11-07 已讀取）",
+        "documents": [
+          {
+            "index": 2,
+            "name": "事業單位（或自然人雇主）名義之國內金融機構或郵局存摺封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0074": {
+    "sourceFingerprint": "aeafe5769f352e55",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "國健署懶人包頁（2026-11-07 已讀取）列出補助項目與年齡；申請與送檢流程未擷取，請至國健署或各篩檢醫療院所確認。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0075": {
+    "sourceFingerprint": "a374766e3123bb67",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "民眾經醫療院所評估符合補助資格後，收費時直接扣除補助額度，無須另填寫申請書或自行向政府申請；新生兒篩檢民眾僅需負擔採檢院所之採檢、檢體運送等行政費用（衛福部新聞稿，已讀取）",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0076": {
+    "sourceFingerprint": "ab256f12eb7e4a56",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "先加入台灣就業通會員並完成「我喜歡做的事」測驗，下載或列印報名及參訓資格切結書，簽名或蓋章後交訓練單位，依規定甄試報名；先繳自付額1萬元並簽訂訓練契約。取得結訓證書、出席達2/3且於結訓次日起90日內依法投保就業保險者，應於120日內線上申請自付額補助。學習獎勵金得向所屬分署申領，須符合其訓練時數規定。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "報名及參訓資格切結書"
+          },
+          {
+            "index": 1,
+            "name": "訓練契約"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0093": {
+    "sourceFingerprint": "f4a371e90ad6fd62",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "申請夫妻至特約人工生殖機構進行檢查評估；機構檢視夫妻資格後，列印補助資格審查表（附表三）請申請人簽名，並於國民健康署指定系統登錄及上傳文件；署方核發補助通知書（附表四）後進入施術療程（申請日起1年效期）。療程完成後，機構於系統完成施術結果證明書（附表五）及補助施術項目費用表（附表六），並於資格審查申請日起1年又6個月內於系統完成補助費用申請（附表七）。",
+        "documents": [
+          {
+            "index": 2,
+            "name": "受術夫妻簽名之補助資格審查表（附表三）"
+          },
+          {
+            "index": 4,
+            "name": "施術結果證明書（附表五）"
+          },
+          {
+            "index": 5,
+            "name": "補助施術項目費用表（附表六）"
+          },
+          {
+            "index": 6,
+            "name": "醫療費申請表（附表七）"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0099": {
+    "sourceFingerprint": "4683f52ac9472069",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "向居所地榮服處申請辦理就養（官方：榮民申請一般就養頁，申請須檢附申請書及下列資料）",
+        "documents": [
+          {
+            "index": 0,
+            "name": "就養申請書"
+          },
+          {
+            "index": 1,
+            "name": "退休給付及公勞保給付資料"
+          },
+          {
+            "index": 2,
+            "name": "綜合所得稅籍資料清單"
+          },
+          {
+            "index": 3,
+            "name": "綜合所得各類所得資料清單"
+          },
+          {
+            "index": 4,
+            "name": "財產歸戶查詢清單"
+          },
+          {
+            "index": 6,
+            "name": "榮民國民身分證及榮民證（正反面）影本"
+          },
+          {
+            "index": 7,
+            "name": "全家人口戶口名簿影本（含非同住直系血親）"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0103": {
+    "sourceFingerprint": "ac843aa7d56307bf",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "毋須申請，由社會局將補助名冊逕送健保局辦理（官方頁面）",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0104": {
+    "sourceFingerprint": "d87b8ce9f46cb882",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "以「臺北市社會扶助申請表」申辦；洽辦電話：市話1999，外縣市02-2720-8889（社會救助科1609）；申請地點官方頁未擷取",
+        "documents": [
+          {
+            "index": 0,
+            "name": "臺北市社會扶助申請表"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0105": {
+    "sourceFingerprint": "cd5b375253c5140c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "經審核通過，且接受政府委派居家服務機構每月至家中至少督導一次者，補助照顧者每月5,000元",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0106": {
+    "sourceFingerprint": "bda4e1e6de413eff",
+    "reviewNote": "續辦免重新填送且帳戶可選，不能一律標記表單、帳戶文件已備。",
+    "steps": [
+      {
+        "step": "向本局提出公共化或準公共托育服務費用申報者，得申請友善托育補助。次年兒童如仍未滿3歲且持續就托原托育人員或托嬰機構，由原居家托育服務中心或機構協助續辦，家長無須重新填送申請表，本局將主動比對新年度之受補助資格。每年初首發月份3或4月開始撥款並追溯當年度符合月份；之後每月補助款於次月（原則上每月30日）撥入委託人郵局帳戶。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0107": {
+    "sourceFingerprint": "997edc4bb559b7c8",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "向申請人或其配偶設籍所在地戶政事務所提出（受理、審查：各區戶政事務所）；補助由戶政事務所撥入申請人指定金融機構帳戶或電子支付帳戶",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "申請人身分證明文件"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0108": {
+    "sourceFingerprint": "c5f1190ee818033c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "符合補助身分者持身分證明文件及補助資格證明向市立聯合醫院、市立醫院或公會所屬醫療院所辦理；市立醫院檢具應備文件向本局提出申請，公會所屬醫療院所檢具應備文件向公會提出專業審查申請，經公會初審認可後函轉本局審核（計畫第六點）。符合補助身分而未依第六點申請者，應於假牙製作及裝置完成後180日內檢具申請及核銷應備文件向本局請款（第七點）。活動假牙裝置滿一年後始可申請維修費用，維修後180日內檢具文件向本局請款（第八點）。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "補助對象之身分證明文件及補助資格證明影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0109": {
+    "sourceFingerprint": "bd51bb0a7bd334f7",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "恢復補助須依核定稅率或居住時間主動提出申請；經審核通過後自符合資格當月起補助，以109年10月起之健保費自付額補助為限",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0110": {
+    "sourceFingerprint": "45d3103030393117",
+    "reviewNote": "來源未擷取完整申請流程，不推定申請表已填妥。",
+    "steps": [
+      {
+        "step": "未擷取完整申請流程",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0111": {
+    "sourceFingerprint": "b1dffd9501ca6b5b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "請填妥申請表，並備妥相關證明文件，以掛號郵寄臺北市政府社會局收。如委任他人代為申請，應檢具委任書，並檢附本人及受委任人之身分證明文件。洽辦資訊詳見官方頁面（洽辦資訊、相關檔案）。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "臺北市特殊境遇家庭扶助申請表（1151001起適用）"
+          },
+          {
+            "index": 1,
+            "name": "申請人之台北富邦商業銀行或郵局存摺帳號影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0112": {
+    "sourceFingerprint": "4ecfc4381e70e193",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "未擷取申請流程",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0113": {
+    "sourceFingerprint": "e5d0a3011dee6dd3",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "至任一區公所申請票卡；委任代理人申請者另附委任書及代理人之身分證明文件",
+        "documents": [
+          {
+            "index": 0,
+            "name": "國民身分證正本"
+          },
+          {
+            "index": 1,
+            "name": "2吋彩色照片"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0122": {
+    "sourceFingerprint": "da830aab9e05365f",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "向戶籍所在地區公所社會課辦理。託他人代申請須附代申請人身分證明文件影本；年節慰問金由社會局主動核發。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "申請人國民身分證"
+          },
+          {
+            "index": 9,
+            "name": "申請人之市庫指定行庫或郵局存摺封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0123": {
+    "sourceFingerprint": "5b38adbc9f62d675",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "掛號郵寄、親送或至臺北市租金補貼網線上申請；線上申請須有台北通金質會員帳號。郵寄以郵戳為憑，親送以送件日為受理日。",
+        "documents": [
+          {
+            "index": 1,
+            "name": "有效期間內低收入戶證明影本"
+          },
+          {
+            "index": 2,
+            "name": "戶口名簿影本"
+          },
+          {
+            "index": 5,
+            "name": "租賃住宅之契約書影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0125": {
+    "sourceFingerprint": "cb8710c67735daeb",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "檢附應備文件向社會局社會救助科提出申請；自費藥品材料及病房費須附專項證明寄送本局評估。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "最近1年全家人口各類所得資料"
+          },
+          {
+            "index": 2,
+            "name": "最近1年全家人口財產資料"
+          },
+          {
+            "index": 3,
+            "name": "最近6個月內醫療院所診斷證明書"
+          },
+          {
+            "index": 4,
+            "name": "最近6個月內醫療費用收據"
+          },
+          {
+            "index": 5,
+            "name": "申請人指定之金融機構存摺封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0126": {
+    "sourceFingerprint": "6130a564ed9e8374",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "檢附應備文件向社會局社會救助科提出申請；自費藥品材料及病房費須附專項證明寄送本局評估。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "中低收入戶相關證明文件"
+          },
+          {
+            "index": 2,
+            "name": "最近6個月內醫療院所診斷證明書"
+          },
+          {
+            "index": 3,
+            "name": "最近6個月內醫療費用收據"
+          },
+          {
+            "index": 4,
+            "name": "具領人之金融機構存摺封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0127": {
+    "sourceFingerprint": "8d3bff916a982592",
+    "reviewNote": "原文包含先洽評估與機構或依職權代辦，不能將完成評估推定本人已備齊看護及請款文件。",
+    "steps": [
+      {
+        "step": "申請人先洽本局所屬單位評估補助與額度。居住安置機構者由機構以公文代轉文件向社會工作科申請；委任代理者須提出委任書。無法委任時社會局得依職權或指定醫療院所、安置機構代為申請。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0128": {
+    "sourceFingerprint": "9214197c5a495dfd",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "依死亡者身分及申請人關係，備妥文件向各別洽辦單位提出申請。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 2,
+            "name": "埋葬或火化許可證明"
+          },
+          {
+            "index": 3,
+            "name": "公墓、骨灰(骸)存放設施、樹（灑）葬設施或海葬等相關證明文件"
+          },
+          {
+            "index": 4,
+            "name": "申請人身分證明文件影本"
+          },
+          {
+            "index": 5,
+            "name": "指定帳戶之存摺封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0129": {
+    "sourceFingerprint": "f1fa3282b681eb74",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "備妥文件向社會局提出申請，以郵戳為受理日期；文件不全經通知限期補正，逾期未補正得駁回。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 3,
+            "name": "學生本人之郵局存摺封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0130": {
+    "sourceFingerprint": "3369bfb6f0e1a4e2",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "符合資格者由本局逕予撥付，不需另提出申請。15歲以上未滿18歲就讀外縣市高中職以上者，加發部分須每學期向本局提出申請。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0131": {
+    "sourceFingerprint": "cc0d53b685b32aaf",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "本人、父母、監護人或實際照顧兒少者備妥文件向社會局提出申請；已接受服務者由服務單位代送。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "存摺封面影本"
+          },
+          {
+            "index": 2,
+            "name": "全家同住直系血親最近一年度所得證明文件"
+          },
+          {
+            "index": 3,
+            "name": "全家同住直系血親最近一年度財產證明文件"
+          },
+          {
+            "index": 4,
+            "name": "足資證明有本作業規定第二點各款情形之相關文件"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0132": {
+    "sourceFingerprint": "5ac62e7bb872710f",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "父母、監護人或法定扶養義務人檢具各補助項目文件向社會局提出申請，必要時得由社會局或有關人員協助。",
+        "documents": [
+          {
+            "index": 7,
+            "name": "受補助兒童少年或申請人指定金融帳戶封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0133": {
+    "sourceFingerprint": "8e798bf99ef115c2",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "完成療育後備齊文件向社會局提出申請；官方另提供發展遲緩兒童早期療育補助線上申辦連結。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0134": {
+    "sourceFingerprint": "a953fcad04834336",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "依就托性質選擇申請表及請款領據；向就托機構索取申請書及就托證明，洽社會局婦幼托育科辦理。115年度申請表載明申請日期依郵戳或本局收件日認定。",
+        "documents": [
+          {
+            "index": 6,
+            "name": "機構就托證明"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0135": {
+    "sourceFingerprint": "8b842e41b30ff3f1",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "本人、父母、監護人或實際照顧兒童者經指定福利單位轉介；轉介單位備妥文件向本局提出。托育補助於已實際就托或近就托時間提出；優先就托公立幼兒園須敘明園名。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "個案評估報告"
+          },
+          {
+            "index": 2,
+            "name": "全家人口最近一年度所得證明文件"
+          },
+          {
+            "index": 3,
+            "name": "全家人口最近一年度財產證明文件"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0136": {
+    "sourceFingerprint": "e8300e4f9a015e5c",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "家長向幼托機構或居家托育服務中心提出申請，原則於服務日前一天提出，特殊狀況經服務單位同意例外。服務提供單位查核資格並按季以限時掛號送局請款。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "家長身分證"
+          },
+          {
+            "index": 1,
+            "name": "兒童之戶口名簿"
+          },
+          {
+            "index": 12,
+            "name": "兒童臨時托育服務申請表"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0137": {
+    "sourceFingerprint": "9b83cf9d167ae209",
+    "reviewNote": "新申請、續辦及收款方式各異，未確認分支不自動勾選。",
+    "steps": [
+      {
+        "step": "托育事實發生日起15日內備齊文件送兒童托育地之居家托育服務中心或托嬰中心初審。次年未滿3歲且持續就托原單位，由原中心或機構協助續辦，家長無須重新填送申請表。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0138": {
+    "sourceFingerprint": "b647f4dbe3f62de9",
+    "reviewNote": "原文只有應備文件及送件方式缺漏，沒有可確認完成的備件或送件動作。",
+    "steps": [
+      {
+        "step": "申請說明頁未載明送件方式；應備文件含申請表、相關證明文件及存摺封面影本，如委任他人代辦需檢附委任書及身分證明文件。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0139": {
+    "sourceFingerprint": "1345620a2de7a6d5",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "申請說明頁未列送件方式。洽辦資訊頁載：持本局核發有效期限內之特殊境遇家庭身分認定公函，向就托機構索取臺北市弱勢家庭兒童托育補助申請表，後由就托機構向本局辦理補助費用申請。申請期限為兒童實際就托機構後6個月內。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "特殊境遇家庭身分認定公函（本局核發，有效期限內）"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0140": {
+    "sourceFingerprint": "a4c3f699bdaa5733",
+    "reviewNote": "步驟使用特境認定公函，文件欄為身分認定的另一組材料，不混用。",
+    "steps": [
+      {
+        "step": "申請人持本局核發有效之特殊境遇家庭身分認定公函影本，向子女就讀之學校申請費用減免。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0141": {
+    "sourceFingerprint": "6c99d5b2f3e5d1d4",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "申請說明頁未列送件方式；應於就診後3個月內提出申請。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 2,
+            "name": "申請人本人郵局或市庫代理銀行臺北富邦銀行存摺封面影本"
+          },
+          {
+            "index": 3,
+            "name": "醫療費用收據"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0142": {
+    "sourceFingerprint": "0ca83994aab1dd94",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "申請說明頁未列送件方式；應於提出訴訟至法院判決確定後6個月內提出申請。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 2,
+            "name": "申請人本人郵局或市庫代理銀行臺北富邦銀行存摺封面影本"
+          },
+          {
+            "index": 3,
+            "name": "律師費用收據"
+          },
+          {
+            "index": 4,
+            "name": "委任狀影本、訴狀影本及法院遞狀證明文件"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0143": {
+    "sourceFingerprint": "64807c363b4ef1ef",
+    "reviewNote": "個人與院所請款附件不同，未選分支不自動勾選。",
+    "steps": [
+      {
+        "step": "申請說明頁未列送件方式；應於就診後3個月內申請。個人申請與經由醫療院所申請之文件不同。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0144": {
+    "sourceFingerprint": "9cc37096851c6b31",
+    "reviewNote": "僅有洽詢窗口與送件方式缺漏，洽詢完成不等於修繕文件已備妥。",
+    "steps": [
+      {
+        "step": "申請說明頁未列送件方式；可洽本局委託之財團法人伊甸社會福利基金會（臺北扶老諮詢專線：0800-894580）。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0145": {
+    "sourceFingerprint": "9ef43537223e93cd",
+    "reviewNote": "機構到宅評估不等於申請人已備齊權屬或屋主文件。",
+    "steps": [
+      {
+        "step": "由本局委託伊甸社會福利基金會到宅協助，自個案申請初審通過後14日（含假日）內提供專人到宅評估、規劃服務。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0146": {
+    "sourceFingerprint": "f4ed14393dd39fd6",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "應填具申請表，並檢附下列文件向本府社會局提出申請（送件方式原文未載明）。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "本市核(換)發或註記之身心障礙證明正、反面影本"
+          },
+          {
+            "index": 1,
+            "name": "載明租賃房屋面積之租賃契約書影本"
+          },
+          {
+            "index": 2,
+            "name": "身心障礙者之台北富邦銀行或郵局存摺帳號影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0147": {
+    "sourceFingerprint": "26e0ccacedb87863",
+    "reviewNote": "原文只載受理期間，沒有可確認文件備妥的步驟。",
+    "steps": [
+      {
+        "step": "受理申請時間：1月1日起至12月31日止。送件方式原文未載明。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0148": {
+    "sourceFingerprint": "1b229c7fbf93ea4b",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "申請人應為本人，本人無法申請時得由代理人（機構相關人員不得擔任）於本人入住機構或服務單位後，檢具下列文件向本局提出申請；資料未備齊經通知限期補正逾15日未補正者，不予受理。送件方式原文未載明。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 2,
+            "name": "機構入住合約書或服務契約書"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0149": {
+    "sourceFingerprint": "74f7956c5d9bb7e6",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "每年受理二次，自04月01日至04月30日止、08月01日至08月31日止；檢具以下資料向本市十二區公所申請。本會將於受理前將受理資訊放置於網站。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請表"
+          },
+          {
+            "index": 1,
+            "name": "切結書"
+          },
+          {
+            "index": 2,
+            "name": "全戶戶口名簿影本（含配偶）"
+          },
+          {
+            "index": 3,
+            "name": "財稅資料證明"
+          },
+          {
+            "index": 4,
+            "name": "房屋租賃契約書影本"
+          },
+          {
+            "index": 5,
+            "name": "申請人存摺封面影本"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0150": {
+    "sourceFingerprint": "2375662a418f2de2",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "書面填寫申請書及活動計畫等文件，以紙本郵寄或親送至青年局提出申請。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "活動計畫等文件"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0151": {
+    "sourceFingerprint": "880f474643eab967",
+    "reviewNote": "依本筆流程與文件逐步對應；取得空白表單、資格核對、等待審查及未確認的選附／分支文件不推定備妥。",
+    "steps": [
+      {
+        "step": "採掛號郵寄（以交郵當日郵戳為憑）或送達本局（以送達為準）提出申請；同一補助對象於同一年度內以補助二案為限；同一案件向二個以上政府機關申請補助，應列明全部經費分攤內容。",
+        "documents": [
+          {
+            "index": 0,
+            "name": "申請書"
+          },
+          {
+            "index": 1,
+            "name": "補助活動計畫書"
+          },
+          {
+            "index": 3,
+            "name": "公職人員利益衝突迴避法補助案件自主檢核表"
+          }
+        ]
+      }
+    ]
+  },
+  "CT-0152": {
+    "sourceFingerprint": "ec63f4c510213a6b",
+    "reviewNote": "彙整多種托育方案，文件具有不同方案及地域要求，不一次勾選。",
+    "steps": [
+      {
+        "step": "中央育兒津貼：備齊申請表、申請人及兒童身分證明文件影本（如戶口名簿）、申請人其中一方之郵局或台北富邦帳戶影本，以郵寄或親送方式至幼兒戶籍地區公所社會課申請。公共及準公共托育補助、臺北市友善托育補助、臺北市協力照顧補助：親送或掛號郵寄申請文件至幼兒送托之托育人員所屬居家托育服務中心/托嬰中心/社區公共托育家園。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0153": {
+    "sourceFingerprint": "35b660335e926489",
+    "reviewNote": "多類創業研發方案各有不同附件且同名異條件，未選類別保留手動確認。",
+    "steps": [
+      {
+        "step": "依「如何申請」頁：請申請人運用線上申請作業。第2梯次主題式研發（AI創新應用）公告：請利用線上申請系統完成送件；各項應備申請文件詳見申請須知（下載專區）。",
+        "documents": []
+      }
+    ]
+  },
+  "CT-0155": {
+    "sourceFingerprint": "ddb8eec9cd0c2b44",
+    "reviewNote": "線上、通報及書面為替代路徑；已通報可免紙本，不一律勾選。",
+    "steps": [
+      {
+        "step": "可擇一採個人線上申辦、委託投保單位線上申辦、出生登記時透過戶政機關通報或書面申請。符合條件者生育給付加給生育補助至10萬元並合併發給，補助無須另行申請；加保日數不足之補助對象，申請程序及應備書件同勞保生育給付。已完成通報或線上申辦，無須重複寄送申請書件。",
+        "documents": []
+      }
+    ]
+  }
+}

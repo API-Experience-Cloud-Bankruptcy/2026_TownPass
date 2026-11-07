@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LOGO_PATH, RING_PATH, logoViewBox } from '../brand/logo';
+import { LOGO_PATH, LOGO_START, RING_PATH, logoViewBox } from '../brand/logo';
 import html from '../../index.html?raw';
 
 describe('福利連 Logo', () => {
@@ -14,8 +14,12 @@ describe('福利連 Logo', () => {
     expect(html).toContain(`viewBox="${logoViewBox(stroke)}"`);
   });
 
-  it('思考圓圈與 Logo 的指令結構相同，才能互相變形', () => {
-    const shape = (d: string) => [d.replace(/[^A-Za-z]/g, ''), d.match(/-?\d+(\.\d+)?/g)?.length];
-    expect(shape(RING_PATH)).toEqual(shape(LOGO_PATH));
+  it('思考圓圈頭尾相接，筆可以一直繞', () => {
+    const nums = RING_PATH.match(/-?\d+(\.\d+)?/g)!.map(Number);
+    expect(nums.slice(-2)).toEqual(nums.slice(0, 2));
+  });
+
+  it('筆從 Logo 的起筆點開始寫', () => {
+    expect(LOGO_PATH.startsWith(`M${LOGO_START.x},${LOGO_START.y} `)).toBe(true);
   });
 });

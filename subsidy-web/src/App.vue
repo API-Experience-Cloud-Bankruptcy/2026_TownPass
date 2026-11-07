@@ -8,6 +8,7 @@ import LogoMark from './components/LogoMark.vue';
 import { dismissSplash, SPLASH_MAX_WAIT_MS } from './brand/splash';
 import BrowseView from './components/BrowseView.vue';
 import PlanItemView from './components/PlanItemView.vue';
+import StepHelpView from './components/StepHelpView.vue';
 import PlanView from './components/PlanView.vue';
 import { FONT_SCALE } from './domain/session';
 import {
@@ -98,6 +99,7 @@ const pageKey = computed(() =>
   isChat.value ? `chat-${conversationEpoch.value}`
   : state.view === 'detail' ? `detail-${state.detailId ?? ''}`
   : state.view === 'planItem' ? `planItem-${state.planItemId ?? ''}`
+  : state.view === 'stepHelp' ? `stepHelp-${state.planItemId ?? ''}-${state.helpStep ?? ''}`
   : state.view,
 );
 /** 目前畫面上（已進場）的頁；main 的版面 class 跟著它，離場中的舊頁不會先換版面。 */
@@ -109,7 +111,7 @@ type Section = 'find' | 'plan' | 'browse';
 const SECTION_ORDER: Record<Section, number> = { find: 0, plan: 1, browse: 2 };
 function sectionOf(view: View): Section {
   if (CHAT_VIEWS.includes(view)) return 'find';
-  if (view === 'plan' || view === 'planItem') return 'plan';
+  if (PLAN_VIEWS.includes(view)) return 'plan';
   if (view === 'browse') return 'browse';
   // 詳情頁屬於開啟它的分頁（返回紀錄的最底層；tab() 會清空紀錄）
   const root = state.history[0];
@@ -144,6 +146,12 @@ function onPageBeforeEnter() {
 }
 function onPageEntered() {
   focusView(isChat.value);
+  if (state.view === 'planItem' && state.helpReturnId) {
+    const trigger = document.getElementById(state.helpReturnId);
+    trigger?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    trigger?.focus({ preventScroll: true });
+    state.helpReturnId = null;
+  }
   resumeReady.value = isChat.value;
 }
 
@@ -161,7 +169,7 @@ watch(
 
 const navItems: { view: View; label: string; match: View[] }[] = [
   { view: 'home', label: '找資源', match: ['home', 'needs', 'search', 'questions', 'results', 'detail'] },
-  { view: 'plan', label: '行動單', match: ['plan', 'planItem'] },
+  { view: 'plan', label: '行動單', match: ['plan', 'planItem', 'stepHelp'] },
   { view: 'browse', label: '補助總覽', match: ['browse'] },
 ];
 
@@ -204,12 +212,14 @@ function withBackBar(name: string, view: Component) {
 }
 const DetailPage = withBackBar('DetailPage', DetailView);
 const PlanItemPage = withBackBar('PlanItemPage', PlanItemView);
+const StepHelpPage = withBackBar('StepHelpPage', StepHelpView);
 
 const page = computed<Component | null>(() =>
   isChat.value ? ChatView
   : state.view === 'detail' ? DetailPage
   : state.view === 'plan' ? PlanView
   : state.view === 'planItem' ? PlanItemPage
+  : state.view === 'stepHelp' ? StepHelpPage
   : state.view === 'browse' ? BrowseView
   : null,
 );
@@ -310,7 +320,7 @@ const dialogTitle = computed(() =>
     </Transition>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已儲存的資料；開啟官方網站仍需要網路。</p>
     <Transition name="fade">
-      <p v-if="PLAN_VIEWS.includes(shownView) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">
+      <p v-if="shownView !== 'stepHelp' && PLAN_VIEWS.includes(shownView) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">
         <span class="sync-dot" :class="`sync-dot--${planSync.state.phase}`" aria-hidden="true"></span>
         <Transition name="fade" mode="out-in"><span :key="planSync.state.phase">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在儲存行動單…' : '正在讀取已儲存的行動單…' }}</span></Transition>
       </p>

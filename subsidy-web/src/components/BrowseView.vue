@@ -132,7 +132,7 @@ function chooseAll() { reset(); showAll.value = true; focusHeading(); }
                   <span class="row__sub">{{ item.classification.category }}</span>
                   <span class="row__title">{{ item.name }}</span>
                   <span class="row__sub">{{ item.provider.name }}</span>
-                  <span v-if="plainLanguageFor(item)" class="row__sub">白話導讀：{{ plainLanguageFor(item)!.support }}</span>
+                  <span v-if="plainLanguageFor(item)" class="row__sub">{{ plainLanguageFor(item)!.summary }}</span>
                   <span v-else-if="item.benefit.raw" class="row__sub">內容節錄：{{ sourceExcerpt(item.benefit.raw, 72) }}</span>
                   <span class="browse-status" :class="{ 'browse-status--inactive': isInactive(browseStatus(item, today)) }">{{ browseStatusLabel(item, today) }}</span>
                 </span>

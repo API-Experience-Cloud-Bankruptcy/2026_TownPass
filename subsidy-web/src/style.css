@@ -1248,18 +1248,17 @@ details.bubble-more.is-closing[open] > summary::after {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.logo__ink {
-  stroke-dasharray: 1 0;
-  transition: stroke-dasharray 0.35s var(--ease);
+.logo__ring,
+.logo__pen {
+  opacity: 0;
 }
-/* 思考中：線條收成圓圈後留一道缺口轉動，像在想事情；變回 Logo 時缺口補滿。 */
-.logo--ring .logo__ink {
-  stroke-dasharray: 0.72 0.28;
-  animation: logo-spin 1.1s linear infinite;
-}
-@keyframes logo-spin {
-  to { stroke-dashoffset: -1; }
-}
+/* 思考中的鉛筆：筆尖用 Logo 的筆色，像正在寫字。 */
+.logo__pen { stroke: none; }
+.logo__pen-wood { fill: var(--tp-secondary-200); }
+.logo__pen-lead { fill: currentColor; }
+.logo__pen-body { fill: var(--tp-secondary-500); }
+.logo__pen-band { fill: var(--tp-grayscale-300); }
+.logo__pen-eraser { fill: var(--tp-orange-300); }
 
 /* 訊息列 */
 .msg {
@@ -1816,7 +1815,7 @@ li.wheel__item + li.wheel__item {
 @media (prefers-reduced-motion: reduce) {
   .msg, .reply, .bubble__extra, .msg__after { animation: none; }
   .bubble-more > summary::after { transition: none; }
-  .caret, .logo--ring .logo__ink { animation: none; }
+  .caret { animation: none; }
   .chat-out-leave-active { transition: none !important; }
 }
 @media (forced-colors: active) {
@@ -2293,7 +2292,8 @@ li.wheel__item + li.wheel__item {
 .task-step__actions .btn {
   line-height: 1;
 }
-.task-step__actions .btn--block {
+.task-step__actions .btn--block,
+.task-step__actions .step-help {
   justify-self: stretch;
 }
 .more--inline > summary {

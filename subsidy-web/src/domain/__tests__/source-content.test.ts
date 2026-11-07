@@ -64,7 +64,10 @@ describe('所有福利的完整原文閱讀', () => {
       const plain = plainLanguageFor(item);
       expect(plain, item.id).not.toBeNull();
       expect(html).toContain('先看重點');
-      expect(card).toContain('白話導讀：');
+      expect(card).toContain(plain!.summary);
+      expect(card).not.toContain('白話導讀：');
+      expect(html).toContain(plain!.support);
+      if (plain!.summary !== plain!.support) expect(card).not.toContain(plain!.support);
     }
   }, 20000);
 });

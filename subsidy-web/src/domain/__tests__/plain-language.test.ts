@@ -8,9 +8,10 @@ describe('逐筆白話導讀', () => {
     for (const item of realItems) {
       const entry = plainLanguageFor(item);
       expect(entry, item.id).not.toBeNull();
-      for (const key of ['audience', 'support', 'firstStep'] as const) {
+      for (const key of ['summary', 'audience', 'support', 'firstStep'] as const) {
         expect(entry![key].trim().length, `${item.id}.${key}`).toBeGreaterThan(5);
       }
+      expect([...entry!.summary].length, `${item.id}.summary`).toBeLessThanOrEqual(60);
       expect(entry!.cautions.length, item.id).toBeGreaterThan(0);
       expect(entry!.cautions.every(s => s.trim().length > 5), item.id).toBe(true);
     }

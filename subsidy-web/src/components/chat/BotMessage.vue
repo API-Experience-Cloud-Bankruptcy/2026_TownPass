@@ -18,8 +18,8 @@ const waiting = ref(!isTyped(props.msgKey));
 const done = computed(() => shown.value >= total.value && !waiting.value);
 
 const bubble = ref<HTMLElement | null>(null);
-/** 「思考中」停留時間：頭像的線條收成圓圈（LogoMark 0.42 秒）並轉一下，再開始回覆。 */
-const TYPING_INTRO_MS = 700;
+/** 「思考中」停留時間：頭像的筆先畫滿一圈多（LogoMark 一圈 0.72 秒），再開始回覆。 */
+const TYPING_INTRO_MS = 800;
 let frame = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let unmounted = false;
@@ -59,7 +59,7 @@ onMounted(async () => {
   // 開場畫面還在時先不打字，免得第一則的書寫動畫被蓋住。
   await splashGone;
   if (unmounted) return;
-  // 先讓頭像「想一下」：線條收成圓圈轉動；開始打字時圓圈變回 Logo，泡泡同時浮現。
+  // 先讓頭像「想一下」：筆一直畫圓圈；開始打字時筆改寫出 Logo，泡泡同時浮現。
   timer = setTimeout(async () => {
     const from = bubble.value?.getBoundingClientRect();
     waiting.value = false;
