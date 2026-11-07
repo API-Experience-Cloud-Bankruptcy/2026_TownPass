@@ -171,7 +171,7 @@ function commitLeftovers(issue, wt) {
   const written = existsSync(msgFile) ? readFileSync(msgFile, 'utf8').trim() : ''
   if (existsSync(msgFile)) rmSync(msgFile)
   // Dependency manifests changed outside a deliberate commit are usually trial installs; never sweep them in.
-  const manifests = git(['diff', '--name-only', 'HEAD'], { cwd: wt.dir }).split('\n').filter((f) => /(^|\/)(package\.json|package-lock\.json|pnpm-lock\.yaml|pubspec\.yaml|pubspec\.lock)$/.test(f))
+  const manifests = git(['diff', '--name-only', '--no-renames', 'HEAD'], { cwd: wt.dir }).split('\n').filter((f) => /(^|\/)(package\.json|package-lock\.json|pnpm-lock\.yaml|pubspec\.yaml|pubspec\.lock)$/.test(f))
   for (const f of manifests) {
     // Staged or unstaged: restore tracked files from HEAD; drop manifests HEAD never had.
     if (git(['ls-tree', '--name-only', 'HEAD', '--', f], { cwd: wt.dir })) git(['checkout', 'HEAD', '--', f], { cwd: wt.dir })
