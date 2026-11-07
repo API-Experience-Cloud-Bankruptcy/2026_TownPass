@@ -1,0 +1,262 @@
+import { router } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import { Btn, Dots, Screen, T } from '@/components/ui-kit';
+import { QUESTIONS } from '@/data';
+import type { Identity, Profile } from '@/data/welfare-schema';
+import { useApp, type Answers } from '@/lib/app-state';
+import { questionsFor, type Question } from '@/lib/questions-types';
+
+const ROC_OFFSET = 1911;
+
+export default function Quiz() {
+  const { categories, answers, setAnswers } = useApp();
+  const questions = useMemo(() => questionsFor(QUESTIONS, categories), [categories]);
+  const [index, setIndex] = useState(0);
+  const [draft, setDraft] = useState<Answers>(answers);
+  const q = questions[index];
+
+  function next(updated: Answers) {
+    setDraft(updated);
+    if (index + 1 < questions.length) setIndex(index + 1);
+    else {
+      setAnswers(updated);
+      router.push('/results');
+    }
+  }
+
+  function skip() {
+    next(clearAnswer(q, draft));
+  }
+
+  return (
+    <Screen title="回答問題">
+      <View style={s.top}>
+        <Dots total={questions.length} current={index} />
+        <T size="small" muted>
+          第 {index + 1} 題，共 {questions.length} 題
+        </T>
+      </View>
+      <T size="title" heading={1}>
+        {q.title}
+      </T>
+      <QuestionBody key={q.id} q={q} draft={draft} onDone={next} />
+      <View style={s.navRow}>
+        {index > 0 ? (
+          <Btn label="上一題" onPress={() => setIndex(index - 1)} style={s.flex1} />
+        ) : null}
+        <Btn label="不知道／跳過" variant="ghost" onPress={skip} style={s.flex1} />
+      </View>
+    </Screen>
+  );
+}
+
+function clearAnswer(q: Question, a: Answers): Answers {
+  const profile: Profile = { ...a.profile };
+  let unknownIdentities = a.unknownIdentities;
+  switch (q.kind) {
+    case 'birthYear':
+      delete profile.birthYear;
+      break;
+    case 'single':
+      delete profile[q.field];
+      break;
+    case 'children':
+      delete profile.childrenUnder;
+      break;
+    case 'identities': {
+      const ids = q.options.map((o) => o.identity);
+      profile.identities = profile.identities.filter((i) => !ids.includes(i));
+      unknownIdentities = [...new Set([...unknownIdentities, ...ids])];
+      break;
+    }
+    case 'identityYesNo':
+      profile.identities = profile.identities.filter((i) => i !== q.identity);
+      unknownIdentities = [...new Set([...unknownIdentities, q.identity])];
+      break;
+  }
+  return { profile, unknownIdentities };
+}
+
+function QuestionBody({ q, draft, onDone }: { q: Question; draft: Answers; onDone: (a: Answers) => void }) {
+  const p = draft.profile;
+  switch (q.kind) {
+    case 'birthYear':
+      return <BirthYear value={p.birthYear} onPick={(y) => onDone({ ...draft, profile: { ...p, birthYear: y } })} />;
+    case 'single':
+      return (
+        <View style={s.options} role="radiogroup">
+          {q.options.map((o) => {
+            const selected = Object.entries(o.patch).every(([k, v]) => p[k as keyof Profile] === v);
+            return (
+              <Btn
+                key={o.label}
+                label={o.label}
+                role="radio"
+                selected={selected && p[q.field] !== undefined}
+                align="left"
+                onPress={() => onDone({ ...draft, profile: { ...p, ...o.patch } })}
+              />
+            );
+          })}
+        </View>
+      );
+    case 'identityYesNo': {
+      const has = p.identities.includes(q.identity);
+      const answer = (yes: boolean) =>
+        onDone({
+          profile: {
+            ...p,
+            identities: yes ? [...new Set([...p.identities, q.identity])] : p.identities.filter((i) => i !== q.identity),
+          },
+          unknownIdentities: draft.unknownIdentities.filter((i) => i !== q.identity),
+        });
+      return (
+        <View style={s.options} role="radiogroup">
+          <Btn label="有" role="radio" align="left" selected={has} onPress={() => answer(true)} />
+          <Btn label="沒有" role="radio" align="left" onPress={() => answer(false)} />
+        </View>
+      );
+    }
+    case 'identities':
+      return <MultiIdentity q={q} draft={draft} onDone={onDone} />;
+    case 'children':
+      return <Children q={q} draft={draft} onDone={onDone} />;
+  }
+}
+
+function MultiIdentity({
+  q,
+  draft,
+  onDone,
+}: {
+  q: Extract<Question, { kind: 'identities' }>;
+  draft: Answers;
+  onDone: (a: Answers) => void;
+}) {
+  const ids = q.options.map((o) => o.identity);
+  const [picked, setPicked] = useState<Identity[]>(draft.profile.identities.filter((i) => ids.includes(i)));
+  const finish = (list: Identity[]) =>
+    onDone({
+      profile: { ...draft.profile, identities: [...draft.profile.identities.filter((i) => !ids.includes(i)), ...list] },
+      unknownIdentities: draft.unknownIdentities.filter((i) => !ids.includes(i)),
+    });
+  return (
+    <View style={s.options}>
+      {q.options.map((o) => {
+        const on = picked.includes(o.identity);
+        return (
+          <Btn
+            key={o.identity}
+            label={o.label}
+            role="checkbox"
+            icon={on ? '✓' : '○'}
+            selected={on}
+            align="left"
+            onPress={() => setPicked(on ? picked.filter((i) => i !== o.identity) : [...picked, o.identity])}
+          />
+        );
+      })}
+      <Btn label="以上都沒有" align="left" icon="—" onPress={() => finish([])} />
+      <Btn label={picked.length ? `下一步（已選 ${picked.length} 個）` : '下一步'} variant="primary" disabled={!picked.length} onPress={() => finish(picked)} />
+    </View>
+  );
+}
+
+function Children({
+  q,
+  draft,
+  onDone,
+}: {
+  q: Extract<Question, { kind: 'children' }>;
+  draft: Answers;
+  onDone: (a: Answers) => void;
+}) {
+  const [picked, setPicked] = useState<number[]>(draft.profile.childrenUnder ?? []);
+  const finish = (list: number[]) => onDone({ ...draft, profile: { ...draft.profile, childrenUnder: list } });
+  return (
+    <View style={s.options}>
+      {q.options.map((o) => {
+        const on = picked.includes(o.age);
+        return (
+          <Btn
+            key={o.label}
+            label={o.label}
+            role="checkbox"
+            icon={on ? '✓' : '○'}
+            selected={on}
+            align="left"
+            onPress={() => setPicked(on ? picked.filter((a) => a !== o.age) : [...picked, o.age])}
+          />
+        );
+      })}
+      <Btn label="沒有孩子或都已成年" align="left" icon="—" onPress={() => finish([])} />
+      <Btn label="下一步" variant="primary" disabled={!picked.length} onPress={() => finish(picked)} />
+    </View>
+  );
+}
+
+function BirthYear({ value, onPick }: { value?: number; onPick: (y: number) => void }) {
+  const thisYear = new Date().getFullYear();
+  const [decade, setDecade] = useState<number | null>(value ? Math.floor(value / 10) * 10 : null);
+  const decades: number[] = [];
+  for (let d = 1920; d <= thisYear; d += 10) decades.push(d);
+
+  if (decade === null) {
+    return (
+      <View style={s.options}>
+        <T muted>先選年代</T>
+        <View style={s.grid}>
+          {decades.map((d) => (
+            <View key={d} style={s.half}>
+              <Btn
+                label={`${d} 年代`}
+                hint={`民國 ${Math.max(d - ROC_OFFSET, 0)} 年前後`}
+                onPress={() => setDecade(d)}
+              />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  const years = Array.from({ length: 10 }, (_, i) => decade + i).filter((y) => y <= thisYear);
+  return (
+    <View style={s.options}>
+      <View style={s.yearHead}>
+        <T muted style={s.flex1}>
+          {decade} 年代，選出生那一年
+        </T>
+        <Btn label="換年代" variant="ghost" onPress={() => setDecade(null)} />
+      </View>
+      <View style={s.grid}>
+        {years.map((y) => {
+          const roc = y - ROC_OFFSET;
+          return (
+            <View key={y} style={s.half}>
+              <Btn
+                label={`${y}${roc > 0 ? `・民國 ${roc}` : ''}`}
+                hint={`${thisYear - y} 歲`}
+                role="radio"
+                selected={value === y}
+                onPress={() => onPick(y)}
+              />
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  top: { gap: 6, paddingTop: 8 },
+  options: { gap: 10 },
+  navRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  flex1: { flex: 1 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5 },
+  half: { width: '50%', padding: 5 },
+  yearHead: { flexDirection: 'row', alignItems: 'center' },
+});
