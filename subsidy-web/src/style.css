@@ -833,6 +833,11 @@ legend {
   gap: var(--space-3);
   padding: var(--space-4) var(--gutter) var(--space-6);
 }
+/* 訊息貼著底部（輸入列上方）排列：新訊息把舊的往上推，頂到上方留白後才開始捲動。
+   用第一個子元素的 margin-top: auto 而非 justify-content: flex-end，內容超出時仍能捲到最上面。 */
+.chat__log > :first-child {
+  margin-top: auto;
+}
 .chat__day,
 .chat__system {
   align-self: center;
