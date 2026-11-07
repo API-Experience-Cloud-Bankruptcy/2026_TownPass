@@ -1,6 +1,6 @@
 import templates from '../../../backend/rules/question-templates.json';
 const LEGACY_FIELDS = new Set(['age','region','is_student','household_type']);
-export const EXTRA_QUALIFICATION_FIELDS = new Set(['education_level','is_unemployed','is_renting','owns_home','disability_certificate']);
+export const EXTRA_QUALIFICATION_FIELDS = new Set(['education_level','is_unemployed','is_renting','owns_home','disability_certificate','has_farmer_insurance','veteran_status']);
 /** A bounded shared vocabulary prevents imported/session answers from storing arbitrary personal text. */
 export function validExtraValue(field: string, value: unknown): value is string | boolean {
   if (LEGACY_FIELDS.has(field)) return false;

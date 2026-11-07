@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:town_pass/util/web_message_handler/llm_message_handler.dart';
+
 import 'package:town_pass/util/web_message_handler/share_pdf_message_handler.dart';
 import 'package:town_pass/util/web_message_handler/tp_web_message_handler.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -8,17 +10,20 @@ abstract class TPWebMessageListener {
   // 將訊息處理器列表快取起來，避免每次訪問時都重複建立新的實例。
   // 這樣做可以提升應用程式的啟動效能，因為這些處理器通常是無狀態的。
   static final List<TPWebMessageHandler> _cachedMessageHandlers = [
-        UserinfoWebMessageHandler(),
-        LaunchMapWebMessageHandler(),
-        PhoneCallMessageHandler(),
-        Agree1999MessageHandler(),
-        LocationMessageHandler(),
-        DeviceInfoMessageHandler(),
-        OpenLinkMessageHandler(),
-        NotifyMessageHandler(),
-        QRCodeScanMessageHandler(),
-        SharePdfMessageHandler(),
-      ];
+    UserinfoWebMessageHandler(),
+    LaunchMapWebMessageHandler(),
+    PhoneCallMessageHandler(),
+    Agree1999MessageHandler(),
+    LocationMessageHandler(),
+    DeviceInfoMessageHandler(),
+    OpenLinkMessageHandler(),
+    NotifyMessageHandler(),
+    QRCodeScanMessageHandler(),
+    SharePdfMessageHandler(),
+    LlmMessageHandler('llm_status'),
+    LlmMessageHandler('llm_prepare'),
+    LlmMessageHandler('llm_interpret'),
+  ];
 
   static List<TPWebMessageHandler> get messageHandler => _cachedMessageHandlers;
 

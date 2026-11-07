@@ -1,0 +1,220 @@
+/*
+ * 福利連設計 token。
+ *
+ * 第一層 --tp-*：原樣對照城市通 Flutter 端（勿自行改值）
+ *   色票  lib/util/tp_colors.dart
+ *   字級  lib/util/tp_text_styles.dart（h1 36・h2 24・title 18・h3 16・body 14・caption 12；400／600）
+ *   圓角  tp_button.dart / tp_dialog.dart = 10，tp_card.dart = 3
+ *   陰影  tp_card.dart（0 4 12 #0000000A）
+ *
+ * 第二層語意 token（--bg、--accent、--fs-* …）：元件只用這一層。
+ * 對比度（白底）：primary-500 僅 2.4:1、secondary-500 僅 1.8:1，不可當文字或白字底色；
+ * 文字／主要按鈕用 primary-700（5.9:1），黃色只當底色或裝飾，上面用深色字。
+ */
+:root {
+  /* ── Primary 主色 ── */
+  --tp-primary-50: #edf8fa;
+  --tp-primary-100: #dbf1f5;
+  --tp-primary-200: #b4e2ea;
+  --tp-primary-300: #93d4df;
+  --tp-primary-400: #71c5d5;
+  --tp-primary-500: #5ab4c5;
+  --tp-primary-600: #468d9b;
+  --tp-primary-700: #356c77;
+  --tp-primary-800: #22474e;
+  --tp-primary-900: #112629;
+  --tp-primary-950: #081315;
+
+  /* ── Secondary 輔色 ── */
+  --tp-secondary-50: #fdf8ed;
+  --tp-secondary-100: #fcf2df;
+  --tp-secondary-200: #f8e3bc;
+  --tp-secondary-300: #f4d69e;
+  --tp-secondary-400: #f0c87c;
+  --tp-secondary-500: #f5ba4b;
+  --tp-secondary-600: #e7a43c;
+  --tp-secondary-700: #ad7b2b;
+  --tp-secondary-800: #74521b;
+  --tp-secondary-900: #3c2b0b;
+  --tp-secondary-950: #1c1304;
+
+  /* ── Grayscale 灰階 ── */
+  --tp-grayscale-50: #f1f3f4;
+  --tp-grayscale-100: #e3e7e9;
+  --tp-grayscale-200: #cad1d5;
+  --tp-grayscale-300: #adb8be;
+  --tp-grayscale-400: #91a0a8;
+  --tp-grayscale-500: #738995;
+  --tp-grayscale-600: #5e6d76;
+  --tp-grayscale-700: #475259;
+  --tp-grayscale-800: #30383d;
+  --tp-grayscale-900: #171b1d;
+  --tp-grayscale-950: #0b0d0e;
+
+  /* ── Red ── */
+  --tp-red-50: #faeeee;
+  --tp-red-100: #f5dcdd;
+  --tp-red-200: #ebb6b6;
+  --tp-red-300: #e29494;
+  --tp-red-400: #d45251;
+  --tp-red-500: #d45251;
+  --tp-red-600: #c2332f;
+  --tp-red-700: #912522;
+  --tp-red-800: #5f1715;
+  --tp-red-900: #310b0b;
+  --tp-red-950: #180505;
+
+  /* ── Orange ── */
+  --tp-orange-50: #fdf3ec;
+  --tp-orange-100: #fbe7d9;
+  --tp-orange-200: #f7cfb2;
+  --tp-orange-300: #f4b992;
+  --tp-orange-400: #f1a26d;
+  --tp-orange-500: #fd853a;
+  --tp-orange-600: #e6692c;
+  --tp-orange-700: #ae501f;
+  --tp-orange-800: #713311;
+  --tp-orange-900: #391a06;
+  --tp-orange-950: #1c0c02;
+
+  --tp-white: #ffffff;
+  --tp-black: #000000;
+
+  /* ── 字型與字級（TPTextStyles；以 rem 表示，跟著「大字」模式一起放大）── */
+  --tp-font-family: Roboto, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+  --tp-fs-h1: 2.25rem;    /* 36 */
+  --tp-fs-h2: 1.5rem;     /* 24 */
+  --tp-fs-title: 1.125rem;/* 18 */
+  --tp-fs-h3: 1rem;       /* 16 */
+  --tp-fs-body: 0.875rem; /* 14 */
+  --tp-fs-caption: 0.75rem;/* 12 */
+  --tp-fw-regular: 400;
+  --tp-fw-semibold: 600;
+
+  /* ── 形狀與陰影 ── */
+  --tp-radius-card: 3px;
+  --tp-radius-control: 10px;
+  --tp-shadow-card: 0 4px 12px rgb(0 0 0 / 4%);
+  --tp-shadow-sheet: 0 -2px 6px rgb(0 0 0 / 8%);
+
+  /* ── 尺寸 ── */
+  --tp-touch-min: 48px;   /* 無障礙規範 TS：觸控目標至少 48dp */
+  --tp-toolbar-h: 56px;
+
+  /* ════════════ 語意 token（元件只用這一層） ════════════ */
+
+  /* 表面 */
+  --bg: var(--tp-white);
+  --bg-page: var(--tp-white);
+  --raised: var(--tp-grayscale-50);
+  --surface-brand: var(--tp-primary-50);
+  --surface-highlight: var(--tp-secondary-50);
+
+  /* 文字 */
+  --text: var(--tp-grayscale-900);
+  --text-2: var(--tp-grayscale-700);
+  --muted: var(--tp-grayscale-600);     /* 5.4:1，仍可當正文 */
+  --disabled-text: var(--tp-grayscale-500);
+  --disabled-bg: var(--tp-grayscale-100);
+
+  /* 線 */
+  --line: var(--tp-grayscale-100);
+  --line-strong: var(--tp-grayscale-300);
+  --line-input: var(--tp-grayscale-500); /* 輸入框邊框需 ≥3:1（3.7:1） */
+
+  /* 品牌／互動 */
+  --brand: var(--tp-primary-500);       /* 只當裝飾、圖示、大面積色塊 */
+  --accent: var(--tp-primary-700);      /* 文字連結、主要按鈕底色 */
+  --accent-press: var(--tp-primary-800);
+  --accent-soft: var(--tp-primary-50);  /* 次要按鈕按下、選取列底色 */
+  --on-accent: var(--tp-white);
+
+  /* 輔色：提醒、重點標記（黃底配深字） */
+  --highlight: var(--tp-secondary-500);
+  --highlight-soft: var(--tp-secondary-100);
+  --on-highlight: var(--tp-grayscale-900);
+  --highlight-text: var(--tp-secondary-800);
+
+  /* 狀態 */
+  --danger: var(--tp-red-700);
+  --danger-soft: var(--tp-red-50);
+  --warning: var(--tp-orange-700);
+  --warning-soft: var(--tp-orange-50);
+  --focus: var(--tp-primary-800);
+
+  /* 字級語意：本服務對象含長者，正文採 16（TP h3），14 作為輔助字 */
+  --font: var(--tp-font-family);
+  --fs-display: var(--tp-fs-h1);
+  --fs-page-title: var(--tp-fs-h2);
+  --fs-section: var(--tp-fs-title);
+  --fs-body: var(--tp-fs-h3);
+  --fs-small: var(--tp-fs-body);
+  --fs-caption: var(--tp-fs-caption);
+  --fw-regular: var(--tp-fw-regular);
+  --fw-medium: 500;
+  --fw-bold: var(--tp-fw-semibold);
+  --lh-tight: 1.35;
+  --lh-body: 1.6;
+
+  /* 間距（4 的倍數） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --gutter: var(--space-4);
+
+  /* 形狀 */
+  --radius: var(--tp-radius-control);
+  --radius-card: var(--tp-radius-card);
+  --radius-dialog: var(--tp-radius-control);
+  --radius-pill: 999px;
+  --shadow-card: var(--tp-shadow-card);
+  --shadow-sheet: var(--tp-shadow-sheet);
+  --touch: var(--tp-touch-min);
+
+  /* 對話介面 */
+  --chat-bg: var(--tp-grayscale-50);
+  --bubble-bot: var(--tp-white);
+  --bubble-user: var(--tp-primary-700);
+  --on-bubble-user: var(--tp-white);
+  --avatar-bg: var(--tp-primary-500);
+  --on-avatar: var(--tp-white);
+  --reply-line: var(--tp-primary-300);
+  --radius-bubble: 18px;
+  --radius-bubble-tail: 6px;
+  --radius-reply: 14px;
+  --radius-panel: 16px;  /* 詳情、行動單的白色卡片，和泡泡同一個質感 */
+
+  /* 動態 */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur: 150ms;
+}
+
+/* 高對比模式：只覆寫語意層 */
+:root.is-contrast {
+  --text: #000000;
+  --text-2: #000000;
+  --muted: #1a1a1a;
+  --line: #000000;
+  --line-strong: #000000;
+  --line-input: #000000;
+  --accent: #003c47;
+  --accent-press: #00262e;
+  --accent-soft: #ffffff;
+  --raised: #ffffff;
+  --surface-brand: #ffffff;
+  --surface-highlight: #ffffff;
+  --highlight-text: #000000;
+  --danger: #7a0000;
+  --warning: #6b2a00;
+  --focus: #b30000;
+  --shadow-card: none;
+  --chat-bg: #ffffff;
+  --bubble-user: #003c47;
+  --avatar-bg: #003c47;
+  --reply-line: #000000;
+}

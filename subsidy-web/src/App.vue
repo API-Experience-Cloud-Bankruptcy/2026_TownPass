@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch, watchEffect } from 'vue';
+import { followBottom } from './chat/typing';
+import ChatView from './components/ChatView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import DetailView from './components/DetailView.vue';
 import HelpView from './components/HelpView.vue';
-import HomeView from './components/HomeView.vue';
-import NeedView from './components/NeedView.vue';
-import SearchView from './components/SearchView.vue';
+import BrowseView from './components/BrowseView.vue';
 import PlanView from './components/PlanView.vue';
-import QuestionsView from './components/QuestionsView.vue';
-import ResultsView from './components/ResultsView.vue';
 import { modelAdapter, type ModelStatus } from './domain/model';
 import {
   back,
@@ -37,29 +35,37 @@ watchEffect(() => {
   root.classList.toggle('is-contrast', state.prefs.highContrast);
 });
 
-// 換頁或換題時把焦點移到新頁標題，讓讀屏與鍵盤使用者知道位置。
-// 動態題目可能在同一個 qIndex 換成別題，所以也看題目 id。
+const CHAT_VIEWS: View[] = ['home', 'needs', 'search', 'questions', 'results'];
+const isChat = computed(() => CHAT_VIEWS.includes(state.view));
+
+// 換頁或換題時把焦點移到新的標題或最新一則提問，讓讀屏與鍵盤使用者知道位置。
+// 對話頁捲到最下面；一般頁捲回頂端。動態題目可能在同一個 qIndex 換成別題，所以也看題目 id。
 watch(
   () => [state.view, state.detailId, state.qIndex, state.view === 'questions' ? questions.value[state.qIndex]?.id : null],
   async () => {
     settingsOpen.value = false;
     await nextTick();
-    window.scrollTo?.(0, 0);
-    document.getElementById('view-title')?.focus();
+    const title = document.getElementById('view-title');
+    if (isChat.value) {
+      title?.focus({ preventScroll: true });
+      followBottom(true);
+    } else {
+      window.scrollTo?.(0, 0);
+      title?.focus();
+    }
   },
 );
 
 const navItems: { view: View; label: string; match: View[] }[] = [
   { view: 'home', label: '找資源', match: ['home', 'needs', 'search', 'questions', 'results', 'detail'] },
   { view: 'plan', label: '行動單', match: ['plan'] },
-  { view: 'help', label: '找人幫忙', match: ['help'] },
+  { view: 'browse', label: '補助總覽', match: ['browse'] },
 ];
 
 const targetLabel = computed(() =>
   state.session.target === 'self' ? '幫自己找' : state.session.target === 'other' ? '幫別人找' : '尚未選擇',
 );
 
-const backLabel = computed(() => (state.view === 'questions' && state.qIndex > 0 ? '上一題' : '返回'));
 
 const dialogTitle = computed(() =>
   pendingSwitch.value === 'clear' ? '清除這次的資料？' : '換人嗎？',
@@ -70,7 +76,13 @@ const dialogTitle = computed(() =>
   <a class="skip-link" href="#main">跳到主要內容</a>
   <header class="app-header no-print">
     <div class="app-header__row">
-      <p class="brand">福利通</p>
+      <div class="brand">
+        <span class="avatar avatar--lg" aria-hidden="true">福</span>
+        <span class="brand__text">
+          <span class="brand__name">福利連</span>
+          <span class="brand__sub">{{ state.session.target ? `${targetLabel}・非官方服務` : '非官方服務，資格以承辦機關為準' }}</span>
+        </span>
+      </div>
       <button
         type="button"
         class="btn btn--text"
@@ -114,7 +126,7 @@ const dialogTitle = computed(() =>
         :key="n.view"
         type="button"
         class="tabs__item"
-        :aria-current="n.match.includes(state.view) ? 'page' : undefined"
+        :aria-current="n.match.includes(state.view === 'detail' && state.history[state.history.length - 1] === 'browse' ? 'browse' : state.view) ? 'page' : undefined"
         @click="tab(n.view)"
       >
         {{ n.view === 'plan' && state.session.target === 'other' ? '家人檢核表' : n.label }}<span v-if="n.view === 'plan' && planItems.length" class="tabs__count">{{ planItems.length }}<span class="sr-only"> 項</span></span>
@@ -122,7 +134,7 @@ const dialogTitle = computed(() =>
     </nav>
   </header>
 
-  <main id="main" class="app-main">
+  <main id="main" class="app-main" :class="{ 'app-main--chat': isChat, 'app-main--page': state.view === 'detail' || state.view === 'plan' }">
     <p v-if="state.loadError" class="status-line status-line--error" role="alert">
       {{ state.loadError }}
       <button type="button" class="btn btn--text" @click="init">重試</button>
@@ -133,23 +145,19 @@ const dialogTitle = computed(() =>
     </p>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已保存的資料，官方網站仍需連線</p>
 
-    <div v-if="['needs', 'search', 'questions', 'results', 'detail'].includes(state.view)" class="topbar no-print">
-      <button type="button" class="btn btn--text" @click="back"><span aria-hidden="true">‹</span> {{ backLabel }}</button>
-      <span v-if="state.session.target" class="muted">{{ targetLabel }}</span>
+    <div v-if="state.view === 'detail'" class="topbar no-print">
+      <button type="button" class="btn btn--text back-chat" @click="back">
+        <span aria-hidden="true">‹</span>
+        <span class="avatar avatar--sm" aria-hidden="true">福</span>
+        {{ state.history[state.history.length - 1] === 'browse' ? '回到補助總覽' : '返回上一頁' }}
+      </button>
     </div>
-    <HomeView v-if="state.view === 'home'" />
-    <NeedView v-else-if="state.view === 'needs'" />
-    <SearchView v-else-if="state.view === 'search'" />
-    <QuestionsView v-else-if="state.view === 'questions'" />
-    <ResultsView v-else-if="state.view === 'results'" />
+    <ChatView v-if="isChat" />
     <DetailView v-else-if="state.view === 'detail'" :key="state.detailId ?? ''" />
     <PlanView v-else-if="state.view === 'plan'" />
-    <HelpView v-else-if="state.view === 'help'" />
+    <KeepAlive><BrowseView v-if="state.view === 'browse'" /></KeepAlive>
+    <HelpView v-if="state.view === 'help'" />
   </main>
-
-  <footer class="app-footer no-print">
-    <p>非官方服務・資格以承辦機關審核為準</p>
-  </footer>
 
   <ConfirmDialog
     :open="pendingSwitch !== null"

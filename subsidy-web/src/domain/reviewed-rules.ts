@@ -5,7 +5,7 @@ import manifest from '../../../backend/rules/eligibility-reviewed.json';
 import { fnv1a64 } from './catalog';
 import type { Answers, Subsidy } from './types';
 
-export type ReviewedField = 'age' | 'region' | 'is_student' | 'household_type' | 'education_level' | 'employment_status' | 'housing_status' | 'care_context' | 'disability_certificate' | 'is_unemployed' | 'is_renting' | 'owns_home';
+export type ReviewedField = 'age' | 'region' | 'is_student' | 'household_type' | 'education_level' | 'employment_status' | 'housing_status' | 'care_context' | 'disability_certificate' | 'is_unemployed' | 'is_renting' | 'owns_home' | 'has_farmer_insurance' | 'veteran_status';
 export interface Requirement {
   field: ReviewedField;
   label: string;

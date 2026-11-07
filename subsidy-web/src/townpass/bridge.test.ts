@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isInTownPass, parseMessage, request, send, TownPassError } from './bridge';
+import { isInTownPass, parseMessage, request, requestCorrelated, send, TownPassError } from './bridge';
 
 type Listener = (event: { data: unknown }) => void;
 
@@ -128,5 +128,35 @@ describe('PDF 原生交付', () => {
     await vi.advanceTimersByTimeAsync(120_000);
     await rejected;
     expect(listeners.size).toBe(0);
+  });
+});
+
+
+describe('模型請求關聯與取消', () => {
+  it('相同 name 的舊 requestId 不可被新請求採用', async () => {
+    const { listeners } = installFlutterObject();
+    const abort = new AbortController();
+    const old = requestCorrelated('llm_interpret', { requestId: 'old' }, { signal: abort.signal });
+    const rejected = expect(old).rejects.toMatchObject({ name: 'AbortError' });
+    abort.abort(); await rejected; expect(listeners.size).toBe(0);
+    const next = requestCorrelated('llm_interpret', { requestId: 'new' });
+    let settled = false; void next.then(() => { settled = true; });
+    listeners.forEach(l => l({ data: JSON.stringify({ name: 'llm_interpret', data: { requestId: 'old', kind: 'answer' } }) }));
+    await Promise.resolve(); expect(settled).toBe(false);
+    listeners.forEach(l => l({ data: JSON.stringify({ name: 'llm_interpret', data: { requestId: 'new', kind: 'clarify' } }) }));
+    await expect(next).resolves.toEqual({ requestId: 'new', kind: 'clarify' });
+    expect(listeners.size).toBe(0);
+  });
+  it('逾時與已取消請求移除監聽，瀏覽器不回傳假模型', async () => {
+    vi.useFakeTimers(); const { listeners, posted } = installFlutterObject();
+    const abort = new AbortController(); abort.abort();
+    await expect(requestCorrelated('llm_interpret', { requestId: 'never' }, { signal: abort.signal })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(posted).toHaveLength(0);
+    const pending = requestCorrelated('llm_interpret', { requestId: 'timeout' }, { timeoutMs: 1000 });
+    const rejected = expect(pending).rejects.toMatchObject({ code: 'TIMEOUT' });
+    await vi.advanceTimersByTimeAsync(1000); await rejected;
+    expect(listeners.size).toBe(0);
+    vi.stubGlobal('window', {});
+    await expect(requestCorrelated('llm_interpret', { requestId: 'browser' })).rejects.toMatchObject({ code: 'NOT_IN_APP' });
   });
 });

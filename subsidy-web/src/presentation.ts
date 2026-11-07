@@ -1,4 +1,4 @@
-// 畫面用的白話標示。只轉換既有資料與 MatchResult 欄位，不產生新規則或摘要文字。
+// 畫面用的白話標示。只轉換既有資料與 MatchResult 欄位，不產生新規則或改寫政策內容。
 
 import { text } from './domain/match';
 import { availability } from './domain/adaptive';
@@ -136,4 +136,16 @@ export function optionalText(source: unknown, key: string): string {
 /** 數字題的單位：題目有 unit 就用；年齡為「歲」；其餘為「數字」。 */
 export function numberUnit(question: { field: string }): string {
   return optionalText(question, 'unit') || (question.field === 'age' ? '歲' : '數字');
+}
+
+/** 原文短摘優先停在句末或子句；超長時節錄並加刪節號，完整條件由展開原文保留。 */
+export function sourceExcerpt(source: string, maxLength = 80): string {
+  const raw = source.trim();
+  if (raw.length <= maxLength) return raw;
+  const sentenceEnd = raw.search(/[。！？\n]/);
+  if (sentenceEnd >= 0 && sentenceEnd < maxLength) return `${raw.slice(0, sentenceEnd + 1).trim()}…`;
+  const prefix = raw.slice(0, maxLength);
+  const clauseEnd = Math.max(prefix.lastIndexOf('；'), prefix.lastIndexOf('，'), prefix.lastIndexOf('、'));
+  const end = clauseEnd >= maxLength / 2 ? clauseEnd : maxLength;
+  return `${raw.slice(0, end).trim()}…`;
 }

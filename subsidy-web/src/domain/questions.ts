@@ -34,7 +34,7 @@ export function buildLocalQuestions(items: Subsidy[]): Question[] {
   return questionTemplates.map(template => {
     const field = template.field;
     const gateIds = items.filter(item => reviewed.get(item.id)?.requirements.some(r=>r.field===field)).map(i=>i.id);
-    const ids = items.filter(item => ['need_area','explore_context','expense_priority'].includes(field) ? !!adaptive.get(item.id) : adaptive.get(item.id)?.facets.some(f=>f.field===field)).map(i=>i.id);
+    const ids = items.filter(item => ['need_area','explore_context','expense_priority'].includes(field) ? !!adaptive.get(item.id) : adaptive.get(item.id)?.facets.some(f=>f.field===field) || adaptive.get(item.id)?.ranking_preferences?.some(p=>p.field===field)).map(i=>i.id);
     const purpose = gateIds.length ? 'qualification' as const : 'discovery' as const;
     let options = template.options;
     if(field === 'region') options = regionOptions([...reviewed.values()].flatMap(row=>row?.requirements.filter(r=>r.field==='region').flatMap(r=>r.values??[])??[]));

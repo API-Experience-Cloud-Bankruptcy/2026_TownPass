@@ -4177,7 +4177,7 @@
       "name": "老年農民福利津貼（老農津貼）",
       "source_fingerprint": "835fe0580345fe5c",
       "age_review": "required",
-      "review_note": "老農津貼本人須年滿65歲；只建立各適用途徑共同必備的年齡條件，其餘資格不推定符合。",
+      "review_note": "老農津貼本人須年滿65歲並依農保年資辦理；只建立必要年齡與有無農保年資條件，年資長短、持續加保及其他資格不推定符合。",
       "source_urls": [
         "https://www.bli.gov.tw/0019439.html"
       ],
@@ -4200,6 +4200,21 @@
           "max": null,
           "min_inclusive": true,
           "max_inclusive": true
+        },
+        {
+          "field": "has_farmer_insurance",
+          "label": "原文所載老農津貼依本人農保年資辦理；年資長短及持續加保另待核驗",
+          "required_boolean": true,
+          "evidence": [
+            {
+              "path": "/eligibility/raw_summary",
+              "value": "年滿65歲、在國內設有戶籍且最近3年內每年居住超過183天之國民，依農保年資領取老農津貼"
+            },
+            {
+              "path": "/eligibility/employment/0/raw",
+              "value": "半額津貼4,055元（103年7月17日（含當日）以前已參加農保且持續加保，申領時年資合計6個月以上未滿15年）"
+            }
+          ]
         }
       ],
       "full_text_age_mentions": [
@@ -4822,13 +4837,25 @@
       "name": "榮民就養給付",
       "source_fingerprint": "f81fcc193105c11e",
       "age_review": "deferred",
-      "review_note": "身障經鑑定另可就養，不能因未滿61歲排除。",
+      "review_note": "建立原文明定的退除役官兵必要身分；身障經鑑定另可就養，不能因未滿61歲排除，其他就養條件仍待確認。",
       "source_urls": [
         "https://www.vac.gov.tw/vac_home/taoyuan/cp-1787-164052-1.html",
         "https://www.vac.gov.tw/cp-591-3742-208.html",
         "https://www.vac.gov.tw/cp-1623-23794-115.html"
       ],
-      "requirements": [],
+      "requirements": [
+        {
+          "field": "veteran_status",
+          "label": "須具有國軍退除役官兵輔導條例第2條規定之退除役官兵身分",
+          "required_boolean": true,
+          "evidence": [
+            {
+              "path": "/extensions/0/raw",
+              "value": "應具有「國軍退除役官兵輔導條例」第2條規定之退除役官兵身分"
+            }
+          ]
+        }
+      ],
       "full_text_age_mentions": [
         {
           "path": "/eligibility/age/0/raw",

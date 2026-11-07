@@ -49,20 +49,20 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
 <template>
   <ChecklistView v-if="state.session.target === 'other'" />
   <div v-else class="view">
-    <div class="view-head no-print">
+    <div class="view-head card card--hero no-print">
       <h1 id="view-title" class="view-title" tabindex="-1">行動單</h1>
       <p class="muted">準備用的清單，不是核准或送件證明</p>
     </div>
 
-    <div v-if="planItems.length === 0" class="actions">
+    <div v-if="planItems.length === 0" class="actions card">
       <p>還沒有加入資源。看到想申請的項目時，按「加入行動單」。</p>
       <button type="button" class="btn btn--primary btn--block" @click="tab('home')">開始找資源</button>
     </div>
 
     <template v-else>
-      <StepDots class="no-print" :current="stageNo" :total="3" label="行動單步驟" />
+      <StepDots class="no-print step-dots--page" :current="stageNo" :total="3" label="行動單步驟" />
 
-      <section v-if="stage === 'resources'" class="actions no-print" aria-labelledby="plan-items-h">
+      <section v-if="stage === 'resources'" class="actions card no-print" aria-labelledby="plan-items-h">
         <h2 id="plan-items-h" ref="stageHeading" tabindex="-1" class="stage-title">要申請的項目（{{ planItems.length }}）</h2>
         <ul class="rows">
           <li v-for="item in planItems" :key="item.id" class="row-static">
@@ -78,7 +78,7 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
         <button type="button" class="btn btn--text" @click="setStage('export')">直接匯出</button>
       </section>
 
-      <section v-else-if="stage === 'documents'" class="actions no-print" aria-labelledby="docs-h">
+      <section v-else-if="stage === 'documents'" class="actions card no-print" aria-labelledby="docs-h">
         <button type="button" class="btn btn--text btn--back" @click="setStage('resources')"><span aria-hidden="true">‹</span> 返回項目</button>
         <h2 id="docs-h" ref="stageHeading" tabindex="-1" class="stage-title">要帶的文件</h2>
         <p class="muted">已準備 {{ preparedDocs }}／{{ merged.documents.length }}・勾選只記錄你的準備</p>
@@ -100,7 +100,7 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
         <button type="button" class="btn btn--primary btn--block" @click="setStage('export')">下一步：匯出</button>
       </section>
 
-      <div v-else class="actions no-print">
+      <div v-else class="actions card no-print">
         <button type="button" class="btn btn--text btn--back" @click="setStage('documents')"><span aria-hidden="true">‹</span> 返回文件</button>
         <h2 ref="stageHeading" tabindex="-1" class="sr-only">匯出行動單</h2>
         <ShareBox

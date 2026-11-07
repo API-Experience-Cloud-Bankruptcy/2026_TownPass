@@ -43,7 +43,10 @@ export function subsidyProblem(value: unknown): string | null {
   if (!isStrOrNull(app.process_text) || !isStrOrNull(app.channel_text) || !isStrOrNull(app.agency)) return 'application.text';
   if (!isStrArr(app.methods)) return 'application.methods';
   if (!isObj(app.deadline) || !isStrOrNull(app.deadline.raw)) return 'application.deadline';
-  if (!isArrOf(app.required_documents, (d) => isObj(d) && isStr(d.name) && isStrOrNull(d.condition) && isStrOrNull(d.notes)))
+  if (!isArrOf(app.required_documents, (d) => isObj(d) && isStr(d.name) && isStrOrNull(d.condition) && isStrOrNull(d.notes)
+    && (d.regions === undefined || (isStrArr(d.regions) && d.regions.length > 0 && d.regions.every(r => r.trim())
+      && ['registered', 'residence', 'application', 'unknown'].includes(String(d.region_basis)) && isStr(d.region_evidence) && !!d.region_evidence.trim()))
+    && (d.region_basis === undefined || d.regions !== undefined) && (d.region_evidence === undefined || d.regions !== undefined)))
     return 'application.required_documents';
   if (!isObj(app.urls) || !isStrOrNull(app.urls.program) || !isStrOrNull(app.urls.apply) || !isStrOrNull(app.urls.form))
     return 'application.urls';

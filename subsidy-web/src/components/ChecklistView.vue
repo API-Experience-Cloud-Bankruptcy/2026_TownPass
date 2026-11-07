@@ -88,17 +88,17 @@ async function copy() { status.value = await copyText(fullText.value) ? '已複�
 
 <template>
   <div class="view checklist-view">
-    <div class="view-head">
+    <div class="view-head card card--hero">
       <h1 id="view-title" class="view-title" tabindex="-1">家人行動檢核表</h1>
       <p class="lead">整理成 A4 PDF，交給家人照著準備、逐項打勾。</p>
       <p class="muted">可合併多項資源，內容較多會自動分頁。檢核表不是核准或送件證明。</p>
     </div>
-    <div v-if="!planItems.length" class="actions">
+    <div v-if="!planItems.length" class="actions card">
       <p>尚未選擇資源。到資源詳情按「加入家人檢核表」，再回來製作 PDF。</p>
       <button type="button" class="btn btn--primary btn--block" @click="tab('home')">開始找資源</button>
     </div>
     <template v-else>
-      <section class="actions" aria-labelledby="checklist-items-h">
+      <section class="actions card" aria-labelledby="checklist-items-h">
         <h2 id="checklist-items-h" class="section-title">要放進 PDF 的資源（{{ planItems.length }}）</h2>
         <ul class="rows">
           <li v-for="item in planItems" :key="item.id" class="row-static">
@@ -111,7 +111,7 @@ async function copy() { status.value = await copyText(fullText.value) ? '已複�
         </ul>
         <button type="button" class="btn btn--text" @click="tab('results')">繼續選資源</button>
       </section>
-      <details v-if="merged.documents.length" class="more more--single">
+      <details v-if="merged.documents.length" class="more more--single card card--list">
         <summary>已經準備好的文件（選填）</summary>
         <div class="more__body">
           <p class="muted">勾選會帶到 PDF；未勾選的項目保留空格，讓家人在紙上打勾。</p>
@@ -127,7 +127,7 @@ async function copy() { status.value = await copyText(fullText.value) ? '已複�
           </label>
         </div>
       </details>
-      <details v-if="conditionLines.length" class="more more--single">
+      <details v-if="conditionLines.length" class="more more--single card card--list">
         <summary>要不要附上對方的填答條件</summary>
         <fieldset class="more__body">
           <legend class="muted">預設不附上，勾選才會寫進 PDF；交給別人前請確認。</legend>
@@ -137,12 +137,12 @@ async function copy() { status.value = await copyText(fullText.value) ? '已複�
           </label>
         </fieldset>
       </details>
-      <div class="actions" :aria-busy="busy">
+      <div class="actions card" :aria-busy="busy">
         <p class="muted">紙本包含：文件清單、辦理步驟、資格與期限提醒、窗口與來源、求助問句、手寫紀錄欄。</p>
         <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="preview">{{ busy ? '正在製作 PDF…' : previewOpen ? '重新製作 PDF' : '預覽 A4 檢核表' }}</button>
       </div>
       <p class="status-text note" role="status" aria-live="polite">{{ status }}</p>
-      <section v-if="previewOpen && file" class="actions" aria-labelledby="checklist-preview-h">
+      <section v-if="previewOpen && file" class="actions card" aria-labelledby="checklist-preview-h">
         <h2 id="checklist-preview-h" ref="previewHeading" tabindex="-1" class="stage-title">確認檢核表全文</h2>
         <p class="muted">{{ planItems.length }} 項資源 · A4 直式 · {{ (file.size / 1024).toFixed(0) }} KB</p>
         <div class="share__grid">
@@ -156,11 +156,11 @@ async function copy() { status.value = await copyText(fullText.value) ? '已複�
           <div class="more__body"><p class="muted">若這裡無法顯示，請用上方「開啟 PDF」。下方另有完整文字。</p><iframe :src="pdfUrl" class="pdf-preview" title="A4 行動檢核表 PDF 預覽"></iframe></div>
         </details>
       </section>
-      <details class="more more--single" :open="previewOpen">
+      <details class="more more--single card card--list" :open="previewOpen">
         <summary>完整檢核表文字</summary>
         <article class="checklist-paper selectable">
           <header class="checklist-paper__head">
-            <p class="muted">福利通 · 申辦準備用</p>
+            <p class="muted">福利連 · 申辦準備用</p>
             <h2 class="section-title">{{ checklist.title }}</h2>
             <p>{{ checklist.subtitle }}</p>
             <p v-for="line in checklist.metaLines" :key="line" class="muted">{{ line }}</p>

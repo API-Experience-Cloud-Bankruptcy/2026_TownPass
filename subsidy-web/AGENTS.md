@@ -95,9 +95,12 @@ subsidy-web/
 └─ src/
    ├─ main.ts / App.vue  福利通逐頁流程與三入口導覽
    ├─ store.ts           對象、需求、題目、行動單與導覽狀態
-   ├─ components/       查詢、問答、詳情、辦理路線、行動單及求助頁
+   ├─ components/       ChatView（對話式：選對象→需求→問答→結果）、詳情、行動單、求助頁
+   │  └─ chat/          BotMessage（打字效果）、UserMessage（點擊改答案）、WheelPicker（年齡滾輪）
+   ├─ chat/typing.ts    打字速度（字多加快但仍逐字，整則上限 3.5 秒）、已播放紀錄、自動往下捲（長訊息停在開頭）
    ├─ domain/           資料讀取、保守規則、固定題庫與完整輸出
-   ├─ style.css          城市通色票 CSS 變數 --tp-*
+   ├─ tokens.css         設計 token：--tp-*（對照 Flutter）＋語意層（--accent、--fs-*…）
+   ├─ style.css          元件樣式，只用語意 token
    └─ townpass/          與 App 溝通的封裝（第 5 節）
       ├─ bridge.ts       底層：isInTownPass、send、request、parseMessage
       ├─ index.ts        型別化 API：getUserInfo、getLocation…
@@ -202,7 +205,7 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 ## 7. 設計規範
 
 - Figma：Town Pass UI Kit（45+ 畫面、100+ 元件），開發文件首頁有連結，搜「Town Pass Design Tokens」。
-- 色票（`lib/util/tp_colors.dart`，網頁已寫成 `src/style.css` 的 `--tp-*`）：Primary 500 `#5AB4C5`、Secondary 500 `#F5BA4B`、Grayscale 500 `#738995`，各有 50–950 階。
+- 色票（`lib/util/tp_colors.dart`，網頁完整寫成 `src/tokens.css` 的 `--tp-*`，元件只用其語意層）：Primary 500 `#5AB4C5`、Secondary 500 `#F5BA4B`、Grayscale 500 `#738995`，各有 50–950 階。
   - 白字放在 primary-500 上對比不足（約 2.4:1）；本專案按鈕底色用 primary-700 `#356C77`，次要文字用 grayscale-700。
 - 字體：中文 PingFang TC，英數 Roboto。
 - 字級（`TPTextStyles`）：h1 36、h2 24、title 18、h3 16、body 14、caption 12。
@@ -237,14 +240,14 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 ## 10. 裝置端 AI（選用）
 
-只在確實解決使用者問題時才加。架構：網頁 `request('llm_ask', 問題)` → App 自訂 `LlmMessageHandler` → 裝置端推論 → 回覆網頁。整個流程在手機上完成，離線可用。
+目前架構：網頁透過帶 requestId 的 `llm_status`／`llm_prepare`／`llm_interpret` → 原生 `LlmMessageHandler` → 手機 LiteRT-LM → 回覆候選語意。僅允許 `SUBSIDY_URL` 同源主框架。首次進入會詢問是否下載模型，使用者同意後才下載；已有模型則每次進入自動載入，自然語句不會自動開始大型下載。模型推論在手機完成，資格依既有規則與使用者確認；完整網頁離線仍須另驗收。
 
 | Flutter 套件 | 支援 | 授權 |
 |---|---|---|
 | `flutter_edge_ai`（原 flutter_gemma） | Gemma 4 E2B/E4B、Gemma 3n、Phi-4 Mini；`.litertlm`、`.task`、`.onnx` | MIT |
 | `llamadart` | GGUF（llama.cpp）、`.litertlm`；需 Dart 3.10+、Flutter 3.38+ | MIT |
 
-建議模型 Gemma 4 E2B（Apache 2.0，8 GB 記憶體手機較穩）。模型檔數 GB，不進 repo，首次啟動下載或 Demo 前放入實機。首次載入需數十秒，Demo 前預熱並以飛航模式測一次。README 要揭露模型名稱、版本、量化格式、推論框架、來源。
+已接入原版 Gemma 4 E2B-it 的 LiteRT-LM bundle（Apache 2.0，2,588,147,712 bytes），不用本專案未通過的微調 adapter。固定 revision、SHA-256、量化來源、原生套件版本、建置及實機測試方法見 [裝置端模型說明](../docs/device-llm-runtime.md)。模型檔不進 repo；首次下載校驗後保留在 App 私有儲存，重啟須重新載入。Demo 前仍須預熱並以飛航模式驗收完整使用流程。
 
 ## 11. 本專案慣例
 
@@ -261,9 +264,9 @@ UI 維護原則：每頁一個決定，完整資格及來源按需展開；不�
 
 動態問答維護須涵蓋返回改答後恢復分支、已略過問題不重複追問、切需求清除不相關探索偏好，以及 catalog／資格／探索／模板版本更新後的工作階段失效。顯示的聚焦筆數不等於符合資格筆數；其他候選、時效不明與已截止項目須保留可查入口。
 
-替他人查詢以 `checklist.ts` 建立共用內容、`checklist-pdf.ts` 產生 A4 PDF、`ChecklistView.vue` 預覽及下載；本人線上行動單保留。字型使用本站附授權 TTF 完整嵌入，避免子集缺字；保留完整條件、待確認及來源，個人填答沿用欄位揭露控制，內容變更撤銷舊檔。App 的 `share_pdf` 由 printing 提出開啟系統分享，回覆不代表已保存或送出；需重新建置 App 才能實機驗收。
+替他人查詢的交付改為 A4 PDF 檢核表：`checklist.ts` 建共用內容、`checklist-pdf.ts` 本機產生實際 PDF（TTF 完整嵌入以避免閱讀器缺字，不改成未驗證的 subset），`ChecklistView.vue` 預覽／下載；本人線上行動單保留。PDF 需保留完整條件、待確認、來源與文件差異，個人填答沿用欄位揭露控制；內容變更撤銷舊檔。字型為附授權的本站 Noto Sans TC，按需載入，不用 CDN。App 的 `share_pdf` 由 printing 開啟系統分享選單，回覆不代表已保存或送出；新增外掛需重新建置 App。
 
-待驗收：手機 WebView 的檔案交付、分享、讀屏及完整離線；模型尚為可替換接口，未接入。安裝 App 不等於全部手機流程已通過；未部署正式公開服務。
+待驗收：手機 WebView 的檔案交付、分享、讀屏及完整離線；原版 Gemma 4 E2B 已接入並完成 iPhone 原生載入，語意/schema 與端到端結果依實機紀錄分別判定。安裝 App 不等於全部手機流程已通過；未部署正式公開服務。
 
 ## 參考資源
 

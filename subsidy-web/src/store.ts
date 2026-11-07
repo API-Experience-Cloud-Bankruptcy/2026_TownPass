@@ -20,11 +20,12 @@ import {
   type SessionState,
 } from './domain/session';
 import { EXTRA_QUALIFICATION_FIELDS } from './domain/answer-fields';
-import { availability, discoveryScore, questionApplies, rankQuestions } from './domain/adaptive';
+import { availability, discoveryScore, identityRanking, questionApplies, rankQuestions } from './domain/adaptive';
 import { filterCatalog, SITUATIONS } from './domain/situations';
 import type { Answers, LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
+import { validFactValue, type CandidateFact } from './chat/interpretation';
 
-export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help';
+export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help' | 'browse';
 
 interface State {
   view: View;
@@ -100,13 +101,16 @@ export const questions = computed<Question[]>(() => state.questionPool === null 
 export const results = computed(() => evaluateAll(catalogItems.value, state.session.answers));
 
 const discoveryScores=computed(()=>new Map(candidates.value.map(item=>[item.id,discoveryScore(item,state.session.answers,state.session.situation)])));
+const identityRankings=computed(()=>new Map(candidates.value.map(item=>[item.id,identityRanking(item,state.session.answers)])));
 export const sortedCandidates = computed(() => sortByFit(candidates.value, results.value)
   .map((item,index)=>({item,index,score:discoveryScores.value.get(item.id)?.score??0}))
   .sort((a,b)=> {
     const fa=results.value.get(a.item.id)?.fit==='ineligible',fb=results.value.get(b.item.id)?.fit==='ineligible';
-    return fa!==fb?(fa?1:-1):b.score-a.score||a.index-b.index;
+    if (fa !== fb) return fa ? 1 : -1;
+    const ia=identityRankings.value.get(a.item.id)!,ib=identityRankings.value.get(b.item.id)!;
+    return ia.unconfirmed-ib.unconfirmed || ib.preferred-ia.preferred || b.score-a.score || a.index-b.index;
   }).map(x=>x.item));
-export const focusedCandidates = computed(()=>candidates.value.filter(item=>results.value.get(item.id)?.fit!=='ineligible'&&discoveryScores.value.get(item.id)?.conflicts===0&&discoveryScores.value.get(item.id)?.unmapped===0));
+export const focusedCandidates = computed(()=>sortedCandidates.value.filter(item=>results.value.get(item.id)?.fit!=='ineligible'&&discoveryScores.value.get(item.id)?.conflicts===0&&discoveryScores.value.get(item.id)?.unmapped===0));
 export const closedCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='closed'));
 export const uncertainCandidates = computed(()=>sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&availability(i)==='unknown'));
 export const recommendedCandidates = computed(()=> {
@@ -293,6 +297,17 @@ export function startExplore(): void {
   startQuestions();
 }
 
+/** 對話已確認基本資料後，從全資料的需求探索接續；不重問已知基本條件。 */
+export function discoverWithKnownAnswers(): void {
+  if (state.loading || !state.session.target || !state.bank) return;
+  state.session.situation = null;
+  state.session.query = '';
+  clearDiscoveryPreferences();
+  const stable = new Set(['age', 'region', 'is_student', 'household_type']);
+  state.session.seenQuestions = state.bank.questions.filter(q => stable.has(q.field) && answerOf(state.session.answers, q.field) !== undefined).map(q => q.id);
+  continueQuestions();
+}
+
 function clearDiscoveryPreferences(): void {
   const removedFields=new Set(Object.keys(state.session.answers.extra??{}).filter(field=>!EXTRA_QUALIFICATION_FIELDS.has(field)));
   const removedIds=new Set((state.bank?.questions??[]).filter(q=>removedFields.has(q.field)).map(q=>q.id));
@@ -307,7 +322,10 @@ export function selectNeed(id: string): void {
   clearDiscoveryPreferences();
   state.session.situation = id;
   state.session.query = '';
-  startQuestions();
+  // 換需求不需要重新問已確認的基本資料；「改答案」仍明確從 startQuestions 進入。
+  const known = (state.bank?.questions ?? []).filter(q => ['age', 'region', 'is_student', 'household_type'].includes(q.field) && answerOf(state.session.answers, q.field) !== undefined);
+  for (const q of known) if (!state.session.seenQuestions.includes(q.id)) state.session.seenQuestions.push(q.id);
+  if (known.length) continueQuestions(); else startQuestions();
 }
 
 export function searchResources(query: string): void {
@@ -316,6 +334,44 @@ export function searchResources(query: string): void {
   state.session.situation = null;
   state.session.query = query.trim().slice(0, 100);
   startQuestions();
+}
+
+/** 僅接收使用者逐項確認、已選定主體的穩定欄位；整批驗證後才原子套用。 */
+export function applyConfirmedFacts(facts: CandidateFact[]): boolean {
+  if (!state.session.target || !state.bank || state.loading || !facts.length) return false;
+  const fields = new Set<string>();
+  const patches: { question: Question; fact: CandidateFact }[] = [];
+  for (const fact of facts) {
+    if (!['age', 'region', 'is_student', 'household_type'].includes(fact.field) || fields.has(fact.field)
+      || !(fact.subject === 'applicant' || fact.subject === state.session.target)) return false;
+    const question = state.bank.questions.find(q => q.field === fact.field);
+    if (!question || !validFactValue({ field: fact.field, min: question.min, max: question.max, options: question.options }, fact.value)) return false;
+    fields.add(fact.field); patches.push({ question, fact });
+  }
+  let answers: Answers = { ...state.session.answers, extra: { ...state.session.answers.extra } };
+  // 只撤銷實際變更前提的相依答案；補年齡不會刪掉已確認的住宅需求。
+  const changed = new Set(patches.filter(({ question, fact }) => answerOf(answers, question.field) !== fact.value).map(({ question }) => question.field));
+  const invalidated = new Set<string>();
+  let found = true;
+  while (found) {
+    found = false;
+    for (const q of state.bank.questions) if (!invalidated.has(q.field) && q.depends_on && Object.keys(q.depends_on).some(field => changed.has(field) || invalidated.has(field))) {
+      invalidated.add(q.field); found = true;
+    }
+  }
+  for (const q of state.bank.questions) if (invalidated.has(q.field)) answers = setAnswer(answers, q, undefined);
+  for (const { question, fact } of patches) answers = setAnswer(answers, question, fact.value);
+  state.session.answers = answers;
+  state.session.seenQuestions = state.session.seenQuestions.filter(id => {
+    const q = state.bank!.questions.find(q => q.id === id);
+    return !!q && !invalidated.has(q.field);
+  });
+  for (const { question } of patches) if (!state.session.seenQuestions.includes(question.id)) state.session.seenQuestions.push(question.id);
+  // 年齡或身分本身不是需求。沒有方向時先問生活情境，不直接倒出結果。
+  if (!state.session.situation && !state.session.query && !state.session.answers.extra?.need_area
+    && !state.session.answers.extra?.expense_priority && !state.session.answers.extra?.explore_context) discoverWithKnownAnswers();
+  else continueQuestions();
+  return true;
 }
 
 let lastAnswerAt = -Infinity;

@@ -77,6 +77,28 @@ export interface RequestOptions {
   timeoutMs?: number;
 }
 
+/** 新增 AI 協定使用 requestId；取消後的遲到回覆不能接到下一次請求。沒有模擬推論。 */
+export function requestCorrelated<T>(name: string, data: { requestId: string; [key: string]: unknown },
+  { signal, timeoutMs = 120_000 }: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<T> {
+  const target = typeof window === 'undefined' ? undefined : window.flutterObject;
+  if (!target) return Promise.reject(new TownPassError('NOT_IN_APP', '請在城市通 App 使用裝置端模型'));
+  if (signal?.aborted) return Promise.reject(new DOMException('已取消', 'AbortError'));
+  return new Promise<T>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cleanup = () => { target.removeEventListener('message', listener); signal?.removeEventListener('abort', abort); if (timer) clearTimeout(timer); };
+    const abort = () => { cleanup(); reject(new DOMException('已取消', 'AbortError')); };
+    const listener: MessageListener = event => {
+      const reply = parseMessage(event.data);
+      if (reply?.name !== name || !reply.data || typeof reply.data !== 'object' || (reply.data as Record<string, unknown>).requestId !== data.requestId) return;
+      cleanup(); resolve(reply.data as T);
+    };
+    target.addEventListener('message', listener);
+    signal?.addEventListener('abort', abort, { once: true });
+    if (timeoutMs > 0) timer = setTimeout(() => { cleanup(); reject(new TownPassError('TIMEOUT', '裝置端模型回覆逾時')); }, timeoutMs);
+    try { target.postMessage(JSON.stringify({ name, data })); } catch (error) { cleanup(); reject(error); }
+  });
+}
+
 /**
  * 送出並等待同名回覆。App 以 name 對應回覆，
  * 同一個 name 同時只應有一個請求在等待。

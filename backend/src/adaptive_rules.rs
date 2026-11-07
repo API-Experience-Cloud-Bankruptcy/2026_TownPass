@@ -20,6 +20,13 @@ pub struct DocumentOverride {
     pub evidence: Vec<Evidence>,
 }
 #[derive(Debug, Deserialize)]
+pub struct RankingPreference {
+    pub field: String,
+    pub values: Vec<Value>,
+    pub evidence: Vec<Evidence>,
+    pub reason: String,
+}
+#[derive(Debug, Deserialize)]
 pub struct AdaptiveRecord {
     pub id: String,
     pub name: String,
@@ -29,6 +36,8 @@ pub struct AdaptiveRecord {
     pub source_urls: Vec<String>,
     #[serde(default)]
     pub document_overrides: Vec<DocumentOverride>,
+    #[serde(default)]
+    pub ranking_preferences: Vec<RankingPreference>,
 }
 #[derive(Deserialize)]
 struct Manifest {
@@ -68,6 +77,19 @@ pub fn bound(row: &AdaptiveRecord, value: &Value) -> bool {
                     sources.iter().any(|source| {
                         source["type"] == "official" && source["url"].as_str() == Some(url.as_str())
                     })
+                })
+        })
+        && row.ranking_preferences.iter().all(|preference| {
+            preference.field == "household_type"
+                && !preference.reason.trim().is_empty()
+                && !preference.values.is_empty()
+                && preference.values.iter().all(|value| {
+                    questions::valid_facet_value(&preference.field, value)
+                })
+                && !preference.evidence.is_empty()
+                && preference.evidence.iter().all(|e| {
+                    !e.value.trim().is_empty()
+                        && value.pointer(&e.path).and_then(Value::as_str) == Some(e.value.as_str())
                 })
         })
         && !row.facets.is_empty()

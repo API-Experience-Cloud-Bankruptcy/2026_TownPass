@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { nextTick, ref, useId, watch } from 'vue';
 
 const props = defineProps<{ open: boolean; title: string; confirmLabel: string; danger?: boolean }>();
 const emit = defineEmits<{ confirm: []; cancel: [] }>();
 const dialog = ref<HTMLDialogElement | null>(null);
+const titleId = useId();
 let opener: HTMLElement | null = null;
 
 watch(
@@ -31,8 +32,8 @@ function onCancel(event: Event) {
 </script>
 
 <template>
-  <dialog ref="dialog" class="dialog" aria-labelledby="dialog-title" @cancel="onCancel">
-    <h2 id="dialog-title" class="dialog__title">{{ title }}</h2>
+  <dialog ref="dialog" class="dialog" :aria-labelledby="titleId" @cancel="onCancel">
+    <h2 :id="titleId" class="dialog__title">{{ title }}</h2>
     <div class="dialog__body"><slot /></div>
     <div class="dialog__actions">
       <button type="button" class="btn btn--ghost" data-autofocus @click="emit('cancel')">取消</button>
