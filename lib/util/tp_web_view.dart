@@ -74,6 +74,8 @@ class _TPWebViewState extends State<TPWebView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 網頁畫出第一個畫面前，WebView 底下露出的就是這個顏色；用白色接住網頁的開場畫面。
+      backgroundColor: TPColors.white,
       appBar: TPAppBar(
         backgroundColor: TPColors.primary500,
         foregroundColor: TPColors.white,
@@ -104,6 +106,11 @@ class _TPWebViewState extends State<TPWebView> {
       body: Stack(
         children: [
           TPInAppWebView(
+            // iOS 的 WKWebView 預設不透明，載入前是一片黑；改成透明，載入前露出底下的白色。
+            initialSettings: InAppWebViewSettings(
+              transparentBackground: true,
+              underPageBackgroundColor: TPColors.white,
+            ),
             onWebViewCreated: (controller) {
               webViewController.value = controller;
               loadPage();
