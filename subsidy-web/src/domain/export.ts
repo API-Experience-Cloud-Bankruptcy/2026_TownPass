@@ -1,7 +1,7 @@
 // ActionPlanExporter：行動單與求助文字。畫面、純文字、列印共用同一份內容。
 // 預設不含任何個人條件；使用者可在預覽中選擇加入或移除。
 
-import { mergeDocuments } from './documents';
+import { mergeDocuments, OTHER_REGION_TITLE, regionText } from './documents';
 import { FIT_LABEL, text } from './match';
 import { buildRoute, SOURCE_KIND_LABEL, STATUS_LABEL, stuckAdvice, STUCK_OPTIONS, type StuckReason } from './route';
 import type { MatchResult, Subsidy, Target } from './types';
@@ -43,6 +43,9 @@ export interface PlanInput {
   conditions: ConditionEntry[];
   docChecks: Record<string, boolean>;
   stepDone: Record<string, number[]>;
+  /** 查詢對象回答的戶籍，只用於篩選文件，不輸出；未回答時其他縣市文件另列 */
+  region?: string;
+  documentAnswers?: import('./types').Answers;
 }
 
 function formatDate(d: Date): string {
@@ -68,7 +71,7 @@ export function buildPlanText(input: PlanInput): string {
   lines.push('');
 
   items.forEach((item, i) => {
-    const route = buildRoute(item);
+    const route = buildRoute(item, input.documentAnswers ?? { region: input.region });
     const result = results.get(item.id);
     lines.push(`【${i + 1}】${item.name}`);
     if (result) {
@@ -113,7 +116,7 @@ export function buildPlanText(input: PlanInput): string {
     lines.push('');
   });
 
-  const merged = mergeDocuments(items);
+  const merged = mergeDocuments(items, input.documentAnswers ?? { region: input.region });
   lines.push('文件準備清單（勾選僅代表自己準備，不代表已送件）：');
   for (const d of merged.documents) {
     const mark = input.docChecks[d.key] ? '[已準備]' : '[ ]';
@@ -122,6 +125,16 @@ export function buildPlanText(input: PlanInput): string {
     lines.push(`    用於：${d.usedBy.map((u) => u.name).join('、')}`);
   }
   for (const m of merged.incomplete) lines.push(`注意：「${m.name}」文件清單尚未補齊，不代表免附文件。`);
+  if (merged.otherRegion.length) {
+    lines.push('');
+    lines.push(`${OTHER_REGION_TITLE}：`);
+    for (const d of merged.otherRegion) {
+      const mark = input.docChecks[d.key] ? '[已準備]' : '[ ]';
+      const detail = [regionText(d.regions), d.required === false && '非必備（依個案需要）', d.condition && `條件：${d.condition}`, d.notes && `備註：${d.notes}`].filter(Boolean).join('；');
+      lines.push(`${mark} ${d.name}（${detail}）`);
+      lines.push(`    用於：${d.usedBy.map((u) => u.name).join('、')}`);
+    }
+  }
   lines.push('');
   lines.push(DISCLAIMER);
   lines.push(`資料版本：${meta.catalogVersion}`);

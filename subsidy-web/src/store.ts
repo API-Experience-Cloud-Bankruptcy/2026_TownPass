@@ -99,6 +99,8 @@ const candidateQuestions = computed<Question[]>(() =>
 export const questions = computed<Question[]>(() => state.questionPool === null ? candidateQuestions.value : state.questionRoute);
 
 export const results = computed(() => evaluateAll(catalogItems.value, state.session.answers));
+/** 查詢對象回答的戶籍，用於篩選只適用特定縣市的文件。 */
+export const answeredRegion = computed(() => state.session.answers.region);
 
 const discoveryScores=computed(()=>new Map(candidates.value.map(item=>[item.id,discoveryScore(item,state.session.answers,state.session.situation)])));
 const identityRankings=computed(()=>new Map(candidates.value.map(item=>[item.id,identityRanking(item,state.session.answers)])));

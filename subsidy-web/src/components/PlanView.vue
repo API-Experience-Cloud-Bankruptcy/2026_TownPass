@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
-import { mergeDocuments } from '../domain/documents';
+import { mergeDocuments, OTHER_REGION_TITLE, regionText } from '../domain/documents';
 import { buildPlanText } from '../domain/export';
 import { buildRoute } from '../domain/route';
-import { conditionLines, pickConditions, openDetail, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
+import { answeredRegion, conditionLines, pickConditions, openDetail, planItems, results, state, tab, toggleDoc, togglePlan } from '../store';
 import { progressText } from '../presentation';
 import ShareBox from './ShareBox.vue';
 import StepDots from './StepDots.vue';
 import ChecklistView from './ChecklistView.vue';
 
-const merged = computed(() => mergeDocuments(planItems.value));
+const merged = computed(() => mergeDocuments(planItems.value, state.session.answers));
 const included = ref<string[]>([]);
 const stage = ref<'resources' | 'documents' | 'export'>('resources');
 const stageNo = computed(() => ({ resources: 1, documents: 2, export: 3 })[stage.value]);
@@ -34,6 +34,7 @@ const planText = computed(() =>
     conditions: includedValid.value,
     docChecks: state.session.docChecks,
     stepDone: state.session.stepDone,
+    documentAnswers: state.session.answers,
   }),
 );
 
@@ -96,6 +97,23 @@ const preparedDocs = computed(() => merged.value.documents.filter((d) => state.s
             </label>
           </li>
         </ul>
+        <details v-if="merged.otherRegion.length" class="more">
+          <summary>{{ OTHER_REGION_TITLE }}（{{ merged.otherRegion.length }}）</summary>
+          <ul class="rows">
+            <li v-for="d in merged.otherRegion" :key="d.key">
+              <label class="check">
+                <input type="checkbox" :checked="!!state.session.docChecks[d.key]" @change="toggleDoc(d.key)" />
+                <span class="check__body">
+                  <span>{{ d.name }}<span v-if="d.required === false" class="muted">（非必要）</span></span>
+                  <span class="muted">{{ regionText(d.regions) }}</span>
+                  <span v-if="d.condition" class="muted">條件：{{ d.condition }}</span>
+                  <span v-if="d.notes && d.notes !== d.name" class="muted">備註：{{ d.notes }}</span>
+                  <span v-if="planItems.length > 1" class="muted">用在：{{ d.usedBy.map((u) => u.name).join('、') }}</span>
+                </span>
+              </label>
+            </li>
+          </ul>
+        </details>
         <p v-for="m in merged.incomplete" :key="m.id" class="note">「{{ m.name }}」原文沒有列出文件，不代表不用帶</p>
         <button type="button" class="btn btn--primary btn--block" @click="setStage('export')">下一步：匯出</button>
       </section>

@@ -66,6 +66,7 @@ export interface MergeResult {
   pendingDocuments: MergedDocument[];
   otherDocuments: MergedDocument[];
   notices: string[];
+  otherRegion: MergedDocument[];
   incomplete: { id: string; name: string }[];
 }
 export function documentKey(name: string, condition: string, notes: string, required: boolean | null, regions?: string[], basis?: DocumentRegionBasis, evidence?: string): string {
@@ -101,5 +102,8 @@ export function mergeDocuments(items: Subsidy[], answers: Answers = {}): MergeRe
   for (const d of all) counts.set(d.name, (counts.get(d.name) ?? 0) + 1);
   for (const d of all) d.hasVariant = (counts.get(d.name) ?? 0) > 1;
   const sorted = (map: Map<string, MergedDocument>) => [...map.values()].sort((a, b) => b.usedBy.length - a.usedBy.length || a.name.localeCompare(b.name, 'zh-Hant'));
-  return { documents: sorted(maps.documents), pendingDocuments: sorted(maps.pendingDocuments), otherDocuments: sorted(maps.otherDocuments), incomplete, notices: [...notices] };
+  return { otherRegion: [...sorted(maps.pendingDocuments), ...sorted(maps.otherDocuments)], documents: sorted(maps.documents), pendingDocuments: sorted(maps.pendingDocuments), otherDocuments: sorted(maps.otherDocuments), incomplete, notices: [...notices] };
 }
+
+export const OTHER_REGION_TITLE = '地方文件（地區或受理依據請確認）';
+export function regionText(regions: string[] = []): string { return regions.length ? `原文地區：${regions.join('、')}` : ''; }

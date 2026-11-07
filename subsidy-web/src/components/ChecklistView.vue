@@ -12,7 +12,7 @@ const generatedAt = new Date();
 const input = computed<PlanInput>(() => ({
   meta: { catalogVersion: state.catalog?.version ?? '未載入', sourceLabel: state.catalog?.sourceLabel ?? '未載入', generatedAt },
   target: 'other', items: planItems.value, results: results.value,
-  conditions: pickConditions(included.value), docChecks: state.session.docChecks, stepDone: state.session.stepDone,
+  conditions: pickConditions(included.value), docChecks: state.session.docChecks, stepDone: state.session.stepDone, documentAnswers: state.session.answers,
 }));
 const checklist = computed(() => buildChecklist(input.value));
 const merged = computed(() => mergeDocuments(planItems.value));

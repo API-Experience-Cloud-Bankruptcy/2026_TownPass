@@ -321,18 +321,25 @@ export async function createChecklistPdf(input: PlanInput): Promise<Uint8Array> 
   });
 
   sectionBar('三、應備文件核對表');
-  const docRows: Cell[][] = form.documents.map(doc => [
+  const docRow = (doc: ChecklistForm['documents'][number]): Cell[] => [
     { text: String(doc.no), align: 'center' }, { text: doc.name }, { text: doc.requirement, align: 'center' },
     { text: doc.usedBy, align: 'center' }, { check: { checked: doc.checked, label: '已備' } }, { text: doc.remarks },
-  ]);
+  ];
+  const docHeader = ['項次', '文件名稱', '必備／\n依個案', '用於\n項目編號', '已備妥', '備註'].map(h => head(h));
+  const docWidths = [30, 128, 54, 50, 44, CONTENT_W - 306];
+  const docRows: Cell[][] = form.documents.map(docRow);
   for (const item of form.incomplete) {
     docRows.push([{ text: '—', align: 'center' }, { text: '文件清單未補齊', bold: true }, { text: '—', align: 'center' }, { text: String(item.no), align: 'center' }, {}, { text: item.remarks }]);
   }
   table({
-    widths: [30, 128, 54, 50, 44, CONTENT_W - 306], context: '三、應備文件核對表',
-    header: ['項次', '文件名稱', '必備／\n依個案', '用於\n項目編號', '已備妥', '備註'].map(h => head(h)),
+    widths: docWidths, context: '三、應備文件核對表',
+    header: docHeader,
     rows: docRows.length ? docRows : [[{ text: form.emptyNote, span: 6, align: 'center' }]],
   });
+  if (form.otherRegionDocuments.length) {
+    subTitle(form.otherRegionTitle);
+    table({ widths: docWidths, context: `三、應備文件核對表　${form.otherRegionTitle}`, header: docHeader, rows: form.otherRegionDocuments.map(docRow) });
+  }
 
   // ── 各項目：每項另起新頁 ──
   for (const resource of form.resources) {
