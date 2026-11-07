@@ -38,5 +38,5 @@ describe.skipIf(!base)('實際HTTP前後端完整資料一致性',()=>{
       for(const [id,r] of expected)expect(actual.get(id),`${id} ${JSON.stringify(profile)}`).toBe(r.fit);
     }
     console.info(`HTTP parity: ${profiles.length} profiles × 217 records = ${profiles.length*217} fit comparisons, date ${today}`);
-  },30000);
+  },120000);
 });

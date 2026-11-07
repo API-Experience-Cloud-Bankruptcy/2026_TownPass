@@ -1121,6 +1121,10 @@ fn adaptive_question_support_is_bound_and_never_an_eligibility_rule() {
                         question.field.as_str(),
                         "need_area" | "explore_context" | "expense_priority"
                     ) || row.facets.iter().any(|facet| facet.field == question.field)
+                        || row
+                            .ranking_preferences
+                            .iter()
+                            .any(|preference| preference.field == question.field)
                 })
             })
             .map(|entry| entry.subsidy.id.clone())
