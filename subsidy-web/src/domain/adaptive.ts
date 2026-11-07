@@ -3,6 +3,7 @@ import manifest from '../../../backend/rules/adaptive-reviewed.json';
 import templates from '../../../backend/rules/question-templates.json';
 import { requirementVerdict, reviewFor, sourceFingerprint, taipeiToday, type ReviewedRecord } from './reviewed-rules';
 import { evaluateAll } from './match';
+import { identityAnswer, identityGateFor, identityStatus, type IdentityField, type IdentityGate } from './identity';
 import type { Answers, Question, Subsidy } from './types';
 
 export interface Evidence { path: string; value: string }
@@ -43,7 +44,9 @@ export function branchArea(answers: Answers, situation: string | null): string |
 }
 /** Preference mismatch never changes MatchResult.fit; the full non-ineligible pool stays accessible. */
 const DETAIL_DISCOVERY_FIELDS=new Set(['education_support','work_support','housing_support','care_context','family_stage','health_support','living_support','disability_support','community_support','elder_support','work_applicant','benefit_style']);
-function scoreReview(row: AdaptiveReview | null, answers: Answers, situation: string | null): {score:number; conflicts:number; matches:number; unmapped:number} {
+/** Dominates preference matches so unanswered identity prerequisites never lead the focus list. */
+const IDENTITY_WEIGHT=100;
+function scoreReview(row: AdaptiveReview | null, answers: Answers, situation: string | null, item?: Subsidy): {score:number; conflicts:number; matches:number; unmapped:number} {
   let score=0,conflicts=0,matches=0,unmapped=0;
   for(const field of DETAIL_DISCOVERY_FIELDS) if(scalarAnswer(answers,field)!==undefined&&!row?.facets.some(f=>f.field===field)) {unmapped++;score-=1;}
   for(const facet of row?.facets??[]) {
@@ -52,10 +55,14 @@ function scoreReview(row: AdaptiveReview | null, answers: Answers, situation: st
     if(facet.values.includes(String(value))) {matches++;score+=facet.field==='need_area'?8:4;}
     else {conflicts++;score-=facet.field==='need_area'?8:4;}
   }
+  const identity=item?identityStatus(item,answers):'none';
+  if(identity==='met') {matches++;score+=IDENTITY_WEIGHT;}
+  else if(identity==='unknown'||identity==='unmet') score-=IDENTITY_WEIGHT;
+  else if(identity==='conflict') {conflicts++;score-=IDENTITY_WEIGHT;}
   return {score,conflicts,matches,unmapped};
 }
 export function discoveryScore(item: Subsidy, answers: Answers, situation: string | null): {score:number; conflicts:number; matches:number; unmapped:number} {
-  return scoreReview(adaptiveReviewFor(item),answers,situation);
+  return scoreReview(adaptiveReviewFor(item),answers,situation,item);
 }
 export function availability(item: Subsidy, today = new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Taipei'})): 'closed'|'unknown'|'prepare' {
   const d = item.application.deadline;
@@ -83,13 +90,14 @@ const TOP_LEVEL_FIELDS=new Set(['age','region','is_student','household_type']);
 function withAnswer(answers: Answers, field: string, value: string|boolean): Answers {
   return TOP_LEVEL_FIELDS.has(field) ? {...answers,[field]:value} : {...answers,extra:{...answers.extra,[field]:value}};
 }
-/** Whether answering `value` would move any surviving resource. */
-function optionChanges(field: string, value: string|boolean, items: Subsidy[], reviews: Map<string,AdaptiveReview|null>, gates: Map<string,ReviewedRecord|null>, answers: Answers, today: string): boolean {
+/** Whether answering `value` would move, demote or promote any surviving resource. */
+function optionChanges(field: string, value: string|boolean, items: Subsidy[], reviews: Map<string,AdaptiveReview|null>, gates: Map<string,ReviewedRecord|null>, identities: Map<string,IdentityGate|null>, answers: Answers, today: string): boolean {
   const next=withAnswer(answers,field,value);
   return items.some(i=>{
     const facet=reviews.get(i.id)?.facets.find(f=>f.field===field);
     if(facet&&!facet.values.includes(String(value))) return true;
-    return !!gates.get(i.id)?.requirements.some(r=>r.field===field&&requirementVerdict(r,next,today)===false);
+    if(gates.get(i.id)?.requirements.some(r=>r.field===field&&requirementVerdict(r,next,today)===false)) return true;
+    return identities.get(i.id)?.field===field&&identityStatus(i,next)!==identityStatus(i,answers);
   });
 }
 /** Re-rank after each answer using current supported partitions and gate coverage. */
@@ -97,14 +105,17 @@ export function rankQuestions(bank: Question[], items: Subsidy[], answers: Answe
   // These indexes live for this recomputation only; mutated original data cannot reuse an old binding.
   const reviews=new Map(items.map(i=>[i.id,adaptiveReviewFor(i)]));
   const gates=new Map(items.map(i=>[i.id,reviewFor(i)]));
+  const identities=new Map(items.map(i=>[i.id,identityGateFor(i)]));
   const results=evaluateAll(items,answers);
   const nonIneligible=items.filter(i=>results.get(i.id)?.fit!=='ineligible');
-  const remaining=nonIneligible.filter(i=>(()=>{const score=scoreReview(reviews.get(i.id)??null,answers,situation);return score.conflicts===0&&score.unmapped===0;})());
+  const remaining=nonIneligible.filter(i=>(()=>{const score=scoreReview(reviews.get(i.id)??null,answers,situation,i);return score.conflicts===0&&score.unmapped===0;})());
   const supported=remaining;
   const supportedSet=new Set(supported.map(i=>i.id));
   const area = branchArea(answers,situation);
   const today=taipeiToday();
-  return bank.filter(q => !visited.has(q.id) && questionApplies(q,answers,situation) && q.resource_ids.some(id => supportedSet.has(id)))
+  // Resources whose identity prerequisite this question would settle.
+  const openIdentity=(field:string)=>supported.filter(i=>{const row=identities.get(i.id);return row?.field===field&&identityAnswer(answers,row.field as IdentityField)===undefined;});
+  return bank.filter(q => !visited.has(q.id) && questionApplies(q,answers,situation) && (q.resource_ids.some(id => supportedSet.has(id))||openIdentity(q.field).length>0))
     .map((q,index) => {
       const supportedIds = new Set(q.resource_ids);
       const coverage = supported.filter(i=>supportedIds.has(i.id)).length;
@@ -117,19 +128,26 @@ export function rankQuestions(bank: Question[], items: Subsidy[], answers: Answe
       const gateCount = supported.filter(i=>gates.get(i.id)?.requirements.some(r=>r.field===q.field)).length;
       const priority = !situation&&!answers.extra?.need_area&&q.field==='explore_context'?10000 : !situation&&!area&&q.field==='expense_priority'?9000 : q.field==='is_student'&&area==='study'?8000 : 0;
       const detailUtility=DETAIL_DISCOVERY_FIELDS.has(q.field)&&q.field!=='benefit_style'?Math.min(15,coverage):0;
-      const score = priority + detailUtility + gateCount*3 + coverage*.2 + split + distinct - (q.burden??1)*2;
+      // Only a split between identity-bound and open resources counts; weighted by share so
+      // identity is asked once needs have narrowed the surviving resources.
+      const gated=openIdentity(q.field);
+      const identityUtility=gated.length&&gated.length<supported.length?10*gated.length/supported.length:0;
+      const score = priority + detailUtility + identityUtility + gateCount*3 + coverage*.2 + split + distinct - (q.burden??1)*2;
       let options=q.options;
       // Keep all options for qualification gates. Discovery options reflect supported surviving directions.
-      if (q.purpose==='discovery' && options) {
+      if (q.field==='special_identity' && options) {
+        const values=new Set(gated.flatMap(i=>identities.get(i.id)?.values??[]));
+        options=options.filter(o=>o.value==='none'||values.has(String(o.value)));
+      } else if (q.purpose==='discovery' && options) {
         const values=new Set(supported.flatMap(i=>reviews.get(i.id)?.facets.filter(f=>f.field===q.field).flatMap(f=>f.values)??[]));
         const filtered=options.filter(o=>values.has(String(o.value)));
         if(filtered.length>0) options=filtered;
       }
       // A choice needs two real options, and one of them must change the surviving resources.
-      // Without any source-bound facet or gate for the field the effect is unknown, so it stays.
+      // Without any source-bound facet, gate or identity for the field the effect is unknown, so it stays.
       const choice=q.kind!=='number'&&!ENTRY_FIELDS.has(q.field);
-      const evaluable=supported.some(i=>reviews.get(i.id)?.facets.some(f=>f.field===q.field)||gates.get(i.id)?.requirements.some(r=>r.field===q.field));
-      const useful=!choice||((options?.length??0)>=2&&(!evaluable||options!.some(o=>optionChanges(q.field,o.value,supported,reviews,gates,answers,today))));
+      const evaluable=supported.some(i=>reviews.get(i.id)?.facets.some(f=>f.field===q.field)||gates.get(i.id)?.requirements.some(r=>r.field===q.field)||identities.get(i.id)?.field===q.field);
+      const useful=!choice||((options?.length??0)>=2&&(!evaluable||options!.some(o=>optionChanges(q.field,o.value,supported,reviews,gates,identities,answers,today))));
       return {q:{...q,options},score,index,useful};
     }).filter(x=>x.useful).sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.q);
 }

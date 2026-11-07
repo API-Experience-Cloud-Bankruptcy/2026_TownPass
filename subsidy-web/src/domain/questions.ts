@@ -1,7 +1,8 @@
 // 題庫：固定模板，題目是否出現由資料中存在的條件決定；不使用 AI 生成。
 // 後端 /api/questions 可用時採用其題目，前端依選定候選資源的 resource_ids 篩題。
 
-import { validExtraValue } from './answer-fields';
+import { SPECIAL_IDENTITY_QUESTION, validExtraValue } from './answer-fields';
+import { identityGateFor } from './identity';
 import { apiBase, type FetchLike } from './catalog';
 import { adaptiveReviewFor, ADAPTIVE_VERSION, questionTemplates, TEMPLATE_VERSION } from './adaptive';
 import { reviewFor, REVIEW_VERSION } from './reviewed-rules';
@@ -40,6 +41,25 @@ export function buildLocalQuestions(items: Subsidy[]): Question[] {
     if(field === 'region') options = regionOptions([...reviewed.values()].flatMap(row=>row?.requirements.filter(r=>r.field==='region').flatMap(r=>r.values??[])??[]));
     return {...template, purpose, options, resource_ids:[...new Set([...gateIds,...ids])].sort()};
   }).filter(q=>q.resource_ids.length>0);
+}
+
+/**
+ * Add source-bound identity prerequisites to the shared bank: household_type also covers
+ * resources that need low or mid-low income status, and one question asks farmer, veteran
+ * or indigenous status. Applied after API support checks so backend parity stays intact.
+ */
+export function withIdentitySupport(bank: Question[], items: Subsidy[]): Question[] {
+  const ids = (field: string) => items.filter(item => identityGateFor(item)?.field === field).map(item => item.id);
+  const out = bank.map(q => {
+    const extra = q.field === 'household_type' ? ids(q.field) : [];
+    return extra.length ? { ...q, resource_ids: [...new Set([...q.resource_ids, ...extra])].sort() } : q;
+  });
+  const income = ids('household_type');
+  const template = questionTemplates.find(q => q.field === 'household_type');
+  if (income.length && template && !out.some(q => q.field === 'household_type')) out.push({ ...template, purpose: 'discovery', resource_ids: income.sort() });
+  const special = ids('special_identity');
+  if (special.length && !out.some(q => q.field === 'special_identity')) out.push({ ...SPECIAL_IDENTITY_QUESTION, resource_ids: special.sort() });
+  return out;
 }
 
 const KINDS = new Set(['single', 'boolean', 'number']);
@@ -113,7 +133,7 @@ export async function loadQuestions(
       const expected = buildLocalQuestions(items);
       const supports = (qs: Question[]) => qs.map(q => `${q.field}:${[...q.resource_ids].sort().join(',')}`).sort().join('|');
       if (questions.length > 0 && typeof body.version === 'string' && body.version.includes(REVIEW_VERSION) && body.version.includes(ADAPTIVE_VERSION) && body.version.includes(TEMPLATE_VERSION) && supports(questions) === supports(expected)) {
-        return { version: typeof body.version === 'string' ? body.version : 'api', questions, origin: 'api' };
+        return { version: typeof body.version === 'string' ? body.version : 'api', questions: withIdentitySupport(questions, items), origin: 'api' };
       }
     }
   } catch {
@@ -121,7 +141,7 @@ export async function loadQuestions(
   } finally {
     if (timer) clearTimeout(timer);
   }
-  return { version: `local-template-3/${REVIEW_VERSION}/${ADAPTIVE_VERSION}/${TEMPLATE_VERSION}`, questions: buildLocalQuestions(items), origin: 'local' };
+  return { version: `local-template-3/${REVIEW_VERSION}/${ADAPTIVE_VERSION}/${TEMPLATE_VERSION}`, questions: withIdentitySupport(buildLocalQuestions(items), items), origin: 'local' };
 }
 
 /** 依候選資源篩題：只問會影響目前候選的問題。 */
@@ -135,6 +155,7 @@ const SELF_TITLES: Record<string, string> = {
   age: '你目前幾歲（實歲）？',
   is_student: '你目前是在學學生嗎？',
   household_type: '你是否已取得低收入戶或中低收入戶資格？',
+  special_identity: '你是否具有下列身分？',
 };
 
 const OTHER_TITLES: Record<string, string> = {
@@ -142,6 +163,7 @@ const OTHER_TITLES: Record<string, string> = {
   age: '對方目前幾歲（實歲）？',
   is_student: '對方目前是在學學生嗎？',
   household_type: '對方是否已取得低收入戶或中低收入戶資格？',
+  special_identity: '對方是否具有下列身分？',
 };
 
 /** 依查詢對象調整問句；未知欄位沿用原題目。 */
