@@ -1029,14 +1029,26 @@ async fn closed_deadlines_are_hidden_by_default_and_marked_when_included() {
             .iter()
             .filter(|(_, r)| r.closed_on.is_some())
             .count(),
-        23
+        21
     );
     assert!(included
         .iter()
         .skip_while(|(_, r)| r.closed_on.is_none())
         .all(|(_, r)| r.closed_on.is_some()));
     let default = matcher::run_match_at(&st.entries, &Profile::default(), "2026-11-07");
-    assert_eq!(default.len(), 194);
+    assert_eq!(default.len(), 196);
+    for id in ["WEL-0006", "WEL-0061", "WEL-0069", "WEL-0080"] {
+        let (_, r) = default
+            .iter()
+            .find(|(e, _)| e.subsidy.id == id)
+            .unwrap_or_else(|| panic!("{id} hidden"));
+        assert_eq!(r.closed_on, None, "{id}");
+        assert!(warns(r, "部分申請期間已截止，請確認仍開放的管道"), "{id}");
+        assert!(!warns(r, "已截止：申請期限"), "{id}");
+    }
+    for id in ["WEL-0028", "WEL-0032", "WEL-0077"] {
+        assert!(!default.iter().any(|(e, _)| e.subsidy.id == id), "{id}");
+    }
     let (_, body) = request(
         app(state()),
         "POST",

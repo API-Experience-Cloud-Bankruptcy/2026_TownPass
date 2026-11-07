@@ -199,8 +199,8 @@ pub struct MatchResult {
     pub warnings: Vec<String>,
     pub blocked_by: Vec<String>,
     pub personal: Vec<PersonalNote>,
-    /// `application.deadline.end` when it is before the query date; such items are
-    /// hidden unless `include_ineligible` is set.
+    /// `application.deadline.end` when it is before the query date and the deadline is a
+    /// single fixed window; such items are hidden unless `include_ineligible` is set.
     pub closed_on: Option<String>,
 }
 
@@ -248,8 +248,8 @@ fn missing_identities(e: &Entry, p: &Profile) -> Vec<String> {
         .collect()
 }
 
-/// End date of the application window if it has passed on `today` (both `YYYY-MM-DD`).
-fn closed_on(e: &Entry, today: &str) -> Option<String> {
+/// Recorded deadline end if it has passed on `today` (both `YYYY-MM-DD`).
+fn passed_end(e: &Entry, today: &str) -> Option<String> {
     let end = e.subsidy.application.deadline.get("end")?.as_str()?;
     crate::reviewed_rules::date_parts(end)?;
     crate::reviewed_rules::date_parts(today)?;
@@ -339,9 +339,16 @@ pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
             missing.join("、")
         ));
     }
-    let closed = closed_on(e, today);
+    // Only a single fixed window closes the whole programme; other types may keep
+    // later periods or other applicant groups open. `partial` means some period,
+    // channel or group has already closed even when the recorded `end` is ahead.
+    let passed = passed_end(e, today);
+    let kind = &e.subsidy.application.deadline["type"];
+    let closed = passed.clone().filter(|_| kind == "fixed");
     if let Some(end) = &closed {
         warnings.push(format!("已截止：申請期限 {end}，請留意下一期公告"));
+    } else if passed.is_some() || kind == "partial" {
+        warnings.push("部分申請期間已截止，請確認仍開放的管道".into());
     }
     for income in &s.eligibility.income {
         warnings.push(format!(
