@@ -28,7 +28,7 @@ SUBSIDY_DATA=./data/subsidies.json cargo run --locked --release
 
 ## 資料完整性與版本
 
-正式輸入共 **217 筆**，資料原有狀態為 `verified` 125、`partial` 90、`unverified` 2；本次沒有逐筆重新查核，不將這些狀態當作當期政策有效或已核准的證明。原資料檔與 schema 均不修改。
+正式輸入共 **217 筆**，資料原有狀態為 `verified` 125、`partial` 90、`unverified` 2；本次沒有逐筆重新查核，不將這些狀態當作當期政策有效或已核准的證明。`application.deadline.type` 新增 `partial`：記錄的截止日只涵蓋部分申請期間、管道或對象（WEL-0006、0061、0069、0080），`end` 為最早截止日。
 
 每筆保留完整的原始 JSON 值，Rust 型別只供內部搜尋／索引使用。catalog、單筆詳情、列表 `view=full` 與 match `view=full` 都從保留的 JSON 輸出，不將型別重新序列化成資料原文。因此 `income.period`、`year`、`multiplier_base`、`multiplier_value`，以及各層未識別欄位、空值、來源與原文仍保留。JSON 空白排版及物件鍵順序不屬於保留承諾；summary 是有意精簡的視圖。
 
@@ -109,7 +109,7 @@ Question 欄位為 `id`、`field`、`kind`、`title`、`description`、選用 `o
 - WEL-0110／0111 明列「未就學」，回答在學為必要條件不符，回答否與未回答區分。WEL-0031 的 enrollment_required=false 原文為畢業／同等學力，不當成禁止在學；CT-0076 只排除日間部，不以通用在學題硬排除。子女在學不套到父母本人。
 - 家戶類型 tag 不能代表完整資格；只有逐筆確認無其他替代途徑的必要核定身分才比較。一般戶遇仍有其他身分或評估途徑的資源保留 possible；不把個人收入當家戶所得。
 - 名稱、摘要或結構化就業／身障條件提到農保、榮民／退除役、原住民、身心障礙、低收／中低收，而 `applicant_types`（或 `household_type`）未提供該身分時，`warnings` 列出「可能限定身分，自述未提供：…」；fit 維持 possible。
-- `application.deadline.end` 早於查詢日（Asia/Taipei）時，`match.closed_on` 為該日期並加「已截止」warning；預設不列出，`include_ineligible=true` 時保留並排在最後。fit 不因截止改變。
+- `application.deadline.end` 早於查詢日（Asia/Taipei）且 `type` 為 `fixed` 時，`match.closed_on` 為該日期並加「已截止」warning；預設不列出，`include_ineligible=true` 時保留並排在最後。其他類型（`partial`、`yearly`、`unknown` 等）保留，warning 為「部分申請期間已截止，請確認仍開放的管道」。fit 不因截止改變。
 - 個人答案仍在前端本機評估，UI 不自動 POST。新理由標記 personal，預設匯出移除未同意欄位的自述年齡、在學及身分訊息。
 
 文字搜尋要求名稱、關鍵字或內文實際包含完整查詢詞，移除「查詢詞反向包含較短關鍵字」的過寬命中。「青年藝術」不因「青年」而混入留學貸款。工作情境也不再以「青年」泛詞代替就業分類；全庫與關鍵字搜尋仍保留217筆入口。
