@@ -166,12 +166,14 @@ function remoteTip(branch) {
 
 // If the agent could not commit (for example a sandbox blocked git), commit its changes for it.
 function commitLeftovers(issue, wt) {
-  if (!git(['status', '--porcelain'], { cwd: wt.dir })) return
   const msgFile = join(wt.dir, '.agent-commit-msg')
-  const message = existsSync(msgFile) ? readFileSync(msgFile, 'utf8').trim() : `Chore: 完成 #${issue.number} ${issue.title}`.slice(0, 72)
+  // Read and remove the message file before staging so it never lands in a commit.
+  const written = existsSync(msgFile) ? readFileSync(msgFile, 'utf8').trim() : ''
+  if (existsSync(msgFile)) rmSync(msgFile)
+  if (!git(['status', '--porcelain'], { cwd: wt.dir })) return
+  const message = written || `Chore: 完成 #${issue.number} ${issue.title}`.slice(0, 72)
   git(['add', '-A'], { cwd: wt.dir })
   git(['commit', '-m', message], { cwd: wt.dir })
-  if (existsSync(msgFile)) rmSync(msgFile)
   log('committed leftovers for issue', issue.number)
 }
 
@@ -269,6 +271,7 @@ async function main() {
   if (command === 'init') return init(args)
   if (command === 'setup-labels') return setupLabels()
   const cfg = loadConfig()
+  ensureIgnored()
   const state = loadJson(STATE, { issues: {} })
   if (command === 'once') return tick(cfg, state)
   if (command !== 'watch') throw new Error(`unknown command ${command}`)
