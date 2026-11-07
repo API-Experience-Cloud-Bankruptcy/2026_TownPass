@@ -28,7 +28,10 @@ class TrendingServiceWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 7.0),
-          Table(children: _tableRowList),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Table(children: _tableRowList),
+          ),
         ],
       ),
     );
