@@ -57,6 +57,48 @@ describe('紙本檢核結構', () => {
     expect(output).not.toContain('custom_internal');
     expect(output).not.toContain('{');
   });
+  it('表單結構：總覽與文件列數、項目編號、文件編號穩定', () => {
+    const base = input();
+    base.items = [makeSubsidy(), makeSubsidy({ id: 'T-2', name: '第二項', application: { required_documents: [{ name: '身分證', condition: null, notes: '', required: true }, { name: '戶口名簿', condition: null, notes: '', required: false }] } }), makeSubsidy({ id: 'T-3', name: '無文件', application: { required_documents: [] } })];
+    const { form } = buildChecklist(base);
+    expect(form.overview.map(r => r.no)).toEqual([1, 2, 3]);
+    expect(form.documents.map(d => [d.name, d.requirement, d.usedBy])).toEqual([['身分證', '必備', '1、2'], ['戶口名簿', '依個案', '2']]);
+    expect(form.incomplete).toEqual([{ no: 3, name: '無文件', remarks: expect.stringContaining('文件清單未補齊') }]);
+    expect(form.code).toMatch(/^FT-20261107-[0-9A-Z]{6}$/);
+    expect(buildChecklist({ ...base, items: [...base.items].reverse() }).form.code).toBe(form.code);
+    expect(buildChecklist({ ...base, items: base.items.slice(1) }).form.code).not.toBe(form.code);
+    expect(form.target).toBe('家人或他人');
+  });
+  it('表單結構涵蓋預覽中每項資源的全部資料', () => {
+    const base = input();
+    base.items = [makeSubsidy({ eligibility: { age: [{ raw: '年滿六十五歲', min: 65, max: null, subject: '本人', unit: 'year' }], exclusions: ['不得重複領取'] }, extensions: [{ namespace: 'eligibility', key: 'k', label: '居住日數', raw: '居住超過183日' }, { namespace: 'benefit', key: 'b', label: '給付方式', raw: '按月撥入' }], source_meta: { notes: '資料備註甲', verification_note: '查核說明乙', missing_fields: ['電話'], sources: [{ url: 'https://example.gov.tw/original', type: 'official', role: 'program', source_date: '2026-01-01', checked_date: '2026-11-01' }] } })];
+    base.results.set('T-0001', { id: 'T-0001', fit: 'possible', reasons: [], warnings: ['資料時效提醒'], blocked_by: [], pending: ['待確認資格'] });
+    base.stepDone['T-0001'] = [2];
+    const checklist = buildChecklist(base);
+    const form = JSON.stringify(checklist.form);
+    for (const section of checklist.sections.slice(1)) {
+      for (const block of section.blocks) {
+        if (block.kind === 'heading' || block.kind === 'notes') continue;
+        if (block.kind === 'link') { expect(form).toContain(block.url); continue; }
+        if (block.text.startsWith('來源紀錄')) continue;
+        const value = block.kind === 'check'
+          ? block.text.replace(/^待確認：/, '').replace(/^\d+\. /, '').replace(/（流程原文，未自行拆步）$/, '')
+          : block.text.slice(block.text.indexOf('：') + 1);
+        expect(form, block.text).toContain(JSON.stringify(value).slice(1, -1));
+      }
+    }
+    expect(checklist.form.resources[0]!.steps.map(s => s.done)).toEqual([false, false, true]);
+    expect(checklist.form.resources[0]!.eligibility).toContainEqual({ category: '補充：居住日數', text: '居住超過183日' });
+  });
+  it('表單不含未同意的填答', () => {
+    const base = input();
+    base.results.set('T-0001', { id: 'T-0001', fit: 'possible', reasons: ['年齡 42 歲'], warnings: [], blocked_by: [], personal: [{ list: 'reasons', text: '年齡 42 歲', field: 'age', neutral: '年齡待確認' }] });
+    const before = JSON.stringify(buildChecklist(base).form);
+    expect(before).not.toContain('42'); expect(before).toContain('年齡待確認');
+    expect(buildChecklist(base).form.conditions).toEqual([]);
+    base.conditions = [{ field: 'age', line: '年齡：42 歲' }];
+    expect(buildChecklist(base).form.conditions).toEqual(['年齡：42 歲']);
+  });
   it('沒有來源或文件時明示缺漏，不臆造電話地址或委託權', () => {
     const base = input();
     base.items = [makeSubsidy({ application: { required_documents: [], methods: [], process_text: null, channel_text: null, urls: { program: 'javascript:alert(1)' } }, source_meta: { sources: [], missing_fields: ['申請方式.form_fields'] } })];
