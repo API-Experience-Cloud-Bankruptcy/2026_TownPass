@@ -8,6 +8,8 @@ import 'package:get/get.dart';
 import 'package:town_pass/gen/assets.gen.dart';
 import 'package:town_pass/util/tp_app_bar.dart';
 import 'package:town_pass/util/tp_colors.dart';
+import 'package:town_pass/util/tp_route.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:town_pass/util/tp_web_load_state.dart';
 import 'package:town_pass/util/web_message_handler/tp_web_message_listener.dart';
 
@@ -110,7 +112,29 @@ class _TPWebViewState extends State<TPWebView> {
             initialSettings: InAppWebViewSettings(
               transparentBackground: true,
               underPageBackgroundColor: TPColors.white,
+              // 讓 target="_blank"、window.open、非網頁協定與檔案下載都交給下方處理，否則點了沒反應。
+              supportMultipleWindows: true,
+              javaScriptCanOpenWindowsAutomatically: true,
+              useShouldOverrideUrlLoading: true,
+              useOnDownloadStart: true,
             ),
+            // 開新視窗的連結：網頁疊一層 App 內網頁，其他協定交給系統。
+            onCreateWindow: (_, action) async {
+              final target = action.request.url;
+              if (target != null) await _openOutside(target);
+              return false;
+            },
+            // tel:、mailto:、line: 等非網頁協定，WebView 無法開啟，交給系統對應的 App。
+            shouldOverrideUrlLoading: (_, action) async {
+              final target = action.request.url;
+              if (target == null || _webSchemes.contains(target.scheme)) {
+                return NavigationActionPolicy.ALLOW;
+              }
+              await _launchExternal(target);
+              return NavigationActionPolicy.CANCEL;
+            },
+            // 申請表等檔案下載：WebView 無法存檔，改用系統瀏覽器開啟（可預覽或下載）。
+            onDownloadStartRequest: (_, request) => _launchExternal(request.url),
             onWebViewCreated: (controller) {
               webViewController.value = controller;
               loadPage();
@@ -202,6 +226,24 @@ class _TPWebViewState extends State<TPWebView> {
         ],
       ),
     );
+  }
+}
+
+const Set<String> _webSchemes = {'http', 'https', 'about', 'data', 'blob', 'javascript', 'file'};
+
+Future<void> _openOutside(Uri uri) async {
+  if (uri.scheme == 'http' || uri.scheme == 'https') {
+    await TPRoute.openUri(uri: uri.toString());
+  } else if (!_webSchemes.contains(uri.scheme)) {
+    await _launchExternal(uri);
+  }
+}
+
+Future<void> _launchExternal(Uri uri) async {
+  try {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    // 沒有能開啟的 App；保持在原頁面。
   }
 }
 
