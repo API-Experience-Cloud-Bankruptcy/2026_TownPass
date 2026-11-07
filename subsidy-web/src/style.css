@@ -1260,7 +1260,7 @@ details.bubble-more.is-closing[open] > summary::after {
   transition: transform var(--dur) var(--ease);
 }
 .bubble-more[open] > summary::after {
-  transform: rotate(-135deg);
+  transform: rotate(-135deg) translateY(2px);
 }
 .bubble-more > p,
 .bubble-more__note {
@@ -1285,6 +1285,17 @@ details.bubble-more.is-closing[open] > summary::after {
   padding: 0;
   display: grid;
   gap: var(--space-2);
+  position: relative;
+}
+.cards .row__chev {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  align-self: center;
+}
+.cards .row__chev svg {
+  display: block;
 }
 .cards > li {
   margin: 0;
@@ -1339,7 +1350,7 @@ details.bubble-more.is-closing[open] > summary::after {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
   transform-origin: top center;
   animation: pop-down 440ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
 }
@@ -1517,6 +1528,13 @@ li.wheel__item + li.wheel__item {
   box-shadow: var(--shadow-card);
   color: var(--text);
   font: inherit;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.composer__input:disabled {
+  background: var(--disabled-bg);
+  border-color: var(--disabled-bg);
+  color: var(--disabled-text);
+  box-shadow: none;
 }
 .composer__input:focus {
   border-color: var(--accent-fill);
@@ -1542,6 +1560,10 @@ li.wheel__item + li.wheel__item {
   box-shadow: var(--accent-shadow);
   color: var(--on-accent);
   cursor: pointer;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.composer__send:not(:disabled):active {
+  transform: scale(0.96);
 }
 .composer__send:disabled {
   box-shadow: var(--shadow-card);
@@ -1550,10 +1572,47 @@ li.wheel__item + li.wheel__item {
   cursor: not-allowed;
 }
 
+/* 離場收合。進場不加第二層，沿用打字、選項彈出與結果卡 list。 */
+.chat-span,
+.chat-beat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.chat-out-enter-active {
+  transition: none;
+}
+.chat-out-leave-active {
+  overflow: hidden;
+  min-height: 0 !important;
+  animation: none !important;
+  transition:
+    opacity var(--dur-slow) var(--ease-exit),
+    max-height var(--dur-expand) var(--ease),
+    margin-top var(--dur-expand) var(--ease),
+    margin-bottom var(--dur-expand) var(--ease),
+    padding-top var(--dur-expand) var(--ease),
+    padding-bottom var(--dur-expand) var(--ease);
+}
+.chat-out-leave-to {
+  opacity: 0;
+  max-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+/* 建議清單自己淡入，泡泡外層不再疊一次。 */
+.bubble__extra:has(> .cards) {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .msg, .reply, .bubble__extra, .msg__after { animation: none; }
   .bubble-more > summary::after { transition: none; }
   .caret, .logo--ring .logo__ink { animation: none; }
+  .chat-out-leave-active { transition: none !important; }
 }
 @media (forced-colors: active) {
   .bubble, .reply { border: 1px solid CanvasText; }

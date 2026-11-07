@@ -81,6 +81,15 @@ onBeforeUnmount(() => {
   clearTimeout(timer);
 });
 
+/** 選項、滾輪離場前鎖住高度，收起時才有銜接。 */
+function holdHeight(el: Element) {
+  const node = el as HTMLElement;
+  node.style.maxHeight = `${node.scrollHeight}px`;
+}
+function releaseHeight(el: Element) {
+  (el as HTMLElement).style.maxHeight = '';
+}
+
 /** 每一行拆成已打出（visible）與尚未打出（rest，隱形佔位）兩段。 */
 const visible = computed(() => {
   let left = shown.value;
@@ -114,13 +123,17 @@ const visible = computed(() => {
           >{{ l.visible }}<span v-if="!done && l.rest && l.typing" class="caret"></span><span v-if="l.rest" class="bubble__ghost">{{ l.rest }}</span></p>
         </template>
         <span class="sr-only">{{ content.map((l) => l.text).join('。') }}</span>
-        <div v-if="done && $slots.default" class="bubble__extra">
-          <slot />
+        <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+          <div v-if="done && $slots.default" class="bubble__extra">
+            <slot />
+          </div>
+        </Transition>
+      </div>
+      <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+        <div v-if="done && $slots.after" class="msg__after">
+          <slot name="after" />
         </div>
-      </div>
-      <div v-if="done && $slots.after" class="msg__after">
-        <slot name="after" />
-      </div>
+      </Transition>
     </div>
   </div>
 </template>

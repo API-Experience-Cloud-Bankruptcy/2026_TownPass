@@ -5,7 +5,7 @@
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 import LogoMark from './LogoMark.vue';
 import { vSmoothDetails } from '../chat/smooth-details';
-import { followBottom, forgetTyped, isTyped, markTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
+import { followBottom, forgetTyped, isTyped, markTyped, prefersReducedMotion, releaseFollow, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, descriptionFor, MAX_AGE, titleFor } from '../domain/questions';
 import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
 import { explicitSelfAge, InterpretationTurn, type CandidateFact, type ChatChoice, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
@@ -90,6 +90,48 @@ function answerText(q: Question): string {
   const typed = typedAnswers.value[q.id];
   if (typed && typed.value === v) return typed.text;
   return v === undefined ? '不知道，先跳過' : describeAnswer(q, v);
+}
+/** 問答中含目前這一題，同一則泡泡留在原地；結果頁只留這一輪走過的題。 */
+const shownQuestions = computed(() => {
+  if (view.value === 'questions') {
+    const list = answered.value.slice();
+    const q = current.value;
+    if (q && !list.some((item) => item.id === q.id)) list.push(q);
+    return list;
+  }
+  if (view.value === 'results') return answered.value;
+  return [];
+});
+/** 離場前鎖住高度，收合才不會從 auto 直接跳沒。取消離場時要把鎖拿掉。 */
+function holdHeight(el: Element) {
+  const node = el as HTMLElement;
+  node.style.maxHeight = `${node.scrollHeight}px`;
+}
+/** 換需求會把整段問答從畫面上拿掉；先在原高度收合，再改狀態，避免量到已經清空的區塊。 */
+function collapseFlow(run: () => void) {
+  const el = document.querySelector<HTMLElement>('[data-flow]');
+  const reduce = prefersReducedMotion();
+  if (!el?.animate || reduce) { run(); return; }
+  const style = getComputedStyle(document.documentElement);
+  const dur = parseFloat(style.getPropertyValue('--dur-expand')) || 300;
+  const ease = style.getPropertyValue('--ease-exit').trim() || 'ease-in';
+  const h = el.getBoundingClientRect().height;
+  // 鎖住高度，避免 overflow:hidden 讓 flex 子項一下子縮到可視範圍。
+  el.style.flexShrink = '0';
+  el.style.minHeight = '0';
+  el.style.height = `${h}px`;
+  el.style.overflow = 'hidden';
+  const anim = el.animate(
+    [{ height: `${h}px`, opacity: 1 }, { height: '0px', opacity: 0 }],
+    { duration: dur, easing: ease, fill: 'forwards' },
+  );
+  let settled = false;
+  const finish = () => { if (settled) return; settled = true; run(); };
+  anim.onfinish = finish;
+  anim.oncancel = finish;
+}
+function releaseHeight(el: Element) {
+  (el as HTMLElement).style.maxHeight = '';
 }
 function qLines(q: Question, withMeta: boolean): Line[] {
   const purpose = descriptionFor(q, target.value);
@@ -421,6 +463,11 @@ const followupPlan = computed(() => {
 });
 /** 選單暫停：逐題追問或確認意思時，上方原本的選項先收起，避免同時有兩組按鈕。 */
 const pausing = computed(() => !!followup.value || !!actionProposal.value);
+/** 確認意思或理解中先收起目前題目，避免兩組選項同時在。 */
+function showQuestionBubble(q: Question): boolean {
+  if (q !== current.value || view.value !== 'questions') return true;
+  return !pausing.value && !recovery.value && !interpreting.value;
+}
 /** 每題的 key 帶著前面的答案：改了前面的答案，後面重新出現的題目會重新打字。 */
 function followupKey(step: FollowupStep): string {
   const f = followup.value!; const steps = followupPlan.value!.steps;
@@ -781,8 +828,10 @@ async function onInput() {
       <p>建議使用 Wi-Fi 並保留足夠空間。下載完成會自動啟用，以後每次開啟補助專區也會自動載入。</p>
       <p>取消仍可使用選項與名稱搜尋，下次開啟補助專區會再詢問。</p>
     </ConfirmDialog>
-    <p v-if="modelStatus?.state === 'downloading'" class="chat__system" role="status">{{ statusText }}，下載期間可以先使用選項。</p>
-    <p v-else-if="modelStatus?.state === 'error'" class="chat__system" role="status">{{ statusText }} <button type="button" class="btn" @click="prepareModel">重試</button></p>
+    <Transition name="fade">
+      <p v-if="modelStatus?.state === 'downloading'" key="model-dl" class="chat__system" role="status">{{ statusText }}，下載期間可以先使用選項。</p>
+      <p v-else-if="modelStatus?.state === 'error'" key="model-err" class="chat__system" role="status">{{ statusText }} <button type="button" class="btn" @click="prepareModel">重試</button></p>
+    </Transition>
     <section ref="log" class="chat__log" aria-label="對話紀錄">
       <p class="chat__day" aria-hidden="true">填答只留在本分頁，不會上傳</p>
 
@@ -838,148 +887,154 @@ async function onInput() {
         </BotMessage>
         <TurnMessages :turns="turnsAt('needs')" />
 
-        <template v-if="past('needs') && isTyped(needKey)">
-          <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="修改需求" @edit="rewind('needs'); go('needs')" />
+        <div v-if="past('needs') && isTyped(needKey)" data-flow class="chat-span">
+            <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="修改需求" @edit="collapseFlow(() => { rewind('needs'); go('needs'); })" />
 
-          <!-- 3. 問答紀錄：在這題打字的往來排在題目前（與作答當下的順序一致） -->
-          <template v-for="q in answered" :key="q.id">
-            <TurnMessages :turns="turnsAt(`q:${q.id}`)" />
-            <BotMessage :msg-key="`q:${q.id}`" :lines="qLines(q, false)" />
-            <UserMessage :text="answerText(q)" edit-label="修改答案" @edit="editQuestion(q)" />
-          </template>
+            <!-- 3. 問答：同一題留在原地，後面的訊息收合離開 -->
+            <template v-for="q in shownQuestions" :key="q.id">
+              <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+                <div v-if="showQuestionBubble(q) || q !== current || turnsAt(`q:${q.id}`).length" :key="q.id" class="chat-beat">
+                  <TurnMessages :turns="turnsAt(`q:${q.id}`)" />
+                  <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+                  <BotMessage v-if="showQuestionBubble(q)" :key="q.id" :msg-key="`q:${q.id}`" :lines="qLines(q, q === current && view === 'questions')" :active="q === current && view === 'questions'">
+                    <template v-if="q === current && view === 'questions' && q.kind === 'number'" #default>
+                      <WheelPicker
+                        v-model="wheelValue"
+                        :min="q.min ?? 0"
+                        :max="q.max ?? MAX_AGE"
+                        :unit="numberUnit(q)"
+                        :label="titleFor(q, target)"
+                      />
+                    </template>
+                    <template v-if="q === current && view === 'questions'" #after>
+                      <div :key="q.id" class="replies" role="group" :aria-label="titleFor(q, target)">
+                        <template v-if="q.kind === 'number'">
+                          <button type="button" class="reply reply--primary reply--center" @click="submit(wheelValue)">
+                            <span class="reply__label">{{ wheelValue }} {{ numberUnit(q) }}，確認</span>
+                          </button>
+                        </template>
+                        <template v-else>
+                          <button
+                            v-for="opt in q.options"
+                            :key="String(opt.value)"
+                            type="button"
+                            class="reply"
+                            :aria-label="opt.label"
+                            @click="submit(opt.value)"
+                          >
+                            <span class="reply__label">{{ opt.label }}</span>
+                            <span v-if="optionalText(opt, 'description')" class="reply__sub">{{ optionalText(opt, 'description') }}</span>
+                          </button>
+                        </template>
+                        <div class="replies__row">
+                          <button type="button" class="reply reply--quiet" @click="submit(undefined)">
+                            <span class="reply__label">不知道，先跳過</span>
+                          </button>
+                          <button type="button" class="reply reply--quiet" @click="go('results')">
+                            <span class="reply__label">先看目前結果</span>
+                          </button>
+                        </div>
+                      </div>
+                    </template>
+                  </BotMessage>
+                  </Transition>
+                  <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+                    <UserMessage v-if="q !== current" :key="`${q.id}:answer`" :text="answerText(q)" edit-label="修改答案" @edit="editQuestion(q)" />
+                  </Transition>
+                </div>
+              </Transition>
+            </template>
 
-          <TurnMessages v-if="current" :turns="turnsAt(`q:${current.id}`)" />
-          <!-- 目前的題目：確認完成後接在使用者原句與回覆之後 -->
-          <template v-if="view === 'questions'">
-
-            <BotMessage v-if="current && !pausing && !recovery && !interpreting" :key="`q:${current.id}`" :msg-key="`q:${current.id}`" :lines="qLines(current, true)" active>
-              <template v-if="current.kind === 'number'">
-                <WheelPicker
-                  v-model="wheelValue"
-                  :min="current.min ?? 0"
-                  :max="current.max ?? MAX_AGE"
-                  :unit="numberUnit(current)"
-                  :label="titleFor(current, target)"
+            <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+              <div v-if="view === 'questions' && !current" key="q-terminal" class="chat-beat">
+                <BotMessage
+                  v-if="state.loading"
+                  key="q-loading"
+                  msg-key="q-loading"
+                  :lines="[{ text: '題目載入中，請稍候。' }]"
+                  active
                 />
-              </template>
-
-              <template #after>
-                <div :key="current.id" class="replies" role="group" :aria-label="titleFor(current, target)">
-                  <template v-if="current.kind === 'number'">
-                    <button type="button" class="reply reply--primary reply--center" @click="submit(wheelValue)">
-                      <span class="reply__label">{{ wheelValue }} {{ numberUnit(current) }}，確認</span>
-                    </button>
+                <BotMessage
+                  v-else
+                  key="q-empty"
+                  msg-key="q-empty"
+                  :lines="[
+                    { text: '目前沒有其他問題了，先看看找到的資源。', tone: 'title' },
+                    { text: '還有些申請條件需要確認，可以點開詳情看原文，或問承辦窗口。', tone: 'muted' },
+                  ]"
+                  active
+                >
+                  <template #after>
+                    <div class="replies">
+                      <button type="button" class="reply reply--primary reply--center" @click="go('results')">
+                        <span class="reply__label">看結果</span>
+                      </button>
+                    </div>
                   </template>
-                  <template v-else>
-                    <button
-                      v-for="opt in current.options"
-                      :key="String(opt.value)"
-                      type="button"
-                      class="reply"
-                      :aria-label="opt.label"
-                      @click="submit(opt.value)"
-                    >
-                      <span class="reply__label">{{ opt.label }}</span>
-                      <span v-if="optionalText(opt, 'description')" class="reply__sub">{{ optionalText(opt, 'description') }}</span>
-                    </button>
-                  </template>
-                  <div class="replies__row">
-                    <button type="button" class="reply reply--quiet" @click="submit(undefined)">
-                      <span class="reply__label">不知道，先跳過</span>
-                    </button>
-                    <button type="button" class="reply reply--quiet" @click="go('results')">
-                      <span class="reply__label">先看目前結果</span>
-                    </button>
-                  </div>
-                </div>
-              </template>
-            </BotMessage>
+                </BotMessage>
+              </div>
+            </Transition>
 
-            <BotMessage
-              v-else-if="state.loading"
-              key="q-loading"
-              msg-key="q-loading"
-              :lines="[{ text: '題目載入中，請稍候。' }]"
-              active
-            />
-            <BotMessage
-              v-else-if="!current"
-              key="q-empty"
-              msg-key="q-empty"
-              :lines="[
-                { text: '目前沒有其他問題了，先看看找到的資源。', tone: 'title' },
-                { text: '還有些申請條件需要確認，可以點開詳情看原文，或問承辦窗口。', tone: 'muted' },
-              ]"
-              active
-            >
-              <template #after>
-                <div class="replies">
-                  <button type="button" class="reply reply--primary reply--center" @click="go('results')">
-                    <span class="reply__label">看結果</span>
-                  </button>
-                </div>
-              </template>
-            </BotMessage>
-          </template>
-
-          <!-- 4. 結果 -->
-          <template v-if="view === 'results'">
-
-            <BotMessage :key="resultsKey" :msg-key="resultsKey" :lines="resultLines" active wide>
-              <ul v-if="recommended.length" class="cards" aria-label="建議先了解">
-                <li v-for="item in recommended" :key="item.id">
-                  <ResultCard :item="item" :result="results.get(item.id)" />
-                </li>
-              </ul>
-            </BotMessage>
-
-            <BotMessage v-if="isTyped(resultsKey) && sections.length" :key="sectionsKey" :msg-key="sectionsKey" :lines="[{ text: '另外還有這些，點開可以看：' }]" wide>
-              <div class="bubble-groups">
-                <details v-for="s in sections" :key="s.key" v-smooth-details class="bubble-more" :open="s.key === 'ineligible' ? state.showIneligible : undefined"
-                  @toggle="s.key === 'ineligible' && (state.showIneligible = ($event.target as HTMLDetailsElement).open)">
-                  <summary>{{ s.title }}（{{ s.list.length }}）</summary>
-                  <p class="bubble-more__note">{{ s.note }}</p>
-                  <ul class="cards" :aria-label="s.title">
-                    <li v-for="item in s.list.slice(0, shownCount[s.key] ?? PAGE)" :key="item.id">
+            <!-- 4. 結果 -->
+            <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+              <div v-if="view === 'results'" key="results" data-results class="chat-beat">
+                <BotMessage :key="resultsKey" :msg-key="resultsKey" :lines="resultLines" active wide>
+                  <TransitionGroup v-if="recommended.length" name="list" tag="ul" class="cards" appear aria-label="建議先了解">
+                    <li v-for="item in recommended" :key="item.id">
                       <ResultCard :item="item" :result="results.get(item.id)" />
                     </li>
-                  </ul>
-                  <button
-                    v-if="(shownCount[s.key] ?? PAGE) < s.list.length"
-                    type="button"
-                    class="btn btn--block"
-                    @click="shownCount[s.key] = (shownCount[s.key] ?? PAGE) + PAGE"
-                  >
-                    再看 {{ Math.min(PAGE, s.list.length - (shownCount[s.key] ?? PAGE)) }} 項<span class="sr-only">：{{ s.title }}</span>
-                  </button>
-                </details>
-              </div>
-            </BotMessage>
+                  </TransitionGroup>
+                </BotMessage>
 
-            <BotMessage v-if="isTyped(resultsKey) && (!sections.length || isTyped(sectionsKey))" :key="nextKey" :msg-key="nextKey" :lines="nextLines">
-              <template v-if="!pausing" #after>
-                <div class="replies">
-                  <button v-if="canRefine" type="button" class="reply reply--primary" @click="continueQuestions">
-                    <span class="reply__label">{{ answeredCount ? '再回答幾題，繼續縮小' : '回答幾題，縮小範圍' }}</span>
-                  </button>
-                  <button v-if="target === 'self' && planItems.length" type="button" class="reply" @click="tab('plan')">
-                    <span class="reply__label">看行動單（{{ planItems.length }} 項）</span>
-                  </button>
-                  <div class="replies__row">
-                    <button v-if="answeredCount" type="button" class="reply reply--quiet" @click="redoAnswers"><span class="reply__label">改答案</span></button>
-                    <button type="button" class="reply reply--quiet" @click="go('needs')"><span class="reply__label">換需求</span></button>
-                    <button v-if="!exploring && state.session.target" type="button" class="reply reply--quiet" @click="startExplore"><span class="reply__label">帶我找</span></button>
-                    <button type="button" class="reply reply--quiet" @click="tab('help')"><span class="reply__label">找人幫忙</span></button>
+                <BotMessage v-if="isTyped(resultsKey) && sections.length" :key="sectionsKey" :msg-key="sectionsKey" :lines="[{ text: '另外還有這些，點開可以看：' }]" wide>
+                  <div class="bubble-groups">
+                    <details v-for="s in sections" :key="s.key" v-smooth-details class="bubble-more" :open="s.key === 'ineligible' ? state.showIneligible : undefined"
+                      @toggle="s.key === 'ineligible' && (state.showIneligible = ($event.target as HTMLDetailsElement).open)">
+                      <summary>{{ s.title }}（{{ s.list.length }}）</summary>
+                      <p class="bubble-more__note">{{ s.note }}</p>
+                      <TransitionGroup name="list" tag="ul" class="cards" :aria-label="s.title">
+                        <li v-for="item in s.list.slice(0, shownCount[s.key] ?? PAGE)" :key="item.id">
+                          <ResultCard :item="item" :result="results.get(item.id)" />
+                        </li>
+                      </TransitionGroup>
+                      <button
+                        v-if="(shownCount[s.key] ?? PAGE) < s.list.length"
+                        type="button"
+                        class="btn btn--block"
+                        @click="shownCount[s.key] = (shownCount[s.key] ?? PAGE) + PAGE"
+                      >
+                        再看 {{ Math.min(PAGE, s.list.length - (shownCount[s.key] ?? PAGE)) }} 項<span class="sr-only">：{{ s.title }}</span>
+                      </button>
+                    </details>
                   </div>
-                </div>
-              </template>
-            </BotMessage>
-          </template>
-        </template>
+                </BotMessage>
+
+                <BotMessage v-if="isTyped(resultsKey) && (!sections.length || isTyped(sectionsKey))" :key="nextKey" :msg-key="nextKey" :lines="nextLines">
+                  <template v-if="!pausing" #after>
+                    <div class="replies">
+                      <button v-if="canRefine" type="button" class="reply reply--primary" @click="continueQuestions">
+                        <span class="reply__label">{{ answeredCount ? '再回答幾題，繼續縮小' : '回答幾題，縮小範圍' }}</span>
+                      </button>
+                      <button v-if="target === 'self' && planItems.length" type="button" class="reply" @click="tab('plan')">
+                        <span class="reply__label">看行動單（{{ planItems.length }} 項）</span>
+                      </button>
+                      <div class="replies__row">
+                        <button v-if="answeredCount" type="button" class="reply reply--quiet" @click="redoAnswers"><span class="reply__label">改答案</span></button>
+                        <button type="button" class="reply reply--quiet" @click="collapseFlow(() => go('needs'))"><span class="reply__label">換需求</span></button>
+                        <button v-if="!exploring && state.session.target" type="button" class="reply reply--quiet" @click="startExplore"><span class="reply__label">帶我找</span></button>
+                        <button type="button" class="reply reply--quiet" @click="tab('help')"><span class="reply__label">找人幫忙</span></button>
+                      </div>
+                    </div>
+                  </template>
+                </BotMessage>
+              </div>
+            </Transition>
+          </div>
       </template>
       <TurnMessages :turns="tailTurns" />
       <!-- 確認意思：和其他選項一樣是對話裡的按鈕，問句就是上一則回覆 -->
-      <div v-if="actionProposal" class="replies conversation-recovery" role="group" aria-label="請確認你的意思">
+      <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+      <div v-if="actionProposal" key="proposal" class="replies conversation-recovery" role="group" aria-label="請確認你的意思">
         <template v-if="actionProposal.kind === 'search'">
           <template v-if="!state.session.target">
             <button type="button" class="reply" :disabled="busy || applyingInput" @click="chooseSearchTarget('self')"><span class="reply__label">幫自己找</span></button>
@@ -995,39 +1050,54 @@ async function onInput() {
           <button type="button" class="reply reply--quiet" :disabled="applyingInput" @click="rejectAction"><span class="reply__label">不是，維持原本進度</span></button>
         </div>
       </div>
+      </Transition>
       <!-- 逐題追問：一題一則訊息，答完才出現下一題；全部答完才一次套用 -->
-      <template v-if="followup && followupPlan">
+      <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+      <div v-if="followup && followupPlan" key="followup" class="chat-span">
         <template v-for="step in followupPlan.steps" :key="followupKey(step)">
-          <BotMessage :msg-key="followupKey(step)" :lines="[{ text: step.prompt, tone: 'title' }, { text: step.note ?? '', tone: 'muted' }]">
-            <template v-if="step === followupPlan.current" #after>
-              <div class="replies" role="group" :aria-label="step.prompt">
-                <button v-for="(choice, i) in step.choices" :key="choice.id" type="button" class="reply" :class="{ 'reply--primary': i === 0 && !!step.yes }" :disabled="busy" @click="answerFollowup(choice.id)">
-                  <span class="reply__label">{{ choice.label }}</span>
-                </button>
-                <p v-if="followupHint" class="chat__tip" role="status">{{ followupHint }}</p>
-                <div class="replies__row">
-                  <button type="button" class="reply reply--quiet" @click="restateFollowup"><span class="reply__label">我重新說</span></button>
-                  <button type="button" class="reply reply--quiet" @click="dropFollowup"><span class="reply__label">這些先不用</span></button>
-                </div>
-              </div>
-            </template>
-          </BotMessage>
-          <UserMessage v-if="step !== followupPlan.current" :text="followupAnswerText(step)" edit-label="修改這一題" @edit="editFollowup(step)" />
+          <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+            <div :key="followupKey(step)" class="chat-beat">
+              <BotMessage :msg-key="followupKey(step)" :lines="[{ text: step.prompt, tone: 'title' }, { text: step.note ?? '', tone: 'muted' }]">
+                <template v-if="step === followupPlan.current" #after>
+                  <div class="replies" role="group" :aria-label="step.prompt">
+                    <button v-for="(choice, i) in step.choices" :key="choice.id" type="button" class="reply" :class="{ 'reply--primary': i === 0 && !!step.yes }" :disabled="busy" @click="answerFollowup(choice.id)">
+                      <span class="reply__label">{{ choice.label }}</span>
+                    </button>
+                    <p v-if="followupHint" class="chat__tip" role="status">{{ followupHint }}</p>
+                    <div class="replies__row">
+                      <button type="button" class="reply reply--quiet" @click="restateFollowup"><span class="reply__label">我重新說</span></button>
+                      <button type="button" class="reply reply--quiet" @click="dropFollowup"><span class="reply__label">這些先不用</span></button>
+                    </div>
+                  </div>
+                </template>
+              </BotMessage>
+              <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+                <UserMessage v-if="step !== followupPlan.current" :key="step.id" :text="followupAnswerText(step)" edit-label="修改這一題" @edit="editFollowup(step)" />
+              </Transition>
+            </div>
+          </Transition>
         </template>
-      </template>
-      <div v-if="searchSuggestions.length" class="replies conversation-recovery" role="group" aria-label="可能想找的名稱">
-        <button v-for="suggestion in searchSuggestions" :key="suggestion" type="button" class="reply" @click="suggestSearch(suggestion)"><span class="reply__label">你是要找「{{ suggestion }}」嗎？</span></button>
       </div>
-      <div v-if="recovery" class="replies conversation-recovery" role="group" aria-label="接著可以這樣做">
-        <button v-for="choice in recoveryChoices" :key="choice.id" type="button" class="reply reply--chip" :disabled="busy" @click="recoverWith(choice.id)"><span class="reply__label">{{ choice.label }}</span></button>
-      </div>
-      <div v-if="interpreting" class="msg msg--bot">
-        <span class="avatar" aria-hidden="true"><LogoMark thinking /></span>
-        <div class="msg__col">
-          <p class="bubble bubble--bot thinking__text" role="status">正在確認你的意思…</p>
-          <div class="msg__after"><button type="button" class="btn" @click="cancelInput">取消</button></div>
+      </Transition>
+      <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+        <div v-if="searchSuggestions.length" key="suggest" class="replies conversation-recovery" role="group" aria-label="可能想找的名稱">
+          <button v-for="suggestion in searchSuggestions" :key="suggestion" type="button" class="reply" @click="suggestSearch(suggestion)"><span class="reply__label">你是要找「{{ suggestion }}」嗎？</span></button>
         </div>
-      </div>
+      </Transition>
+      <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+        <div v-if="recovery" key="recovery" class="replies conversation-recovery" role="group" aria-label="接著可以這樣做">
+          <button v-for="choice in recoveryChoices" :key="choice.id" type="button" class="reply reply--chip" :disabled="busy" @click="recoverWith(choice.id)"><span class="reply__label">{{ choice.label }}</span></button>
+        </div>
+      </Transition>
+      <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+        <div v-if="interpreting" key="thinking" class="msg msg--bot">
+          <span class="avatar" aria-hidden="true"><LogoMark thinking /></span>
+          <div class="msg__col">
+            <p class="bubble bubble--bot thinking__text" role="status">正在確認你的意思…</p>
+            <div class="msg__after"><button type="button" class="btn" @click="cancelInput">取消</button></div>
+          </div>
+        </div>
+      </Transition>
     </section>
 
     <form class="composer no-print conversation-composer" @submit.prevent="onInput">
