@@ -87,6 +87,13 @@ export function openLink(url: string): void {
   else globalThis.open?.(url, '_blank', 'noopener');
 }
 
+/** Opens a map URL: Town Pass `launch_map`, falling back to `openLink` when the App cannot launch it. */
+export async function launchMap(url: string): Promise<void> {
+  const fo = bridge();
+  if (!fo) return openLink(url);
+  if ((await request(fo, 'launch_map', url)) !== true) openLink(url);
+}
+
 export async function getLocation(): Promise<Position | null> {
   const fo = bridge();
   if (fo) {
