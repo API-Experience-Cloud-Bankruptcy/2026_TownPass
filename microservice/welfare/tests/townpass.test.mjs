@@ -81,6 +81,15 @@ test('call and openLink post to Town Pass', () => {
   ]);
 });
 
+test('openLink neither waits for a reply nor falls back to window.open', () => {
+  const opened = [];
+  globalThis.open = (...args) => opened.push(args);
+  const { listeners } = mockFlutter();
+  assert.equal(openLink('https://example.gov.taipei/apply'), undefined);
+  assert.equal(listeners.size, 0);
+  assert.deepEqual(opened, []);
+});
+
 test('call and openLink fall back to tel: and window.open', () => {
   const opened = [];
   globalThis.open = (...args) => opened.push(args);
@@ -96,6 +105,31 @@ test('getLocation reads the Town Pass position or returns null', async () => {
   assert.deepEqual(await getLocation(), { latitude: 25.05, longitude: 121.53 });
   mockFlutter({ location: [] });
   assert.equal(await getLocation(), null);
+});
+
+test('getLocation waits 15 seconds for a reply, other handlers 3 seconds', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const { listeners } = mockFlutter();
+  let settled = false;
+  const pending = getLocation().then((p) => {
+    settled = true;
+    return p;
+  });
+  t.mock.timers.tick(14999);
+  await Promise.resolve();
+  assert.equal(settled, false);
+  const fix = JSON.stringify({ name: 'location', data: { latitude: 25.05, longitude: 121.53 } });
+  listeners.forEach((l) => l({ data: fix }));
+  assert.deepEqual(await pending, { latitude: 25.05, longitude: 121.53 });
+
+  const late = getLocation();
+  t.mock.timers.tick(15000);
+  assert.equal(await late, null);
+
+  const user = getUserInfo();
+  t.mock.timers.tick(3000);
+  assert.equal(await user, null);
+  assert.equal(listeners.size, 0);
 });
 
 test('birth year accepts 西元 and 民國 dates', () => {

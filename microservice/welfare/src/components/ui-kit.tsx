@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useApp, type FontLevel } from '@/lib/app-state';
 import { go, goBack } from '@/lib/nav';
+import { inTownPass } from '@/lib/townpass';
 
 export const MAX_WIDTH = 640;
 export const TOUCH = 52;
@@ -157,6 +158,9 @@ export function Screen({
   const { colors, loaded } = useApp();
   const insets = useSafeAreaInsets();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Town Pass shows the service name in its own top bar. Read after mount so the static HTML matches the first render.
+  const [hostBar, setHostBar] = useState(false);
+  useEffect(() => setHostBar(inTownPass()), []);
   if (!loaded) {
     // Answers are restored after mount; showing the page before that flashes wrong results.
     return (
@@ -184,9 +188,13 @@ export function Screen({
           ) : (
             <View style={styles.headerSpacer} />
           )}
-          <T size="small" weight="600" muted style={styles.headerTitle} numberOfLines={1}>
-            {title}
-          </T>
+          {hostBar ? (
+            <View style={styles.headerTitle} />
+          ) : (
+            <T size="small" weight="600" muted style={styles.headerTitle} numberOfLines={1}>
+              {title}
+            </T>
+          )}
           <Pressable
             role="button"
             aria-label="調整字級與對比"
@@ -223,11 +231,8 @@ function HelpBar({ bottomInset }: { bottomInset: number }) {
     <View
       nativeID="help-bar"
       style={[styles.helpBar, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: bottomInset + 8 }]}>
-      <View style={[styles.columnFlat, styles.helpRow]}>
-        <T size="small" muted style={styles.helpText}>
-          看不懂、不會操作？
-        </T>
-        <Btn label="請人幫我" variant="primary" onPress={() => go('/help')} style={styles.helpBtn} />
+      <View style={styles.columnFlat}>
+        <Btn label="請人幫我" variant="primary" onPress={() => go('/help')} />
       </View>
     </View>
   );
@@ -350,9 +355,6 @@ export const styles = StyleSheet.create({
   card: { borderRadius: 16, padding: 16, gap: 10 },
   pinned: { paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1 },
   helpBar: { borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 8 },
-  helpRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  helpText: { flex: 1 },
-  helpBtn: { minWidth: 136 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end', alignItems: 'center' },
   sheet: {
     width: '100%',
