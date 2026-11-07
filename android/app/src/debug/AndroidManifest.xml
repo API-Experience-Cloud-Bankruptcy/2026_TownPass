@@ -4,6 +4,6 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- Lets the debug WebView load the local Expo server over http://10.0.2.2. -->
+    <!-- Debug builds may load microservices from a local dev server over http (emulator 10.0.2.2 or LAN). -->
     <application android:usesCleartextTraffic="true"/>
 </manifest>

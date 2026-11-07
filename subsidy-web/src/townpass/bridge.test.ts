@@ -1,0 +1,92 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isInTownPass, parseMessage, request, send, TownPassError } from './bridge';
+
+type Listener = (event: { data: unknown }) => void;
+
+/** 模擬 App 注入的 flutterObject；reply 決定 App 收到訊息後回什麼。 */
+function installFlutterObject(reply?: (name: string, data: unknown) => unknown) {
+  const listeners = new Set<Listener>();
+  const posted: string[] = [];
+  const flutterObject = {
+    postMessage(message: string) {
+      posted.push(message);
+      if (!reply) return;
+      const { name, data } = JSON.parse(message);
+      const answer = reply(name, data);
+      queueMicrotask(() =>
+        listeners.forEach((l) => l({ data: JSON.stringify({ name, data: answer }) })),
+      );
+    },
+    addEventListener: (_: string, l: Listener) => listeners.add(l),
+    removeEventListener: (_: string, l: Listener) => listeners.delete(l),
+  };
+  vi.stubGlobal('window', { flutterObject });
+  return { posted, listeners };
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
+
+describe('parseMessage', () => {
+  it('解析 App 傳來的 JSON 字串', () => {
+    expect(parseMessage('{"name":"location","data":{"latitude":25}}')).toEqual({
+      name: 'location',
+      data: { latitude: 25 },
+    });
+  });
+
+  it('接受已是物件的訊息', () => {
+    expect(parseMessage({ name: 'userinfo', data: [] })).toEqual({ name: 'userinfo', data: [] });
+  });
+
+  it('格式不符時回傳 null', () => {
+    expect(parseMessage('不是 JSON')).toBeNull();
+    expect(parseMessage('{"data":1}')).toBeNull();
+    expect(parseMessage(null)).toBeNull();
+  });
+});
+
+describe('在 App 內', () => {
+  it('偵測到 flutterObject', () => {
+    installFlutterObject();
+    expect(isInTownPass()).toBe(true);
+  });
+
+  it('send 以 { name, data } JSON 字串送出', () => {
+    const { posted } = installFlutterObject();
+    send('notify', { title: 't', content: 'c' });
+    expect(posted).toEqual(['{"name":"notify","data":{"title":"t","content":"c"}}']);
+  });
+
+  it('request 取得同名回覆並移除監聽', async () => {
+    const { listeners } = installFlutterObject((name) => (name === 'phone_call' ? true : null));
+    await expect(request<boolean>('phone_call', '1999')).resolves.toBe(true);
+    expect(listeners.size).toBe(0);
+  });
+
+  it('忽略其他 name 的回覆，逾時後拒絕', async () => {
+    vi.useFakeTimers();
+    const { listeners } = installFlutterObject();
+    const pending = request('location', null, { timeoutMs: 1000 });
+    listeners.forEach((l) => l({ data: JSON.stringify({ name: 'userinfo', data: {} }) }));
+    vi.advanceTimersByTime(1000);
+    await expect(pending).rejects.toMatchObject({ code: 'TIMEOUT' });
+    expect(listeners.size).toBe(0);
+  });
+});
+
+describe('在一般瀏覽器', () => {
+  it('request 改用模擬資料', async () => {
+    vi.stubGlobal('window', {});
+    expect(isInTownPass()).toBe(false);
+    const account = await request<{ realName: string }>('userinfo');
+    expect(account.realName).toBe('金大森');
+  });
+
+  it('沒有模擬資料時以 NOT_IN_APP 拒絕', async () => {
+    vi.stubGlobal('window', {});
+    await expect(request('unknown_handler')).rejects.toBeInstanceOf(TownPassError);
+  });
+});
