@@ -64,12 +64,13 @@ class LaunchMapWebMessageHandler extends TPWebMessageHandler {
     required bool isMainFrame,
     required Function(WebMessage reply)? onReply,
   }) async {
-    if (message == null || message is! String) {
+    final Uri? uri = message is String ? Uri.tryParse(message) : null;
+    if (uri == null) {
       onReply?.call(
         replyWebMessage(data: false),
       );
+      return;
     }
-    final Uri uri = Uri.parse(message as String);
     final bool canLaunch = await canLaunchUrl(uri);
 
     onReply?.call(
@@ -150,12 +151,13 @@ class PhoneCallMessageHandler extends TPWebMessageHandler {
     required bool isMainFrame,
     required Function(WebMessage reply)? onReply,
   }) async {
-    if (message == null) {
+    final Uri? uri = message is String && message.isNotEmpty ? Uri.tryParse('tel://$message') : null;
+    if (uri == null) {
       onReply?.call(
         replyWebMessage(data: false),
       );
+      return;
     }
-    final Uri uri = Uri.parse('tel://${message!}');
     final bool canLaunch = await canLaunchUrl(uri);
 
     onReply?.call(
@@ -222,10 +224,10 @@ class OpenLinkMessageHandler extends TPWebMessageHandler {
     required bool isMainFrame,
     required Function(WebMessage reply)? onReply,
   }) async {
-    switch (message as String?) {
+    switch (message) {
       case String uri:
         await TPRoute.openUri(uri: uri);
-      case null:
+      default:
         onReply?.call(replyWebMessage(data: false));
     }
   }
