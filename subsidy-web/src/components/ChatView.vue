@@ -2,7 +2,7 @@
 // 「找資源」的對話介面：選對象 → 選需求或搜尋 → 逐題問答 → 結果。
 // 流程與判斷全部沿用 store；這裡只把同一份狀態排成一則則訊息。
 // 對話紀錄由狀態推導：點自己過去的回答即可回到那一步修改。
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 import LogoMark from './LogoMark.vue';
 import { vSmoothDetails } from '../chat/smooth-details';
 import { followBottom, forgetTyped, isTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
@@ -185,8 +185,8 @@ const sectionsKey = computed(() => `${resultsKey.value}:more`);
 // ── 跟著最新訊息捲動：內容長高（打字、選項、滾輪出現）時，若使用者停在底部就跟著到底 ──
 const log = ref<HTMLElement | null>(null);
 let observer: ResizeObserver | null = null;
-onMounted(() => {
-  window.addEventListener('scroll', trackPinned, { passive: true });
+onActivated(() => {
+  log.value?.addEventListener('scroll', trackPinned, { passive: true });
   window.addEventListener('touchstart', releaseFollow, { passive: true });
   window.addEventListener('wheel', releaseFollow, { passive: true });
   if (typeof ResizeObserver !== 'undefined' && log.value) {
@@ -195,11 +195,12 @@ onMounted(() => {
   }
   followBottom(true);
 });
-onBeforeUnmount(() => {
-  window.removeEventListener('scroll', trackPinned);
+onDeactivated(() => {
+  log.value?.removeEventListener('scroll', trackPinned);
   window.removeEventListener('touchstart', releaseFollow);
   window.removeEventListener('wheel', releaseFollow);
   observer?.disconnect();
+  observer = null;
 });
 
 // ── 自然語言：目前答案優先，其次提出情境與事實供確認 ──

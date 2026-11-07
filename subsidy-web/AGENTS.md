@@ -260,6 +260,10 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 已完成福利通前後端核心流程，並升級為依答案重排的動態問答：217 筆完整資料 API 與逐筆探索映射、來源綁定必要條件、本機保守初篩、不確定需求的生活情境探索、辦理路線、文件準備、求助及行動單輸出。題目來自共用模板，不由執行時 AI 生成；探索方向與資格判斷分開。詳細範圍及驗證見 `README.md` 與 `../docs/welfare-implementation-contract.md`。
 
+行動單持久化：`domain/action-plan.ts` 透過 `/api/action-plan` 讀寫 SQLite，僅保存資源與準備進度，不傳資格答案／聊天原句。後端須明確啟用 `DEMO_MODE=1`；App、瀏覽器與 DB 共用 `assets/mock_data/account.json` 的虛擬測試者，非正式台北通登入。資料欄位與限制見 `../docs/townpass-profile.md`。保存狀態以後端回覆為準，revision 衝突不得靜默覆寫。`../scripts/install_macos_service.py --demo` 將 DB 放在 release 以外的持久目錄。
+
+頂部品牌／分頁與底部對話輸入列不參與內容捲動；對話在 `.chat__log` 捲動，一般頁在 `.app-main` 捲動。返回找資源時提供續接選擇，初始招呼頁除外；開新對話保留行動單，換人／清除仍依確認內容清除。
+
 UI 維護原則：每頁一個決定，完整資格及來源按需展開；不得因文字精簡刪掉必要提醒、資料原文或匯出條件。切換需求不得混入舊搜尋篩選；換人必須確認並清除舊答案與行動單。題目切換須處理焦點與連點，不用 AI 生成題庫。
 
 動態問答維護須涵蓋返回改答後恢復分支、已略過問題不重複追問、切需求清除不相關探索偏好，以及 catalog／資格／探索／模板版本更新後的工作階段失效。顯示的聚焦筆數不等於符合資格筆數；其他候選、時效不明與已截止項目須保留可查入口。

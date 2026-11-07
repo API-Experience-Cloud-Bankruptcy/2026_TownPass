@@ -1,4 +1,4 @@
-// 全域狀態：資料、題庫、本機答案與行動單。答案只在本機評估與保存。
+// 全域狀態：資料、題庫、本機答案與資料庫行動單。資格答案只在本機評估與保存。
 
 import { computed, reactive, ref, watch } from 'vue';
 import { loadCatalog } from './domain/catalog';
@@ -24,6 +24,8 @@ import { availability, discoveryScore, identityRanking, questionApplies, rankQue
 import { filterCatalog, SITUATIONS } from './domain/situations';
 import type { Answers, LoadedCatalog, Question, QuestionBank, Subsidy, Target } from './domain/types';
 import { validFactValue, type CandidateFact } from './chat/interpretation';
+import { ActionPlanSync, savedPlan } from './domain/action-plan';
+import { resetTyped } from './chat/typing';
 
 export type View = 'home' | 'needs' | 'search' | 'questions' | 'results' | 'detail' | 'plan' | 'help' | 'browse';
 
@@ -67,6 +69,24 @@ export const state = reactive<State>({
   showIneligible: false,
   helpContext: { itemId: null },
 });
+
+export const planSync = new ActionPlanSync(() => savedPlan(state.session, state.catalog?.items), (plan) => {
+  // 帳號的行動單不帶資格答案；換到不同查詢對象時不沿用前一人的本機回答。
+  if (state.session.target !== plan.target) resetPerson(plan.target);
+  Object.assign(state.session, plan);
+  if (state.catalog) {
+    const { notice, ...patch } = migrateSession(state.session, state.catalog);
+    Object.assign(state.session, patch);
+    if (notice) state.notice = notice;
+  }
+});
+watch(() => JSON.stringify(savedPlan(state.session, state.catalog?.items)), () => planSync.changed());
+
+export const pendingResume = ref(false);
+export const conversationEpoch = ref(0);
+const CHAT_VIEWS: View[] = ['home', 'needs', 'search', 'questions', 'results'];
+let lastChatView: View = 'home';
+watch(() => state.view, (view) => { if (CHAT_VIEWS.includes(view)) lastChatView = view; }, { flush: 'sync' });
 
 watch(
   () => state.session,
@@ -181,6 +201,7 @@ export async function init(): Promise<void> {
     state.questionRoute = [];
     state.qIndex = 0;
     if (state.view === 'questions') startQuestions();
+    if (planSync.state.phase === 'loading') await planSync.load();
   } catch (error) {
     state.loadError = `資料載入失敗：${(error as Error).message}`;
   } finally {
@@ -203,8 +224,26 @@ export function back(): void {
 
 /** 直接切換主要分頁，清掉返回紀錄。 */
 export function tab(view: View): void {
+  if (view === 'home' && !CHAT_VIEWS.includes(state.view) && lastChatView !== 'home') {
+    pendingResume.value = true;
+    return;
+  }
   state.history = [];
   state.view = view;
+}
+
+export function continueConversation(): void {
+  pendingResume.value = false;
+  state.history = [];
+  state.view = lastChatView;
+}
+
+/** 開新對話只重設對話；已加入的行動單與勾選進度保留。 */
+export function newConversation(): void {
+  const plan = savedPlan(state.session);
+  resetPerson(null);
+  Object.assign(state.session, plan);
+  state.notice = '';
 }
 
 export function needsSwitchConfirm(target: Target): boolean {
@@ -248,6 +287,10 @@ export function confirmPending(): void {
 
 /** 換人：清除答案、行動單、進度。 */
 export function resetPerson(target: Target | null): void {
+  pendingResume.value = false;
+  lastChatView = 'home';
+  conversationEpoch.value += 1;
+  resetTyped();
   const version = state.session.catalogVersion;
   const rulesVersion = state.session.rulesVersion;
   const engineVersion=state.session.engineVersion;
@@ -271,7 +314,7 @@ export function resetPerson(target: Target | null): void {
 export function clearAllData(): void {
   clearSession();
   resetPerson(null);
-  state.notice = '已清除本分頁保存的答案、行動單與進度。';
+  state.notice = '已清除這次的答案、行動單與進度；資料庫清除結果請看保存狀態。';
 }
 
 function beginQuestions(continuing: boolean): void {

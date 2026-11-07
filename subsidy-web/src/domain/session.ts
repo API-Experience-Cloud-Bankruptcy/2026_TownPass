@@ -1,5 +1,5 @@
-// 本機保存：答案與進度預設只存在本分頁的 sessionStorage（本次工作階段），不送後端；可隨時清除。
-// 不提供長期保存。顯示偏好（大字、高對比）不含個資，另存於 localStorage。
+// 本分頁的答案與對話狀態保存在 sessionStorage；行動單項目與進度另由 action-plan.ts 存後端。
+// 資格答案不送後端。顯示偏好（大字、高對比）不含個資，另存於 localStorage。
 // 不讀取 TownPass userinfo（mock 帳號）作為任何人的資格條件。
 
 import { validExtraValue } from './answer-fields';

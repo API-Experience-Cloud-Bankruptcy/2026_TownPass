@@ -82,7 +82,7 @@ describe('在一般瀏覽器', () => {
     vi.stubGlobal('window', {});
     expect(isInTownPass()).toBe(false);
     const account = await request<{ realName: string }>('userinfo');
-    expect(account.realName).toBe('金大森');
+    expect(account.realName).toBe('陳福利（虛擬）');
   });
 
   it('沒有模擬資料時以 NOT_IN_APP 拒絕', async () => {

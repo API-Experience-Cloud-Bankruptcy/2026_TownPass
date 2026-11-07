@@ -4,6 +4,7 @@ import {
   answerAndAdvance, applyConfirmedFacts, back, confirmPending, go, pendingSwitch, questions,
   requestNewPerson, requestTarget, resetPerson, searchResources, selectNeed,
   startQuestions, state, tab,
+  pendingResume, continueConversation, newConversation, conversationEpoch,
 } from '../store';
 
 beforeEach(() => {
@@ -25,6 +26,33 @@ beforeEach(() => {
 });
 
 describe('逐頁找資源', () => {
+  it('從初始招呼頁離開再回來，不詢問續接', () => {
+    tab('browse'); tab('home');
+    expect(pendingResume.value).toBe(false); expect(state.view).toBe('home');
+  });
+
+  it('離開進行中的問答後返回，繼續會保留目前題目及答案', () => {
+    requestTarget('self'); selectNeed('housing');
+    state.session.answers = { age: 30 }; state.qIndex = 1;
+    const route = [...state.questionRoute];
+    tab('plan'); tab('home');
+    expect(pendingResume.value).toBe(true); expect(state.view).toBe('plan');
+    continueConversation();
+    expect(state.view).toBe('questions'); expect(state.qIndex).toBe(1);
+    expect(state.questionRoute).toEqual(route); expect(state.session.answers.age).toBe(30);
+  });
+
+  it('開新對話回到招呼頁，清除對話答案、保留行動單及勾選進度', () => {
+    requestTarget('self'); selectNeed('housing'); state.session.answers = { age: 30 };
+    state.session.planIds = ['housing']; state.session.docChecks = { document: true }; state.session.stepDone = { housing: [0] };
+    const epoch = conversationEpoch.value;
+    tab('plan'); tab('home'); newConversation();
+    expect(state.view).toBe('home'); expect(pendingResume.value).toBe(false);
+    expect(state.session.answers).toEqual({}); expect(state.session.situation).toBeNull();
+    expect(state.session.planIds).toEqual(['housing']); expect(state.session.docChecks).toEqual({ document: true });
+    expect(state.session.stepDone).toEqual({ housing: [0] }); expect(conversationEpoch.value).toBeGreaterThan(epoch);
+    tab('browse'); tab('home'); expect(pendingResume.value).toBe(false);
+  });
   it('對象選擇前進到需求，同一對象返回再選不清除答案', () => {
     requestTarget('self');
     expect(state.view).toBe('needs');

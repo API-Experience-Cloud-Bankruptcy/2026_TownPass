@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { nextTick, ref, useId, watch } from 'vue';
 
-const props = defineProps<{ open: boolean; title: string; confirmLabel: string; danger?: boolean }>();
-const emit = defineEmits<{ confirm: []; cancel: [] }>();
+const props = defineProps<{ open: boolean; title: string; confirmLabel: string; cancelLabel?: string; danger?: boolean; dismissOnEscape?: boolean }>();
+const emit = defineEmits<{ confirm: []; cancel: []; dismiss: [] }>();
 const dialog = ref<HTMLDialogElement | null>(null);
 const titleId = useId();
 let opener: HTMLElement | null = null;
@@ -27,7 +27,7 @@ watch(
 
 function onCancel(event: Event) {
   event.preventDefault();
-  emit('cancel');
+  if (props.dismissOnEscape) emit('dismiss'); else emit('cancel');
 }
 </script>
 
@@ -36,7 +36,7 @@ function onCancel(event: Event) {
     <h2 :id="titleId" class="dialog__title">{{ title }}</h2>
     <div class="dialog__body"><slot /></div>
     <div class="dialog__actions">
-      <button type="button" class="btn btn--ghost" data-autofocus @click="emit('cancel')">取消</button>
+      <button type="button" class="btn btn--ghost" data-autofocus @click="emit('cancel')">{{ cancelLabel ?? '取消' }}</button>
       <button type="button" class="btn" :class="danger ? 'btn--danger' : 'btn--primary'" @click="emit('confirm')">
         {{ confirmLabel }}
       </button>

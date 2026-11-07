@@ -68,8 +68,8 @@ export function trackPinned(): void {
   if (typeof window === 'undefined') return;
   // 自己發起的平滑捲動途中離底部還遠，不能因此判定使用者往上翻。
   if (performance.now() < autoUntil) return;
-  const doc = document.documentElement;
-  pinned = window.innerHeight + window.scrollY >= doc.scrollHeight - 160;
+  const log = document.querySelector<HTMLElement>('.chat__log');
+  if (log?.clientHeight) pinned = log.scrollTop + log.clientHeight >= log.scrollHeight - 160;
 }
 
 /**
@@ -81,17 +81,17 @@ export function followBottom(force = false): void {
   if (typeof window === 'undefined') return;
   if (force) pinned = true;
   if (!pinned) return;
-  const doc = document.documentElement;
-  let target = doc.scrollHeight - window.innerHeight;
+  const log = document.querySelector<HTMLElement>('.chat__log');
+  if (!log?.clientHeight) return;
+  let target = log.scrollHeight - log.clientHeight;
   const anchor = document.getElementById('view-title')?.closest('.msg');
   if (anchor) {
-    const header = document.querySelector('.app-header')?.getBoundingClientRect().bottom ?? 0;
-    target = Math.min(target, window.scrollY + anchor.getBoundingClientRect().top - header - 12);
+    target = Math.min(target, log.scrollTop + anchor.getBoundingClientRect().top - log.getBoundingClientRect().top - 12);
   }
-  if (target <= window.scrollY + 1) return;
+  if (target <= log.scrollTop + 1) return;
   const smooth = !prefersReducedMotion();
   if (smooth) autoUntil = performance.now() + 600;
-  window.scrollTo?.({ top: target, behavior: smooth ? 'smooth' : 'auto' });
+  log.scrollTo?.({ top: target, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 /** 使用者手指或滾輪一動，就停止把捲動當成程式發起的。 */

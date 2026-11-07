@@ -3,34 +3,9 @@
 
 import type { Account, DeviceInfo, Position } from './types';
 
-const account: Account = {
-  id: '7f3562f4-bb3f-4ec7-89b9-da3b4b5ff250',
-  account: 'wz7786',
-  username: 'Wesley',
-  realName: '金大森',
-  idNo: 'A123456789',
-  email: 'ist83903@bcaoo.com',
-  phoneNo: '0932166777',
-  birthday: '1988/12/12',
-  memberType: 'personal',
-  verifyLevel: '3',
-  addresses: [
-    {
-      zip3: 104,
-      city: '臺北市',
-      town: '中山區',
-      village: '正得里',
-      street: '吉林路',
-      usageType: '0',
-      seq: 1,
-      priority: true,
-    },
-  ],
-  residentAddress: '臺北市中山區吉林路 69 號 4 樓',
-  citizen: true,
-  nativePeople: false,
-  cityInternetUid: '',
-};
+import accountResponse from '../../../assets/mock_data/account.json';
+
+const account: Account = accountResponse.data;
 
 // 臺北市政府
 const position: Position = {

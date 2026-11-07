@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch, watchEffect } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 import { followBottom } from './chat/typing';
 import ChatView from './components/ChatView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
@@ -13,8 +13,13 @@ import { modelAdapter, type ModelStatus } from './domain/model';
 import {
   back,
   confirmPending,
+  continueConversation,
+  conversationEpoch,
   init,
   pendingSwitch,
+  pendingResume,
+  newConversation,
+  planSync,
   planItems,
   questions,
   requestNewPerson,
@@ -26,11 +31,27 @@ import {
 const settingsOpen = ref(false);
 const modelStatus = ref<ModelStatus | null>(null);
 
+// iOS 鍵盤可能只縮小 visualViewport；外框跟著可見高度，輸入框留在鍵盤上方。
+function syncViewport() {
+  const viewport = window.visualViewport;
+  document.documentElement.style.setProperty('--app-height', `${viewport?.height ?? window.innerHeight}px`);
+  document.documentElement.style.setProperty('--app-top', `${viewport?.offsetTop ?? 0}px`);
+}
+
 onMounted(async () => {
+  syncViewport();
+  window.visualViewport?.addEventListener('resize', syncViewport);
+  window.visualViewport?.addEventListener('scroll', syncViewport);
+  window.addEventListener('resize', syncViewport);
   // 開場畫面等資料載入完（最多等 SPLASH_MAX_WAIT_MS）才收起。
   const loaded = init();
   void Promise.race([loaded, new Promise((r) => setTimeout(r, SPLASH_MAX_WAIT_MS))]).then(dismissSplash);
   modelStatus.value = await modelAdapter.status();
+});
+onBeforeUnmount(() => {
+  window.visualViewport?.removeEventListener('resize', syncViewport);
+  window.visualViewport?.removeEventListener('scroll', syncViewport);
+  window.removeEventListener('resize', syncViewport);
 });
 
 watchEffect(() => {
@@ -54,8 +75,8 @@ watch(
       title?.focus({ preventScroll: true });
       followBottom(true);
     } else {
-      window.scrollTo?.(0, 0);
-      title?.focus();
+      document.getElementById('main')?.scrollTo?.(0, 0);
+      title?.focus({ preventScroll: true });
     }
   },
 );
@@ -110,7 +131,8 @@ const dialogTitle = computed(() =>
         <button type="button" class="btn btn--text" @click="requestNewPerson">換人（清除前一位）</button>
         <button type="button" class="btn btn--text" @click="pendingSwitch = 'clear'">清除這次的資料</button>
       </div>
-      <p class="muted">填寫的內容只留在這個分頁，不會送出；關閉分頁後通常會清除。</p>
+      <p class="muted">對話與填答只留在本分頁；行動單項目、文件勾選與步驟進度會存入資料庫，關閉後可再開啟。</p>
+      <p v-if="planSync.state.profile" class="muted">虛擬測試者：{{ planSync.state.profile.realName }}（非真實台北通登入）</p>
       <details class="more more--single settings__meta">
         <summary>資料來源</summary>
         <dl class="more__body facts">
@@ -147,7 +169,13 @@ const dialogTitle = computed(() =>
       {{ state.notice }}
       <button type="button" class="btn btn--text" @click="state.notice = ''">知道了</button>
     </p>
+    <p v-if="planSync.state.phase === 'error' || planSync.state.phase === 'conflict'" class="status-line status-line--error no-print" role="alert">
+      {{ planSync.state.error }}
+      <button v-if="planSync.state.phase === 'conflict'" type="button" class="btn btn--text" @click="planSync.load(true)">載入最新行動單（取代本頁修改）</button>
+      <button v-else type="button" class="btn btn--text" @click="planSync.retry()">重試保存</button>
+    </p>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已保存的資料，官方網站仍需連線</p>
+    <p v-if="state.view === 'plan' && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在保存行動單…' : '正在讀取已保存的行動單…' }}</p>
 
     <div v-if="state.view === 'detail'" class="topbar no-print">
       <button type="button" class="btn btn--text back-chat" @click="back">
@@ -156,12 +184,25 @@ const dialogTitle = computed(() =>
         {{ state.history[state.history.length - 1] === 'browse' ? '回到補助總覽' : '返回上一頁' }}
       </button>
     </div>
-    <ChatView v-if="isChat" />
-    <DetailView v-else-if="state.view === 'detail'" :key="state.detailId ?? ''" />
-    <PlanView v-else-if="state.view === 'plan'" />
+    <KeepAlive :max="1"><ChatView v-if="isChat" :key="conversationEpoch" /></KeepAlive>
+    <DetailView v-if="state.view === 'detail'" :key="state.detailId ?? ''" />
+    <PlanView v-if="state.view === 'plan'" />
     <KeepAlive><BrowseView v-if="state.view === 'browse'" /></KeepAlive>
     <HelpView v-if="state.view === 'help'" />
   </main>
+
+  <ConfirmDialog
+    :open="pendingResume"
+    title="要接著上次的對話嗎？"
+    confirm-label="繼續對話"
+    cancel-label="開新對話"
+    dismiss-on-escape
+    @confirm="continueConversation"
+    @cancel="newConversation"
+    @dismiss="pendingResume = false"
+  >
+    <p>可以繼續上次的查詢，或重新開始。已加入的行動單會保留。</p>
+  </ConfirmDialog>
 
   <ConfirmDialog
     :open="pendingSwitch !== null"
