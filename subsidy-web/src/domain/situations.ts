@@ -12,14 +12,14 @@ export interface Situation {
 }
 
 export const SITUATIONS: Situation[] = [
-  { id: 'living', label: '生活費與急難', hint: '生活困難、急難救助、低收入', categories: ['低收', '急難', '生活', '稅賦'], applicants: ['低收入戶', '中低收入戶'] },
+  { id: 'living', label: '生活費與急難', hint: '生活費、急難、低收入', categories: ['低收', '急難', '生活', '稅賦'], applicants: ['低收入戶', '中低收入戶'] },
   { id: 'elder', label: '長者與照顧', hint: '敬老、長照、中高齡', categories: ['敬老', '長者', '長照', '老人', '高齡', '中高齡'], applicants: ['長者'] },
   { id: 'study', label: '就學與學費', hint: '學雜費、助學金、獎學金', categories: ['教育'], applicants: ['學生'] },
   { id: 'family', label: '育兒與家庭', hint: '生育、托育、兒少、婦女', categories: ['育兒', '生育', '兒少', '婦女'], applicants: ['兒童'] },
   { id: 'health', label: '醫療與健康', hint: '健保、篩檢、醫療補助', categories: ['醫療'], applicants: [] },
   { id: 'disability', label: '身心障礙', hint: '身障補助、輔具、照顧', categories: ['身心障礙', '身障'], applicants: ['身心障礙者'] },
   { id: 'housing', label: '住宅與租屋', hint: '租金補貼、購屋、修繕', categories: ['住宅', '租屋'], applicants: ['租屋族', '購屋族'] },
-  { id:'community',label:'文化、競賽與社區',hint:'文化藝術、獎項、公益及環境',categories:['文化','體育','獎勵','社區'],applicants:[] },
+  { id:'community',label:'文化與社區',hint:'藝文、競賽、公益、環境',categories:['文化','體育','獎勵','社區'],applicants:[] },
   { id: 'work', label: '工作與失業', hint: '失業、職訓、職災、創業', categories: ['就業', '失業', '職訓', '職業災害', '勞工', '創業'], applicants: ['失業者', '勞工', '創業者'] },
 ];
 
