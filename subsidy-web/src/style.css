@@ -986,10 +986,25 @@ legend {
 .bubble__extra:empty {
   display: none;
 }
-/* 打完字才出現的卡片、選項：淡入而不是突然冒出。 */
-.bubble__extra,
-.msg__after {
+/* 打完字才出現的卡片：淡入而不是突然冒出。 */
+.bubble__extra {
   animation: msg-in 260ms var(--ease) both;
+}
+/* 泡泡下方的按鈕：從訊息框往下彈出，稍微超過再回到定位。
+   用 backwards 而非 both：動畫結束後不再鎖住 transform，按下時的縮放回饋才會生效。 */
+.msg__after {
+  transform-origin: top left;
+  animation: pop-down 440ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
+}
+/* 有選項按鈕時改由按鈕一顆顆彈出，容器本身不再跟著動，免得位移疊加。 */
+.msg__after:has(.reply) {
+  animation: none;
+}
+@keyframes pop-down {
+  0% { opacity: 0; transform: translateY(-14px) scale(0.96); }
+  55% { opacity: 1; transform: translateY(3px) scale(1.01); }
+  78% { transform: translateY(-1px) scale(1); }
+  100% { opacity: 1; transform: none; }
 }
 /* 還沒打到的字：照常排版、看不見，所以打字時不會換行跳動。 */
 .bubble__ghost {
@@ -1163,12 +1178,13 @@ legend {
   text-align: left;
   cursor: pointer;
   transition: background-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
-  animation: msg-in 260ms var(--ease) both;
+  transform-origin: top center;
+  animation: pop-down 440ms cubic-bezier(0.2, 0.9, 0.3, 1) backwards;
 }
-.replies > .reply:nth-child(2), .replies__grid > .reply:nth-child(2) { animation-delay: 40ms; }
-.replies > .reply:nth-child(3), .replies__grid > .reply:nth-child(3) { animation-delay: 80ms; }
-.replies > .reply:nth-child(4), .replies__grid > .reply:nth-child(4) { animation-delay: 120ms; }
-.replies > .reply:nth-child(n+5), .replies__grid > .reply:nth-child(n+5) { animation-delay: 160ms; }
+.replies > .reply:nth-child(2), .replies__grid > .reply:nth-child(2), .replies__row > .reply:nth-child(1) { animation-delay: 50ms; }
+.replies > .reply:nth-child(3), .replies__grid > .reply:nth-child(3), .replies__row > .reply:nth-child(2) { animation-delay: 100ms; }
+.replies > .reply:nth-child(4), .replies__grid > .reply:nth-child(4), .replies__row > .reply:nth-child(3) { animation-delay: 150ms; }
+.replies > .reply:nth-child(n+5), .replies__grid > .reply:nth-child(n+5), .replies__row > .reply:nth-child(n+4) { animation-delay: 200ms; }
 .reply:active {
   transform: scale(0.98);
   background: var(--accent-soft);
