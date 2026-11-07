@@ -182,16 +182,28 @@ const nextKey = computed(() => `${resultsKey.value}:next`);
 const nextLines: Line[] = [{ text: '接下來想怎麼做？' }];
 const sectionsKey = computed(() => `${resultsKey.value}:more`);
 
-// ── 跟著最新訊息捲動：內容長高（打字、選項、滾輪出現）時，若使用者停在底部就跟著到底 ──
+// ── 跟著最新訊息捲動：新訊息出現或內容長高（打字、選項、滾輪出現）時往上推，推到這一輪回覆的頂端為止 ──
+// 捲動容器本身大小不變，所以觀察的是裡面每一則訊息：MutationObserver 接新增／移除，ResizeObserver 接長高。
 const log = ref<HTMLElement | null>(null);
-let observer: ResizeObserver | null = null;
+let resizer: ResizeObserver | null = null;
+let mutations: MutationObserver | null = null;
+function observeChildren() {
+  if (!resizer || !log.value) return;
+  resizer.disconnect();
+  resizer.observe(log.value);
+  for (const el of log.value.children) resizer.observe(el);
+}
 onActivated(() => {
   log.value?.addEventListener('scroll', trackPinned, { passive: true });
   window.addEventListener('touchstart', releaseFollow, { passive: true });
   window.addEventListener('wheel', releaseFollow, { passive: true });
-  if (typeof ResizeObserver !== 'undefined' && log.value) {
-    observer = new ResizeObserver(() => followBottom());
-    observer.observe(log.value);
+  if (log.value && typeof ResizeObserver !== 'undefined') {
+    resizer = new ResizeObserver(() => followBottom());
+    observeChildren();
+  }
+  if (log.value && typeof MutationObserver !== 'undefined') {
+    mutations = new MutationObserver(() => { observeChildren(); followBottom(); });
+    mutations.observe(log.value, { childList: true });
   }
   followBottom(true);
 });
@@ -199,8 +211,10 @@ onDeactivated(() => {
   log.value?.removeEventListener('scroll', trackPinned);
   window.removeEventListener('touchstart', releaseFollow);
   window.removeEventListener('wheel', releaseFollow);
-  observer?.disconnect();
-  observer = null;
+  resizer?.disconnect();
+  resizer = null;
+  mutations?.disconnect();
+  mutations = null;
 });
 
 // ── 自然語言：目前答案優先，其次提出情境與事實供確認 ──
@@ -310,6 +324,8 @@ function currentStep(): string {
   if (view.value === 'questions') return `q:${current.value?.id ?? ''}`;
   return 'results';
 }
+// 使用者往前走一步（選了答案、換題、送出文字）就重新跟著最新訊息，即使先前往上翻過。
+watch(() => [currentStep(), turns.value.length], () => followBottom(true), { flush: 'post' });
 /**
  * 按「修改」回到某一則（from：那一則所在的步驟）：那一則之下的訊息全部收掉，
  * 包含打字送出的原句、福利連的回覆、打字填的答案文字與進行中的理解；

@@ -73,9 +73,26 @@ export function trackPinned(): void {
 }
 
 /**
- * 新訊息或內容長高時平滑往下捲；force 用於換題（使用者剛按下選項）。
- * 最多捲到「這一輪的回覆」（目前題目、結果，即 #view-title 那則）頂端貼齊版頭：
- * 訊息比畫面長時從開頭讀起、往下延伸，不會一路捲到訊息最底。
+ * 這一輪回覆的開頭：最後一則使用者訊息之後的第一則福利連訊息；還沒回覆時就是使用者剛送出的那則。
+ * 結果頁連續好幾則回覆時，錨點是第一則，從頭讀起。
+ */
+function latestReply(log: HTMLElement): HTMLElement | null {
+  const msgs = [...log.querySelectorAll<HTMLElement>('.msg')];
+  let anchor: HTMLElement | null = null;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].classList.contains('msg--user')) return anchor ?? msgs[i];
+    anchor = msgs[i];
+  }
+  return anchor;
+}
+
+/** 回覆頂端與對話區上緣保留的間隔。 */
+const ANCHOR_GAP = 16;
+
+/**
+ * 新訊息或內容長高時平滑往下捲；force 用於換題（使用者剛按下選項或送出文字）。
+ * 訊息從上往下排，內容超出畫面才開始往上推；最多推到「這一輪的回覆」頂端離上緣留一點間隔，
+ * 回覆比畫面長時從開頭讀起、其餘往下延伸，不會一路捲到最底。
  */
 export function followBottom(force = false): void {
   if (typeof window === 'undefined') return;
@@ -84,9 +101,9 @@ export function followBottom(force = false): void {
   const log = document.querySelector<HTMLElement>('.chat__log');
   if (!log?.clientHeight) return;
   let target = log.scrollHeight - log.clientHeight;
-  const anchor = document.getElementById('view-title')?.closest('.msg');
+  const anchor = latestReply(log);
   if (anchor) {
-    target = Math.min(target, log.scrollTop + anchor.getBoundingClientRect().top - log.getBoundingClientRect().top - 12);
+    target = Math.min(target, log.scrollTop + anchor.getBoundingClientRect().top - log.getBoundingClientRect().top - ANCHOR_GAP);
   }
   if (target <= log.scrollTop + 1) return;
   const smooth = !prefersReducedMotion();
