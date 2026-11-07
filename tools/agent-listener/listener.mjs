@@ -146,12 +146,23 @@ function ensureWorktree(cfg, issue) {
 }
 
 // A conflicting rebase is abandoned; the PR then shows the conflict for a person to resolve.
-function rebaseOrAbort(dir) {
-  git(['rebase', 'origin/main'], { cwd: dir, allowFail: true })
-  if (existsSync(resolve(dir, git(['rev-parse', '--git-path', 'rebase-merge'], { cwd: dir })))) git(['rebase', '--abort'], { cwd: dir, allowFail: true })
+function rebaseInProgress(dir) {
+  return ['rebase-merge', 'rebase-apply'].some((p) => existsSync(resolve(dir, git(['rev-parse', '--git-path', p], { cwd: dir }))))
 }
 
-function publish(cfg, issue, wt, report, state) {
+function rebaseOrAbort(dir) {
+  git(['-c', 'rebase.backend=merge', 'rebase', 'origin/main'], { cwd: dir, allowFail: true })
+  if (rebaseInProgress(dir)) git(['rebase', '--abort'], { cwd: dir, allowFail: true })
+  if (rebaseInProgress(dir)) throw new Error('rebase could not be aborted; resolve the worktree by hand')
+}
+
+// Remote tip of the issue branch when work started; the push only succeeds if nobody else moved it.
+function remoteTip(branch) {
+  const line = git(['ls-remote', '--heads', 'origin', branch])
+  return line ? line.split(/s+/)[0] : ''
+}
+
+function publish(cfg, issue, wt, report, state, expectedTip) {
   const ahead = Number(git(['rev-list', '--count', 'origin/main..HEAD'], { cwd: wt.dir }))
   const dirty = git(['status', '--porcelain'], { cwd: wt.dir })
   if (ahead === 0) {
@@ -162,7 +173,8 @@ function publish(cfg, issue, wt, report, state) {
   // Keep the branch on top of the latest main so squash-merged work is not carried again.
   git(['fetch', 'origin', '--quiet'], { cwd: wt.dir })
   if (!dirty) rebaseOrAbort(wt.dir)
-  git(['push', '-u', '--force-with-lease', 'origin', `HEAD:${wt.branch}`], { cwd: wt.dir })
+  if (remoteTip(wt.branch) !== expectedTip) throw new Error(`branch ${wt.branch} changed on GitHub while the agent was working; not overwriting it`)
+  git(['push', '-u', `--force-with-lease=refs/heads/${wt.branch}:${expectedTip}`, 'origin', `HEAD:refs/heads/${wt.branch}`], { cwd: wt.dir })
   const record = state.issues[issue.number] ?? {}
   const body = `Closes #${issue.number}\n\n${dirty ? '> 注意：工作目錄還有未提交的變更，沒有包含在這個 PR。\n\n' : ''}## 代理報告\n\n${tail(report, 12000)}`
   if (!record.pr) {
@@ -186,8 +198,9 @@ async function handleIssue(cfg, issue, state, instruction) {
   state.issues[issue.number] = { ...(state.issues[issue.number] ?? {}), started: new Date().toISOString() }
   saveJson(STATE, state)
   const wt = ensureWorktree(cfg, issue)
+  const expectedTip = remoteTip(wt.branch)
   const result = await runAgent(cfg, wt.dir, agentPrompt(cfg, issue, instruction))
-  try { publish(cfg, issue, wt, result.output, state) } catch (err) {
+  try { publish(cfg, issue, wt, result.output, state, expectedTip) } catch (err) {
     log('publish failed', err.message)
     gh(['issue', 'comment', String(issue.number), '-R', cfg.repo, '--body', `推送或開 PR 失敗：${err.message.slice(0, 500)}`], { allowFail: true })
   }
