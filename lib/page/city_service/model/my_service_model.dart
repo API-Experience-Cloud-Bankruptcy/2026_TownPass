@@ -29,8 +29,17 @@ enum MyServiceItemId {
   library,
   locationSearch,
   zoo,
+  welfareFinder,
   ;
 }
+
+// Pass the deployed HTTPS URL at build time:
+// flutter build apk --dart-define=WELFARE_URL=https://...
+// The default reaches a local Expo dev server from the Android emulator.
+const String _welfareUrl = String.fromEnvironment(
+  'WELFARE_URL',
+  defaultValue: 'http://10.0.2.2:8081',
+);
 
 extension MyServiceIdExt on MyServiceItemId {
   MyServiceItem get item {
@@ -182,6 +191,13 @@ extension MyServiceIdExt on MyServiceItemId {
           icon: Assets.svg.iconZoo24.svg(),
           category: MyServiceCategory.explore,
           destinationUrl: '',
+        ),
+      MyServiceItemId.welfareFinder => MyServiceItem(
+          title: '福利補助自己查',
+          description: '查詢可申請的臺北市福利補助',
+          icon: Assets.svg.iconCaseSearch.svg(),
+          category: MyServiceCategory.cityService,
+          destinationUrl: _welfareUrl,
         ),
     };
   }
