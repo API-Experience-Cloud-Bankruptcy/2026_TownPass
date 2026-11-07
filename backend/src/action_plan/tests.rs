@@ -18,6 +18,104 @@ fn db_path() -> std::path::PathBuf {
 fn plan() -> Value {
     json!({"v":1,"target":"self","planIds":["CT-0113"],"docChecks":{},"stepDone":{},"catalogVersion":"catalog-v1-demo","rulesVersion":null,"engineVersion":null})
 }
+
+#[tokio::test]
+async fn personal_plan_is_separate_from_legacy_other_and_rejects_other_target() {
+    let path = db_path();
+    let app = router(&path);
+    let mut other = plan();
+    other["target"] = json!("other");
+    let (status, _, legacy) = call(
+        app.clone(),
+        "PUT",
+        Some(json!({"plan":other,"revision":0})),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _, initial) =
+        call_at(app.clone(), "/api/personal-action-plan", "GET", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(initial["plan"].is_null());
+    let (status, _, _) = call_at(
+        app.clone(),
+        "/api/personal-action-plan",
+        "PUT",
+        Some(json!({"plan":other,"revision":0})),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _, saved) = call_at(
+        app.clone(),
+        "/api/personal-action-plan",
+        "PUT",
+        Some(json!({"plan":plan(),"revision":0})),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(saved["plan"], plan());
+    let (status, _, _) = call_at(
+        app.clone(),
+        "/api/personal-action-plan",
+        "PUT",
+        Some(json!({"plan":plan(),"revision":0})),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(call(app.clone(), "GET", None, None).await.2, legacy);
+    drop(app);
+    let app = router(&path);
+    assert_eq!(
+        call_at(app.clone(), "/api/personal-action-plan", "GET", None, None)
+            .await
+            .2,
+        saved
+    );
+    assert_eq!(call(app.clone(), "GET", None, None).await.2, legacy);
+    let (status, _, _) = call_at(
+        app.clone(),
+        "/api/personal-action-plan",
+        "PUT",
+        Some(json!({"plan":plan(),"revision":1})),
+        Some("https://evil.example"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    drop(app);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn personal_plan_migration_copies_only_self_and_keeps_legacy_untouched() {
+    for target in ["self", "other"] {
+        let path = db_path();
+        let store = DemoStore::open(&path).unwrap();
+        let mut legacy = plan();
+        legacy["target"] = json!(target);
+        let update = serde_json::from_value(json!({"plan":legacy,"revision":0})).unwrap();
+        let saved = store.update(update, false).unwrap();
+        store
+            .connection
+            .lock()
+            .unwrap()
+            .execute_batch("DROP TABLE personal_action_plans")
+            .unwrap();
+        drop(store);
+        let store = DemoStore::open(&path).unwrap();
+        let migrated = store.read(true).unwrap();
+        assert_eq!(store.read(false).unwrap(), saved);
+        if target == "self" {
+            assert_eq!(migrated["plan"], legacy);
+        } else {
+            assert!(migrated["plan"].is_null());
+        }
+        drop(store);
+        std::fs::remove_file(path).unwrap();
+    }
+}
 fn router(path: &Path) -> Router {
     let mut state = crate::state_from_str(crate::EMBEDDED_DATA).unwrap();
     state.demo = Some(std::sync::Arc::new(DemoStore::open(path).unwrap()));
@@ -29,8 +127,17 @@ async fn call(
     body: Option<Value>,
     origin: Option<&str>,
 ) -> (StatusCode, axum::http::HeaderMap, Value) {
+    call_at(router, "/api/action-plan", method, body, origin).await
+}
+async fn call_at(
+    router: Router,
+    uri: &str,
+    method: &str,
+    body: Option<Value>,
+    origin: Option<&str>,
+) -> (StatusCode, axum::http::HeaderMap, Value) {
     let mut request = Request::builder()
-        .uri("/api/action-plan")
+        .uri(uri)
         .method(method)
         .header("host", "127.0.0.1:8080");
     if let Some(origin) = origin {

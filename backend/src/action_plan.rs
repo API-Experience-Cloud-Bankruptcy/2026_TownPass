@@ -2,7 +2,7 @@
 //! Explicitly enabled, shared fictional demonstration account; this is not authentication.
 use crate::{AppState, Shared};
 use axum::{
-    extract::{rejection::JsonRejection, DefaultBodyLimit, Request, State},
+    extract::{rejection::JsonRejection, DefaultBodyLimit, OriginalUri, Request, State},
     http::{header, HeaderValue, Method, StatusCode, Uri},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -89,20 +89,30 @@ impl DemoStore {
                 [&user_id],
             )
             .map_err(|_| "cannot seed demo plan")?;
+        // 本人行動單另存；複製舊版本人資料，保留原表與他人檢核表，避免混用或覆寫。
+        connection.execute_batch("CREATE TABLE IF NOT EXISTS personal_action_plans (user_id TEXT PRIMARY KEY REFERENCES users(id), plan_json TEXT, revision INTEGER NOT NULL DEFAULT 0 CHECK(revision >= 0));").map_err(|_| "cannot initialize personal plan")?;
+        connection.execute("INSERT OR IGNORE INTO personal_action_plans(user_id,plan_json) SELECT user_id, CASE WHEN json_extract(plan_json,'$.target') IS NULL OR json_extract(plan_json,'$.target')='self' THEN CASE WHEN plan_json IS NULL THEN NULL ELSE json_set(plan_json,'$.target','self') END ELSE NULL END FROM action_plans WHERE user_id=?1", [&user_id]).map_err(|_| "cannot migrate personal plan")?;
         Ok(Self {
             connection: Mutex::new(connection),
             user_id,
         })
     }
 
-    fn read(&self) -> Result<Value, StoreError> {
+    fn read(&self, personal: bool) -> Result<Value, StoreError> {
         let connection = self.connection.lock().map_err(|_| StoreError::Database)?;
-        Self::read_from(&connection, &self.user_id)
+        Self::read_from(&connection, &self.user_id, personal)
     }
-    fn read_from(connection: &Connection, id: &str) -> Result<Value, StoreError> {
-        let (profile, plan, revision): (String, Option<String>, i64) = connection.query_row(
-            "SELECT u.profile_json,p.plan_json,p.revision FROM users u JOIN action_plans p ON p.user_id=u.id WHERE u.id=?1", [id],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?))).map_err(|_| StoreError::Database)?;
+    fn read_from(connection: &Connection, id: &str, personal: bool) -> Result<Value, StoreError> {
+        let query = if personal {
+            "SELECT u.profile_json,p.plan_json,p.revision FROM users u JOIN personal_action_plans p ON p.user_id=u.id WHERE u.id=?1"
+        } else {
+            "SELECT u.profile_json,p.plan_json,p.revision FROM users u JOIN action_plans p ON p.user_id=u.id WHERE u.id=?1"
+        };
+        let (profile, plan, revision): (String, Option<String>, i64) = connection
+            .query_row(query, [id], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })
+            .map_err(|_| StoreError::Database)?;
         let profile: Value = serde_json::from_str(&profile).map_err(|_| StoreError::Database)?;
         let plan: Option<SavedPlan> = plan
             .map(|p| serde_json::from_str(&p))
@@ -110,7 +120,7 @@ impl DemoStore {
             .map_err(|_| StoreError::Database)?;
         Ok(json!({"mode":"demo", "profile":profile, "plan":plan, "revision":revision}))
     }
-    fn update(&self, update: Update) -> Result<Value, StoreError> {
+    fn update(&self, update: Update, personal: bool) -> Result<Value, StoreError> {
         let mut connection = self.connection.lock().map_err(|_| StoreError::Database)?;
         let transaction = connection
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
@@ -120,11 +130,18 @@ impl DemoStore {
             return Err(StoreError::Conflict);
         }
         let plan = serde_json::to_string(&update.plan).map_err(|_| StoreError::Database)?;
-        let changed = transaction.execute("UPDATE action_plans SET plan_json=?1,revision=revision+1 WHERE user_id=?2 AND revision=?3", params![plan, self.user_id, revision]).map_err(|_| StoreError::Database)?;
+        let query = if personal {
+            "UPDATE personal_action_plans SET plan_json=?1,revision=revision+1 WHERE user_id=?2 AND revision=?3"
+        } else {
+            "UPDATE action_plans SET plan_json=?1,revision=revision+1 WHERE user_id=?2 AND revision=?3"
+        };
+        let changed = transaction
+            .execute(query, params![plan, self.user_id, revision])
+            .map_err(|_| StoreError::Database)?;
         if changed != 1 {
             return Err(StoreError::Conflict);
         }
-        let result = Self::read_from(&transaction, &self.user_id)?;
+        let result = Self::read_from(&transaction, &self.user_id, personal)?;
         transaction.commit().map_err(|_| StoreError::Database)?;
         Ok(result)
     }
@@ -278,26 +295,34 @@ fn result_response(result: Result<Value, StoreError>) -> Response {
         }
     }
 }
-async fn read(State(st): State<Shared>) -> Response {
+async fn read(State(st): State<Shared>, OriginalUri(uri): OriginalUri) -> Response {
+    let personal = uri.path() == "/api/personal-action-plan";
     let Some(store) = st.demo.clone() else {
         return error(StatusCode::SERVICE_UNAVAILABLE, "demo_disabled");
     };
-    match tokio::task::spawn_blocking(move || store.read()).await {
+    match tokio::task::spawn_blocking(move || store.read(personal)).await {
         Ok(result) => result_response(result),
         Err(_) => error(StatusCode::INTERNAL_SERVER_ERROR, "storage_unavailable"),
     }
 }
-async fn update(State(st): State<Shared>, body: Result<Json<Update>, JsonRejection>) -> Response {
+async fn update(
+    State(st): State<Shared>,
+    OriginalUri(uri): OriginalUri,
+    body: Result<Json<Update>, JsonRejection>,
+) -> Response {
+    let personal = uri.path() == "/api/personal-action-plan";
     let Some(store) = st.demo.clone() else {
         return error(StatusCode::SERVICE_UNAVAILABLE, "demo_disabled");
     };
     let Ok(Json(update)) = body else {
         return error(StatusCode::BAD_REQUEST, "invalid_input");
     };
-    if !valid_plan(&update.plan, &st) {
+    if !valid_plan(&update.plan, &st)
+        || personal && !matches!(update.plan.target, Some(Target::Self_))
+    {
         return error(StatusCode::BAD_REQUEST, "invalid_input");
     }
-    match tokio::task::spawn_blocking(move || store.update(update)).await {
+    match tokio::task::spawn_blocking(move || store.update(update, personal)).await {
         Ok(result) => result_response(result),
         Err(_) => error(StatusCode::INTERNAL_SERVER_ERROR, "storage_unavailable"),
     }
@@ -371,6 +396,12 @@ async fn guard(request: Request, next: Next) -> Response {
 }
 pub fn routes() -> Router<Shared> {
     Router::new()
+        .route(
+            "/api/personal-action-plan",
+            get(read)
+                .put(update)
+                .options(|| async { StatusCode::NO_CONTENT }),
+        )
         .route(
             "/api/action-plan",
             get(read)
