@@ -1,0 +1,19 @@
+福利通微服務網頁（subsidy-web/）授權聲明
+
+本資料夾的原始碼依 GNU Affero General Public License v3.0（AGPL-3.0-only）授權。
+SPDX-License-Identifier: AGPL-3.0-only
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+完整授權條文：同資料夾 COPYING（取自 https://www.gnu.org/licenses/agpl-3.0.txt）
+
+範圍說明：
+- 本聲明僅適用 subsidy-web/。repo 根目錄的上游 TownPass 維持其原有授權（GPL-3.0），未變更。
+- 第三方套件依各自授權（見 README「第三方套件」），本聲明不改變其授權。
+- 打包的資料快照來自 backend/data/subsidies.json，資料來源與授權依各筆 source_meta 及其原始網站規定。

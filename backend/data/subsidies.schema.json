@@ -1,0 +1,936 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "subsidies-api.schema.json",
+  "title": "Subsidy API Record",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/record"
+  },
+  "$defs": {
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "api_version",
+        "id",
+        "name",
+        "scope",
+        "provider",
+        "classification",
+        "eligibility",
+        "benefit",
+        "application",
+        "search",
+        "extensions",
+        "source_meta"
+      ],
+      "properties": {
+        "api_version": {
+          "const": "1.0"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "object",
+          "required": [
+            "level",
+            "regions"
+          ],
+          "properties": {
+            "level": {
+              "enum": [
+                "central",
+                "taipei",
+                "private_national",
+                "mixed"
+              ]
+            },
+            "regions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "provider": {
+          "type": "object",
+          "required": [
+            "name",
+            "type"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "government",
+                "school",
+                "foundation",
+                "private",
+                "mixed",
+                "unknown"
+              ]
+            }
+          }
+        },
+        "classification": {
+          "type": "object",
+          "required": [
+            "category",
+            "benefit_type"
+          ],
+          "properties": {
+            "category": {
+              "type": "string"
+            },
+            "benefit_type": {
+              "type": "string"
+            }
+          }
+        },
+        "eligibility": {
+          "type": "object",
+          "required": [
+            "age",
+            "income",
+            "residence",
+            "student",
+            "employment",
+            "disability",
+            "household",
+            "property",
+            "nationality",
+            "exclusions",
+            "raw_summary",
+            "taipei_applicability"
+          ],
+          "properties": {
+            "age": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/age"
+              }
+            },
+            "income": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/income"
+              }
+            },
+            "residence": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/residence"
+              }
+            },
+            "student": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/student"
+              }
+            },
+            "employment": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/employment"
+              }
+            },
+            "disability": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/disability"
+              }
+            },
+            "household": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/household"
+              }
+            },
+            "property": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/property"
+              }
+            },
+            "nationality": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nationality"
+              }
+            },
+            "exclusions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "raw_summary": {
+              "type": "string"
+            },
+            "taipei_applicability": {
+              "type": "string"
+            }
+          }
+        },
+        "benefit": {
+          "type": "object",
+          "required": [
+            "kind",
+            "amounts",
+            "raw"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "amounts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/amount"
+              }
+            },
+            "raw": {
+              "type": "string"
+            }
+          }
+        },
+        "application": {
+          "type": "object",
+          "required": [
+            "methods",
+            "agency",
+            "channel_text",
+            "process_text",
+            "required_documents",
+            "deadline",
+            "urls"
+          ],
+          "properties": {
+            "methods": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "agency": {
+              "type": "string"
+            },
+            "channel_text": {
+              "type": "string"
+            },
+            "process_text": {
+              "type": "string"
+            },
+            "required_documents": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/document"
+              }
+            },
+            "deadline": {
+              "$ref": "#/$defs/deadline"
+            },
+            "urls": {
+              "type": "object",
+              "required": [
+                "program",
+                "apply",
+                "form"
+              ],
+              "properties": {
+                "program": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "apply": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "form": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "search": {
+          "type": "object",
+          "required": [
+            "keywords",
+            "facets",
+            "text"
+          ],
+          "properties": {
+            "keywords": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "facets": {
+              "type": "object",
+              "required": [
+                "scope",
+                "regions",
+                "category",
+                "benefit_type",
+                "applicant_types"
+              ],
+              "properties": {
+                "scope": {
+                  "type": "string"
+                },
+                "regions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "category": {
+                  "type": "string"
+                },
+                "benefit_type": {
+                  "type": "string"
+                },
+                "applicant_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/extension"
+          }
+        },
+        "source_meta": {
+          "type": "object",
+          "required": [
+            "verification_status",
+            "verification_note",
+            "application_status",
+            "checked_date",
+            "relation_to_original",
+            "missing_fields",
+            "notes",
+            "sources"
+          ],
+          "properties": {
+            "verification_status": {
+              "enum": [
+                "verified",
+                "partial",
+                "unverified"
+              ]
+            },
+            "verification_note": {
+              "type": "string"
+            },
+            "application_status": {
+              "type": "string"
+            },
+            "checked_date": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "relation_to_original": {
+              "type": "string"
+            },
+            "missing_fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "notes": {
+              "type": "string"
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "merge": {
+          "type": "object",
+          "properties": {
+            "origin": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "legacy_ids": {
+              "type": "object"
+            },
+            "related_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "has_supplemental": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "age": {
+      "type": "object",
+      "required": [
+        "subject",
+        "min",
+        "max",
+        "unit",
+        "raw"
+      ],
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "enum": [
+            "year",
+            "month",
+            "day"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "income": {
+      "type": "object",
+      "required": [
+        "subject",
+        "metric",
+        "operator",
+        "value",
+        "currency",
+        "period",
+        "multiplier_base",
+        "multiplier_value",
+        "year",
+        "raw"
+      ],
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "metric": {
+          "enum": [
+            "annual_income",
+            "monthly_income",
+            "per_capita_income",
+            "interest_income",
+            "income_multiple",
+            "other"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "<",
+            "<=",
+            "==",
+            ">=",
+            ">",
+            "in",
+            "text"
+          ]
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "multiplier_base": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "multiplier_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "residence": {
+      "type": "object",
+      "required": [
+        "region",
+        "registered_required",
+        "actual_residence_required",
+        "min_duration_months",
+        "raw"
+      ],
+      "properties": {
+        "region": {
+          "type": "string"
+        },
+        "registered_required": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "actual_residence_required": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "min_duration_months": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "student": {
+      "type": "object",
+      "required": [
+        "education_levels",
+        "enrollment_required",
+        "min_score",
+        "rank_requirement",
+        "raw"
+      ],
+      "properties": {
+        "education_levels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "enrollment_required": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "min_score": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rank_requirement": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "employment": {
+      "type": "object",
+      "required": [
+        "statuses",
+        "insurance_types",
+        "min_tenure_months",
+        "raw"
+      ],
+      "properties": {
+        "statuses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "insurance_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "min_tenure_months": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "disability": {
+      "type": "object",
+      "required": [
+        "required",
+        "severities",
+        "certificate_required",
+        "raw"
+      ],
+      "properties": {
+        "required": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "severities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "certificate_required": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "household": {
+      "type": "object",
+      "required": [
+        "types",
+        "children_min",
+        "child_age_max",
+        "dependent_required",
+        "raw"
+      ],
+      "properties": {
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "children_min": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "child_age_max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dependent_required": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "property": {
+      "type": "object",
+      "required": [
+        "property_type",
+        "operator",
+        "value",
+        "currency",
+        "raw"
+      ],
+      "properties": {
+        "property_type": {
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "<",
+            "<=",
+            "==",
+            ">=",
+            ">",
+            "text"
+          ]
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "nationality": {
+      "type": "object",
+      "required": [
+        "values",
+        "raw"
+      ],
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "amount": {
+      "type": "object",
+      "required": [
+        "min",
+        "max",
+        "fixed",
+        "currency",
+        "period",
+        "percentage",
+        "condition",
+        "raw"
+      ],
+      "properties": {
+        "min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "fixed": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "percentage": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "condition": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "required": [
+        "name",
+        "required",
+        "condition",
+        "notes"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "condition": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "deadline": {
+      "type": "object",
+      "required": [
+        "start",
+        "end",
+        "type",
+        "raw"
+      ],
+      "properties": {
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "end": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "enum": [
+            "fixed",
+            "rolling",
+            "yearly",
+            "ongoing",
+            "automatic",
+            "unknown"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        }
+      }
+    },
+    "extension": {
+      "type": "object",
+      "required": [
+        "namespace",
+        "key",
+        "label",
+        "operator",
+        "value",
+        "value_type",
+        "unit",
+        "raw"
+      ],
+      "properties": {
+        "namespace": {
+          "enum": [
+            "eligibility",
+            "benefit",
+            "application",
+            "other"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string"
+        },
+        "value": {},
+        "value_type": {
+          "enum": [
+            "string",
+            "number",
+            "boolean",
+            "array",
+            "object"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "raw": {
+          "type": "string"
+        },
+        "original_key": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
