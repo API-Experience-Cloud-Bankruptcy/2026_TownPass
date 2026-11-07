@@ -48,6 +48,13 @@ body {
 h1, h2, h3, p, ul, ol, dl, dd, fieldset, figure {
   margin: 0;
 }
+/* 避免最後一行只剩一個字（中文孤字）；標題兩行時盡量等長 */
+p, li, dd, summary, button, label {
+  text-wrap: pretty;
+}
+h1, h2, h3 {
+  text-wrap: balance;
+}
 
 ul, ol {
   padding-left: 1.25rem;
@@ -124,32 +131,61 @@ li + li {
   font-size: var(--fs-caption);
   color: var(--muted);
   line-height: 1.4;
+  text-wrap: balance;
 }
 .app-header__row > .btn {
   flex: none;
   white-space: nowrap;
 }
 .tabs {
+  --tab-index: 0;
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
 }
+/* 目前分頁的底線：一條指示條跟著滑過去，而不是三條各自閃現。 */
+.tabs::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: calc(100% / 3);
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--brand);
+  transform: translateX(calc(100% * var(--tab-index)));
+  transition: transform var(--dur-page) var(--ease), opacity var(--dur) var(--ease);
+  pointer-events: none;
+}
+.tabs--none::after {
+  opacity: 0;
+}
 .tabs__item {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--touch);
   border: 0;
-  border-bottom: 3px solid transparent;
   background: none;
   font: inherit;
   font-weight: var(--fw-medium);
+  line-height: var(--lh-tight);
   color: var(--muted);
   cursor: pointer;
   padding: 4px;
-  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-slow) var(--ease), background-color var(--dur) var(--ease);
+}
+.tabs__item:active {
+  background: var(--accent-soft);
 }
 .tabs__item[aria-current='page'] {
   color: var(--accent);
   font-weight: var(--fw-bold);
-  border-bottom-color: var(--brand);
+}
+@media (forced-colors: active) {
+  .tabs::after { background: Highlight; forced-color-adjust: none; }
 }
 .tabs__count {
   display: inline-grid;
@@ -182,8 +218,32 @@ li + li {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden; /* 換頁時左右位移的頁面不撐出水平捲軸 */
   overscroll-behavior-y: contain;
   padding: 16px 16px 32px;
+  transition: background-color var(--dur-page) var(--ease);
+}
+/* 換頁中：位移只用 transform，不影響排版 */
+.app-main > [class*='page-'][class*='-active'] {
+  will-change: transform, opacity;
+}
+/* 儲存狀態：小圓點跟著狀態換色，儲存中輕輕呼吸 */
+.sync-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background-color var(--dur-slow) var(--ease);
+}
+.sync-dot--saved { background: var(--brand); }
+.sync-dot--saving,
+.sync-dot--loading { background: var(--doing-mark); animation: sync-breathe 1.2s ease-in-out infinite; }
+@keyframes sync-breathe {
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sync-dot { animation: none !important; }
 }
 /* 頁面 */
 .view {
@@ -527,9 +587,23 @@ legend {
   background:
     linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat,
     linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat;
+  transition: background-size var(--dur-expand) var(--ease), transform var(--dur-expand) var(--ease);
 }
+/* ＋ 的直線收起來變成 −，同時轉半圈 */
 .more[open] > summary::after {
-  background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
+  background-size: 100% 2px, 2px 0%;
+  transform: rotate(180deg);
+}
+/* 收合動畫一開始（chat/smooth-details.ts 加 .is-closing）圖示就轉回去，不等高度收完。 */
+details.more.is-closing[open] > summary::after {
+  background-size: 100% 2px, 2px 100%;
+  transform: none;
+}
+.app-main--page details.more.is-closing[open] > summary::after {
+  transform: rotate(45deg);
+}
+details.bubble-more.is-closing[open] > summary::after {
+  transform: rotate(45deg) translateY(-2px);
 }
 @media (forced-colors: active) {
   .more > summary::after {
@@ -670,6 +744,34 @@ legend {
 }
 .dialog::backdrop {
   background: rgb(23 27 29 / 45%);
+}
+/* 開啟：背景淡入、對話框由下浮起；關閉由 ConfirmDialog.vue 加 .dialog--closing 播完再關 */
+.dialog[open] {
+  animation: dialog-in var(--dur-slow) var(--ease-spring);
+}
+.dialog[open]::backdrop {
+  animation: backdrop-in var(--dur-slow) var(--ease);
+}
+.dialog.dialog--closing {
+  animation: dialog-out var(--dur-page-exit) var(--ease-exit) forwards;
+}
+.dialog.dialog--closing::backdrop {
+  animation: backdrop-out var(--dur-page-exit) var(--ease-exit) forwards;
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+}
+@keyframes dialog-out {
+  to { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+@keyframes backdrop-in {
+  from { opacity: 0; }
+}
+@keyframes backdrop-out {
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog[open], .dialog[open]::backdrop, .dialog.dialog--closing, .dialog.dialog--closing::backdrop { animation: none; }
 }
 .dialog__title {
   font-size: var(--fs-section);
@@ -1568,10 +1670,20 @@ li.wheel__item + li.wheel__item {
   background: var(--done-bg);
 }
 
-/* 回到對話 */
+/* 回到對話：箭頭、Logo、文字三者垂直置中 */
 .back-chat {
   gap: var(--space-2);
   color: var(--accent);
+  line-height: var(--lh-tight);
+}
+.back-chat__chev {
+  flex: none;
+  display: block;
+  margin-right: calc(var(--space-2) * -0.5);
+  transition: transform var(--dur) var(--ease);
+}
+.back-chat:active .back-chat__chev {
+  transform: translateX(-3px);
 }
 .avatar--sm {
   width: 28px;

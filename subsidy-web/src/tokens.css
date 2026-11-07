@@ -218,9 +218,16 @@
   --radius-panel: 16px;  /* 詳情、行動單的白色卡片，和泡泡同一個質感 */
 
   /* 動態 */
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 120ms;
-  --dur: 150ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);       /* 一般：快速出發、緩緩停下 */
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.15); /* 彈出：稍微超過再回到定位 */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);       /* 離場：加速離開 */
+  --dur-fast: 120ms;   /* 按壓、顏色 */
+  --dur: 150ms;        /* hover、邊框 */
+  --dur-slow: 240ms;   /* 淡入、卡片出現、進度變化 */
+  --dur-expand: 300ms; /* 展開收合（與 chat/smooth-details.ts 一致） */
+  --dur-page: 280ms;   /* 換頁進場；離場用 --dur-page-exit */
+  --dur-page-exit: 140ms;
+  --page-shift: 32px;  /* 換頁水平位移 */
 }
 
 /* 高對比模式：只覆寫語意層 */

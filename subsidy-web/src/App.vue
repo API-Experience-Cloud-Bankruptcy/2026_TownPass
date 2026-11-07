@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
+import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect, type Component } from 'vue';
 import { followBottom } from './chat/typing';
 import ChatView from './components/ChatView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
@@ -10,6 +10,7 @@ import { dismissSplash, SPLASH_MAX_WAIT_MS } from './brand/splash';
 import BrowseView from './components/BrowseView.vue';
 import PlanItemView from './components/PlanItemView.vue';
 import PlanView from './components/PlanView.vue';
+import Expand from './components/motion/Expand.vue';
 import { modelAdapter, type ModelStatus } from './domain/model';
 import {
   back,
@@ -76,19 +77,78 @@ const isChat = computed(() => CHAT_VIEWS.includes(state.view));
 
 // 換頁或換題時把焦點移到新的標題或最新一則提問，讓讀屏與鍵盤使用者知道位置。
 // 對話頁捲到最下面；一般頁捲回頂端。動態題目可能在同一個 qIndex 換成別題，所以也看題目 id。
+function focusView(chat: boolean) {
+  const title = document.getElementById('view-title');
+  if (chat) {
+    title?.focus({ preventScroll: true });
+    followBottom(true);
+  } else {
+    document.getElementById('main')?.scrollTo?.(0, 0);
+    title?.focus({ preventScroll: true });
+  }
+}
+
+// ── 換頁轉場 ──
+// 每個「頁」一個 key；key 變了就由 <Transition> 換頁，焦點與捲動等新頁進場時才處理（見 onPageBeforeEnter/onPageEntered）。
+// 同一頁內（對話換題、換需求）沿用原本的即時處理。
+const pageKey = computed(() =>
+  isChat.value ? `chat-${conversationEpoch.value}`
+  : state.view === 'detail' ? `detail-${state.detailId ?? ''}`
+  : state.view === 'planItem' ? `planItem-${state.planItemId ?? ''}`
+  : state.view,
+);
+/** 目前畫面上（已進場）的頁；main 的版面 class 跟著它，離場中的舊頁不會先換版面。 */
+const shownKey = ref(pageKey.value);
+const shownView = ref<View>(state.view);
+const shownChat = computed(() => CHAT_VIEWS.includes(shownView.value));
+
+type Section = 'find' | 'plan' | 'browse';
+const SECTION_ORDER: Record<Section, number> = { find: 0, plan: 1, browse: 2 };
+function sectionOf(view: View): Section {
+  if (CHAT_VIEWS.includes(view)) return 'find';
+  if (view === 'plan' || view === 'planItem') return 'plan';
+  if (view === 'browse') return 'browse';
+  // 詳情、求助頁屬於開啟它的分頁（返回紀錄的最底層；tab() 會清空紀錄）
+  const root = state.history[0];
+  return root && root !== 'detail' && root !== 'help' ? sectionOf(root) : 'find';
+}
+const pageTransition = ref('page-fade');
+let lastSection = sectionOf(state.view);
+let lastDepth = state.history.length;
+watch(
+  pageKey,
+  () => {
+    const section = sectionOf(state.view);
+    const depth = state.history.length;
+    pageTransition.value =
+      section !== lastSection ? (SECTION_ORDER[section] > SECTION_ORDER[lastSection] ? 'page-next' : 'page-prev')
+      : depth > lastDepth ? 'page-push'
+      : depth < lastDepth ? 'page-pop'
+      : 'page-fade';
+    lastSection = section;
+    lastDepth = depth;
+    settingsOpen.value = false;
+  },
+  { flush: 'pre' },
+);
+function onPageBeforeEnter() {
+  shownKey.value = pageKey.value;
+  shownView.value = state.view;
+  if (!isChat.value) document.getElementById('main')?.scrollTo?.(0, 0);
+}
+function onPageEntered() {
+  focusView(isChat.value);
+}
+
 watch(
   () => [state.view, state.detailId, state.planItemId, state.qIndex, state.view === 'questions' ? questions.value[state.qIndex]?.id : null],
   async () => {
     settingsOpen.value = false;
     await nextTick();
-    const title = document.getElementById('view-title');
-    if (isChat.value) {
-      title?.focus({ preventScroll: true });
-      followBottom(true);
-    } else {
-      document.getElementById('main')?.scrollTo?.(0, 0);
-      title?.focus({ preventScroll: true });
-    }
+    // 換頁的焦點交給轉場完成後處理；同一頁內換題、換需求才在這裡處理。
+    if (pageKey.value !== shownKey.value) return;
+    shownView.value = state.view;
+    focusView(isChat.value);
   },
 );
 
@@ -104,15 +164,49 @@ const activeView = computed<View>(() => {
   const from = state.history[state.history.length - 1];
   return from === 'browse' ? 'browse' : from && PLAN_VIEWS.includes(from) ? 'plan' : 'detail';
 });
+const activeTabIndex = computed(() => navItems.findIndex((n) => n.match.includes(activeView.value)));
 const backLabel = computed(() => {
   const from = state.history[state.history.length - 1];
-  return from === 'browse' ? '回到補助總覽' : from === 'planItem' ? '回到行動單' : from === 'plan' ? '回到行動單列表' : from === 'detail' ? '回到補助內容' : state.view === 'planItem' ? '行動單列表' : '返回上一頁';
+  return from === 'browse' ? '回到補助總覽' : from === 'planItem' ? '回到行動單' : from === 'plan' ? '回到行動單列表' : from === 'detail' ? '回到補助內容' : from === 'results' ? '回到查詢結果' : state.view === 'planItem' ? '行動單列表' : '返回上一頁';
 });
 
 const targetLabel = computed(() =>
   state.session.target === 'self' ? '幫自己找' : state.session.target === 'other' ? '幫別人找' : '尚未選擇',
 );
 
+
+// 詳情與單張行動單：返回列跟著頁面一起進出場，標籤在進場時定下來，離場中不會換字。
+const BackBar = defineComponent({
+  name: 'BackBar',
+  setup() {
+    const label = backLabel.value;
+    return () =>
+      h('div', { class: 'topbar no-print' }, [
+        h('button', { type: 'button', class: 'btn btn--text back-chat', onClick: back }, [
+          h('svg', { class: 'back-chat__chev', viewBox: '0 0 24 24', width: 20, height: 20, 'aria-hidden': 'true', focusable: 'false' }, [
+            h('path', { d: 'M15 5l-7 7 7 7', fill: 'none', stroke: 'currentColor', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+          ]),
+          h('span', { class: 'avatar avatar--sm', 'aria-hidden': 'true' }, [h(LogoMark)]),
+          h('span', null, label),
+        ]),
+      ]);
+  },
+});
+function withBackBar(name: string, view: Component) {
+  return defineComponent({ name, setup: () => () => h('div', { class: 'page-shell' }, [h(BackBar), h(view)]) });
+}
+const DetailPage = withBackBar('DetailPage', DetailView);
+const PlanItemPage = withBackBar('PlanItemPage', PlanItemView);
+
+const page = computed<Component | null>(() =>
+  isChat.value ? ChatView
+  : state.view === 'detail' ? DetailPage
+  : state.view === 'plan' ? PlanView
+  : state.view === 'planItem' ? PlanItemPage
+  : state.view === 'browse' ? BrowseView
+  : state.view === 'help' ? HelpView
+  : null,
+);
 
 const dialogTitle = computed(() =>
   pendingSwitch.value === 'clear' ? '清除這次的資料？' : '換人嗎？',
@@ -127,7 +221,9 @@ const dialogTitle = computed(() =>
         <span class="brand__logo" aria-hidden="true"><LogoMark :stroke="52" /></span>
         <span class="brand__text">
           <span class="brand__name">福利連</span>
-          <span class="brand__sub">{{ state.session.target ? `${targetLabel}・非官方服務` : '非官方服務，資格以承辦機關為準' }}</span>
+          <Transition name="fade" mode="out-in">
+            <span :key="state.session.target ?? ''" class="brand__sub">{{ state.session.target ? `${targetLabel}・非官方服務` : '非官方服務，資格以承辦機關為準' }}</span>
+          </Transition>
         </span>
       </div>
       <button
@@ -140,6 +236,7 @@ const dialogTitle = computed(() =>
         {{ settingsOpen ? '關閉設定' : '設定' }}
       </button>
     </div>
+    <Expand>
     <section v-show="settingsOpen" id="settings-panel" class="settings" aria-label="設定">
       <label class="check">
         <input v-model="state.prefs.largeText" type="checkbox" />
@@ -167,8 +264,9 @@ const dialogTitle = computed(() =>
         </dl>
       </details>
     </section>
+    </Expand>
 
-    <nav class="tabs" aria-label="主要功能">
+    <nav class="tabs" :class="{ 'tabs--none': activeTabIndex < 0 }" :style="{ '--tab-index': Math.max(activeTabIndex, 0) }" aria-label="主要功能">
       <button
         v-for="n in navItems"
         :key="n.view"
@@ -177,41 +275,44 @@ const dialogTitle = computed(() =>
         :aria-current="n.match.includes(activeView) ? 'page' : undefined"
         @click="tab(n.view)"
       >
-        {{ n.label }}<span v-if="n.view === 'plan' && planItems.length" class="tabs__count">{{ planItems.length }}<span class="sr-only"> 項</span></span>
+        {{ n.label }}<Transition name="pop"><span v-if="n.view === 'plan' && planItems.length" :key="planItems.length" class="tabs__count bump">{{ planItems.length }}<span class="sr-only"> 項</span></span></Transition>
       </button>
     </nav>
   </header>
 
-  <main id="main" class="app-main" :class="{ 'app-main--chat': isChat, 'app-main--page': state.view === 'detail' || PLAN_VIEWS.includes(state.view) }">
-    <p v-if="state.loadError" class="status-line status-line--error" role="alert">
-      {{ state.loadError }}
-      <button type="button" class="btn btn--text" @click="init">重試</button>
-    </p>
-    <p v-if="state.notice" class="status-line no-print" role="status">
-      {{ state.notice }}
-      <button type="button" class="btn btn--text" @click="state.notice = ''">知道了</button>
-    </p>
-    <p v-if="planSync.state.phase === 'error' || planSync.state.phase === 'conflict'" class="status-line status-line--error no-print" role="alert">
-      {{ planSync.state.error }}
-      <button v-if="planSync.state.phase === 'conflict'" type="button" class="btn btn--text" @click="planSync.load(true)">載入最新行動單（取代本頁修改）</button>
-      <button v-else type="button" class="btn btn--text" @click="planSync.retry()">重新儲存</button>
-    </p>
+  <main id="main" class="app-main" :class="{ 'app-main--chat': shownChat, 'app-main--page': shownView === 'detail' || PLAN_VIEWS.includes(shownView) }">
+    <Transition name="fade">
+      <p v-if="state.loadError" class="status-line status-line--error" role="alert">
+        {{ state.loadError }}
+        <button type="button" class="btn btn--text" @click="init">重試</button>
+      </p>
+    </Transition>
+    <Transition name="fade">
+      <p v-if="state.notice" class="status-line no-print" role="status">
+        {{ state.notice }}
+        <button type="button" class="btn btn--text" @click="state.notice = ''">知道了</button>
+      </p>
+    </Transition>
+    <Transition name="fade">
+      <p v-if="planSync.state.phase === 'error' || planSync.state.phase === 'conflict'" class="status-line status-line--error no-print" role="alert">
+        {{ planSync.state.error }}
+        <button v-if="planSync.state.phase === 'conflict'" type="button" class="btn btn--text" @click="planSync.load(true)">載入最新行動單（取代本頁修改）</button>
+        <button v-else type="button" class="btn btn--text" @click="planSync.retry()">重新儲存</button>
+      </p>
+    </Transition>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已儲存的資料；開啟官方網站仍需要網路。</p>
-    <p v-if="PLAN_VIEWS.includes(state.view) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在儲存行動單…' : '正在讀取已儲存的行動單…' }}</p>
+    <Transition name="fade">
+      <p v-if="PLAN_VIEWS.includes(shownView) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">
+        <span class="sync-dot" :class="`sync-dot--${planSync.state.phase}`" aria-hidden="true"></span>
+        <Transition name="fade" mode="out-in"><span :key="planSync.state.phase">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在儲存行動單…' : '正在讀取已儲存的行動單…' }}</span></Transition>
+      </p>
+    </Transition>
 
-    <div v-if="state.view === 'detail' || state.view === 'planItem'" class="topbar no-print">
-      <button type="button" class="btn btn--text back-chat" @click="back">
-        <span aria-hidden="true">‹</span>
-        <span class="avatar avatar--sm" aria-hidden="true"><LogoMark /></span>
-        {{ backLabel }}
-      </button>
-    </div>
-    <KeepAlive :max="1"><ChatView v-if="isChat" :key="conversationEpoch" /></KeepAlive>
-    <DetailView v-if="state.view === 'detail'" :key="state.detailId ?? ''" />
-    <PlanView v-if="state.view === 'plan'" />
-    <PlanItemView v-if="state.view === 'planItem'" :key="state.planItemId ?? ''" />
-    <KeepAlive><BrowseView v-if="state.view === 'browse'" /></KeepAlive>
-    <HelpView v-if="state.view === 'help'" />
+    <Transition :name="pageTransition" mode="out-in" @before-enter="onPageBeforeEnter" @after-enter="onPageEntered">
+      <KeepAlive :include="['ChatView', 'BrowseView']" :max="2">
+        <component :is="page" v-if="page" :key="pageKey" />
+      </KeepAlive>
+    </Transition>
   </main>
 
   <ConfirmDialog

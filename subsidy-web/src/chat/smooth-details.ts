@@ -17,7 +17,10 @@ function closedHeight(details: HTMLDetailsElement, summary: HTMLElement): number
 }
 
 function onClick(event: MouseEvent) {
-  const summary = event.currentTarget as HTMLElement;
+  animateToggle(event, event.currentTarget as HTMLElement);
+}
+
+function animateToggle(event: MouseEvent, summary: HTMLElement) {
   const details = summary.parentElement;
   if (!(details instanceof HTMLDetailsElement) || !details.animate || prefersReducedMotion()) return;
   event.preventDefault();
@@ -27,6 +30,7 @@ function onClick(event: MouseEvent) {
   const from = details.getBoundingClientRect().height;
   prev?.anim.cancel();
 
+  details.classList.toggle('is-closing', !opening);
   if (opening) details.open = true;
   const to = opening ? details.offsetHeight : closedHeight(details, summary);
 
@@ -44,9 +48,17 @@ function onClick(event: MouseEvent) {
   running.set(details, { anim, opening });
   anim.onfinish = () => {
     if (!opening) details.open = false;
-    details.style.overflow = '';
+    details.classList.remove('is-closing');
     anim.cancel();
     running.delete(details);
+    // 內容在展開後才載入（v-if 綁 open 狀態）時，實際高度會比量到的高：再順順長到實際高度。
+    const natural = details.offsetHeight;
+    if (opening && Math.abs(natural - to) > 4) {
+      const grow = details.animate([{ height: `${to}px` }, { height: `${natural}px` }], { duration: 220, easing: EASING });
+      grow.onfinish = grow.oncancel = () => { details.style.overflow = ''; };
+      return;
+    }
+    details.style.overflow = '';
   };
 }
 
@@ -59,3 +71,22 @@ export const vSmoothDetails: Directive<HTMLDetailsElement> = {
     running.get(el)?.anim.cancel();
   },
 };
+
+/**
+ * 全站的 <details>：在 document 上監聽 summary 點擊，同樣以高度動畫展開收合。
+ * 已由 v-smooth-details 處理（preventDefault）的、或標了 data-motion="off" 的不重複處理。
+ */
+export function installSmoothDetails(): void {
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0) return;
+    const target = event.target as Element | null;
+    const summary = target?.closest?.('summary');
+    if (!summary || !(summary instanceof HTMLElement)) return;
+    // summary 內的連結、按鈕照常運作
+    const interactive = target?.closest?.('a, button, input, select, textarea, label');
+    if (interactive && summary.contains(interactive)) return;
+    const details = summary.parentElement;
+    if (!(details instanceof HTMLDetailsElement) || details.dataset.motion === 'off' || summary !== details.querySelector(':scope > summary')) return;
+    animateToggle(event, summary);
+  });
+}

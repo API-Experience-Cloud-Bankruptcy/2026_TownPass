@@ -19,6 +19,14 @@ watch(
       await nextTick();
       el.querySelector<HTMLElement>('[data-autofocus]')?.focus();
     } else if (!open && el.open) {
+      // 先播離場動畫再關；減少動態效果或不支援動畫時直接關。
+      const closing = typeof el.getAnimations === 'function' && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (closing) {
+        el.classList.add('dialog--closing');
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        el.classList.remove('dialog--closing');
+        if (props.open) return; // 播放期間又被打開
+      }
       el.close();
       opener?.focus?.();
     }
