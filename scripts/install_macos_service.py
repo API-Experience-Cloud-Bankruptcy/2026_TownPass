@@ -62,11 +62,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True, help='Built release townpass-backend binary')
     parser.add_argument('--web-root', type=Path, default=Path('subsidy-web/dist'))
+    parser.add_argument('--forms-root', type=Path, default=Path(__file__).resolve().parent.parent / 'backend/data/forms')
     parser.add_argument('--port', type=int, default=5173)
     args = parser.parse_args()
     if sys.platform != 'darwin':
         parser.error('macOS only')
     binary, web = args.binary.resolve(), args.web_root.resolve()
+    forms = args.forms_root.resolve()
+    if not forms.is_dir() or not any(forms.glob('*.pdf')):
+        parser.error('Provide the original blank form PDFs with --forms-root')
     if not binary.is_file() or not os.access(binary, os.X_OK) or not (web / 'index.html').is_file():
         parser.error('Build the executable and web dist before installing')
     if not 1024 <= args.port <= 65535:
@@ -92,13 +96,14 @@ def main():
     release = base / 'releases' / uuid.uuid4().hex
     release.mkdir(parents=True)
     shutil.copytree(web, release / 'web')
+    shutil.copytree(forms, release / 'forms')
     logs = Path.home() / 'Library/Logs/TownPassLocal'
     logs.mkdir(parents=True, exist_ok=True)
     config = {
         'Label': label,
         'ProgramArguments': [str(runtime)],
         'WorkingDirectory': str(release),
-        'EnvironmentVariables': {'HOST': '0.0.0.0', 'PORT': str(args.port), 'WEB_ROOT': str(release / 'web')},
+        'EnvironmentVariables': {'HOST': '0.0.0.0', 'PORT': str(args.port), 'WEB_ROOT': str(release / 'web'), 'FORMS_DIR': str(release / 'forms')},
         'RunAtLoad': True, 'KeepAlive': True, 'ThrottleInterval': 10,
         'ProcessType': 'Background',
         'StandardOutPath': str(logs / 'service.log'),

@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { text } from '../domain/match';
 import { buildRoute, SOURCE_KIND_LABEL, SOURCE_ROLE } from '../domain/route';
 import { benefitLabel, itemFlags, sourceExcerpt, statusPlain } from '../presentation';
 import { inPlan, itemsById, results, state, tab, togglePlan } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import RouteSteps from './RouteSteps.vue';
+
+const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
+const formOpen = ref(false);
+watch([() => state.detailId, () => state.session.target], () => { formOpen.value = false; });
 
 const item = computed(() => (state.detailId ? itemsById.value.get(state.detailId) : undefined));
 const result = computed(() => (item.value ? results.value.get(item.value.id) : undefined));
@@ -77,6 +81,12 @@ function kindOf(type: string) {
 
     <div class="card-stack">
       <RouteSteps :item="item" hide-deadline />
+      <details class="more card card--list" :open="formOpen" @toggle="formOpen = ($event.target as HTMLDetailsElement).open">
+        <summary>申請表與填寫</summary>
+        <div class="more__body">
+          <FormFillPanel v-if="formOpen" :key="`${item.id}:${state.session.target}`" :item="item" :target="state.session.target" />
+        </div>
+      </details>
       <div class="more-group card card--list">
         <details class="more">
           <summary>完整條件與初篩說明</summary>

@@ -1,7 +1,7 @@
 # 申請表欄位（form_fields）對接指南
 
 適用對象：subsidy-web（前端）、Flutter 殼（Dart）、後端維護者。
-狀態：資料已產出並寫入 `backend/data/subsidies.json`；PDF 送達與填寫流程尚未在 app 內實作，見第 6 節。
+狀態：資料已產出；`clean-ver` 已整合 PDF 路由與資源詳情的「申請表與填寫」入口。僅明確確認的本人資料可填入，未涵蓋實機分享或逐份表單位置驗收。
 
 ## 0. 結論
 
@@ -93,7 +93,10 @@
 | 180 | W0 − ux | uy |
 | 270 | H0 − uy | W0 − ux |
 
-**注意：這張表是依旋轉方向推導的，尚未用真實檔案實測。** 寫入文字時，旋轉頁的文字也要以相同角度繪製。在完成實測前，R≠0 的頁面應該拒絕填寫，見下方範例。
+**已實測（2026-11-08）**：對全部 161 份已分析 PDF 的 5274 個欄位，用 pdf-lib 依此表放標記、PyMuPDF 渲染比對，5273 個不同中心點中 5222 個誤差 ≤1pt，其餘 51 個皆因相距 <6.5pt 的標記在點陣上合併（每個都有相鄰欄位），無無法解釋的偏差。涵蓋 0°、90°；180°、270° 以 WEL-0028 第 4 頁合成旋轉測試；CropBox 原點非 (0,0) 的 4 頁也在測試內。
+
+- 使用者空間座標一律要加上 CropBox 原點：`x = cropBox.x + ux`，`y = cropBox.y + uy`，其中 `ux, uy` 以 CropBox 寬高（W0, H0）計算。
+- 文字方向：旋轉頁的文字要以 `rotate: degrees(R)` 繪製（R 為頁面 `/Rotate`）。已用 NotoSansTC 在 0/90/180/270 空白頁各畫一次「申請人」，墨跡都落在顯示座標的同一框內。
 
 ## 4. 預填規則（app 必須遵守）
 
@@ -111,11 +114,22 @@
 ### 5.1 範例（草稿，尚未在 app 內執行）
 
 ```ts
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, rgb, degrees } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
 type Box = { page: number; x: number; y: number; w: number; h: number };
 type Field = { type: string; prefill: boolean; prefill_key?: string; box: Box; preprinted_prefix?: string };
+
+// 顯示座標（左上原點）→ CropBox 內的使用者座標，依 §3.1 已實測
+function toUser(R: number, dx: number, dy: number, W0: number, H0: number): [number, number] {
+  switch (R) {
+    case 0: return [dx, H0 - dy];
+    case 90: return [dy, dx];
+    case 180: return [W0 - dx, dy];
+    case 270: return [W0 - dy, H0 - dx];
+    default: throw new Error(`unsupported rotation ${R}`);
+  }
+}
 
 // values 必須是使用者已確認的內容，例如 { name: '…', national_id: '…' }
 export async function fillForm(
@@ -126,7 +140,8 @@ export async function fillForm(
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.load(pdfBytes);
   doc.registerFontkit(fontkit);
-  const font = await doc.embedFont(fontBytes, { subset: true });
+  // 完整嵌入，與 checklist-pdf.ts 一致：subset 在 PyMuPDF 渲染為空白
+  const font = await doc.embedFont(fontBytes, { subset: false });
   const pages = doc.getPages();
 
   for (const f of fields) {
@@ -136,17 +151,20 @@ export async function fillForm(
     if (f.preprinted_prefix && value.startsWith(f.preprinted_prefix)) {
       value = value.slice(f.preprinted_prefix.length);
     }
-
     const page = pages[f.box.page - 1];
-    if (page.getRotation().angle !== 0) {
-      // 旋轉頁尚未實測，先拒絕，見指南 3.1
-      throw new Error(`第 ${f.box.page} 頁為旋轉頁，尚未支援`);
-    }
-    const { height } = page.getSize();
-    const x = Math.max(0, f.box.x);
-    const size = Math.min(11, f.box.h * 0.6);
-    const baseline = height - (f.box.y + f.box.h) + f.box.h * 0.25;
-    page.drawText(value, { x: x + 2, y: baseline, size, font, color: rgb(0, 0, 0) });
+    const R = page.getRotation().angle;
+    const cb = page.getCropBox();
+    // 錨點：框左側 +2pt，基線約在框高 80%；超出框寬的文字尚未處理（需縮字級或換行）
+    const size = Math.min(11, f.box.h * 0.8);
+    const [ux, uy] = toUser(R, f.box.x + 2, f.box.y + f.box.h * 0.8, cb.width, cb.height);
+    page.drawText(value, {
+      x: cb.x + ux,
+      y: cb.y + uy,
+      size,
+      font,
+      color: rgb(0, 0, 0),
+      rotate: degrees(R),
+    });
   }
   return doc.save();
 }
@@ -155,7 +173,7 @@ export async function fillForm(
 注意事項：
 - 文字寬度超過 `w` 時要縮小字級或換行，草稿沒有處理。
 - 字型必須嵌入 CJK 字型（同 `checklist-pdf.ts` 的 NotoSansTC），pdf-lib 內建字型不支援中文。
-- 必須在真實 PDF 上目視比對，包括旋轉頁與多人表單。
+- 錨點位置與字級只驗證了文字方向與大致落點，未檢查中文字在欄位內的垂直置中；必須在真實表單上目視比對。
 
 ### 5.2 分享
 
@@ -176,10 +194,7 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 
 ## 6. 尚未完成的缺口（上線前必須決定）
 
-1. **PDF 送達路徑。** 目前沒有任何服務會把 `backend/data/forms/*.pdf` 送到前端：後端只服務 `WEB_ROOT` 內的建置檔，subsidy-web 也沒有 `public/`。可選方案：
-   - A（建議）：後端新增 `GET /api/forms/{file}`，只允許 `^[0-9a-f]{12}\.pdf$` 這種檔名，避免路徑穿越。
-   - B：隨 subsidy-web 建置放入 `public/forms/`。全部約 39 MB，WebView 負擔大。
-   - C：打包進 Flutter assets。同樣很大，且每次更新都要發版。
+1. **PDF 送達路徑（已實作，分支 `feat/form-fields-serving`）。** 後端提供 `GET /api/forms/{file}`，只接受 `^[0-9a-f]{12}\.pdf$`，其他檔名一律 404。檔案目錄預設為 `backend/data/forms`，部署時以 `FORMS_DIR` 覆寫。app 取用時用 `local_file` 的檔名組出 `/api/forms/<檔名>`。回應為 `application/pdf`，`Cache-Control: public, max-age=86400`，`X-Content-Type-Options: nosniff`。另外 B、C 兩個方案不採用：B 約 39MB 會放進 web 建置，C 會把同樣的體積打進 Flutter 殼且每次更新都要發版。
 2. **資料更新需重建。** 後端用 `include_str!` 內嵌 JSON，改資料後要重建後端，或設定 `SUBSIDY_DATA` 覆寫；subsidy-web 快照也要重新建置。
 3. **檔案體積。** `subsidies.json` 約 4.3 MB（已排版），其中 `form_fields` 約 1 MB；`forms/` 約 39 MB。前端快照是獨立 chunk 按需載入，但仍需留意手機 WebView 的載入時間。
 4. **`urls.form` 未被修改。** 規則檔的審核指紋包含 `urls.form`，所以找到的新網址只寫在 `form_fields.source_url`。`form_fields` 不參與指紋計算（後端與前端一致）。
@@ -190,7 +205,7 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 - 所有來源 PDF 都是平面檔（沒有 AcroForm 可填欄位），所有位置都靠文字與格線推算。
 - 以下情況不會產生可填欄位：ODT／DOCX／XLS（24 筆）、掃描檔（4 筆）、亂碼字型（2 筆）、非申請表（5 筆）、網頁入口（9 筆）。
 - 學生、病人、被保險人、授權人、承租人的欄位會被擋下（`subject_unclear`），即使表單其實就是本人填寫。這是刻意保守的設計；若要放寬需另行確認規則。
-- 旋轉頁座標映射尚未實測（見 3.1）。
+- 旋轉頁座標與文字方向已實測（見 3.1），但中文字在欄位內的垂直置中與超寬文字尚未處理。
 - 出現在同頁的其他人物（代理人、家庭成員、受款人）以標題、列位與距離判斷，多人表單容易出錯，應以抽樣檢查為準。
 
 ## 8. 驗收清單
@@ -214,31 +229,100 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 
 `audit_prefill.py` 每次在 `build.py` 之後都要重跑，因為 `build.py` 會重寫 `form_fields`。
 
-## 10. 待決定事項（尚未實作）
+## 10. 決定與狀態（2026-11-08）
 
-以下三項需要先決定，才能進入實作。目前只記錄，不改程式。
+| 項目 | 決定 | 狀態 |
+|---|---|---|
+| 10.1 PDF 送達 | 方案 A：後端 `GET /api/forms/{file}` | 已實作，含測試 |
+| 10.2 填寫位置 | web 以 pdf-lib 填寫，Dart 只負責 `share_pdf` | 已接入資源詳情；仍須逐欄核對與實機分享驗收 |
+| 10.3 旋轉頁座標 | 以真實渲染實測 | 已實測，見下 |
 
-### 10.1 PDF 送達路徑
+### 10.1 實作細節
+- 路由：`GET /api/forms/{file}`。只接受 16 字元、小寫十六進位加 `.pdf` 的檔名；路徑穿越、大寫、非 ASCII、錯誤長度皆 404（測試 `form_pdfs_are_served_only_by_exact_hash_names` 涵蓋 12 種非法名稱）。
+- 目錄：預設為編譯時的 `backend/data/forms`（`CARGO_MANIFEST_DIR`）。已確認 167 個檔名全部符合規則。部署到其他路徑時設定 `FORMS_DIR`。
+- 注意：預設值是編譯時寫入的路徑，二進位搬離原始碼目錄時必須設定 `FORMS_DIR`。`scripts/install_macos_service.py` 會複製空白 PDF 到該次 release 的 `forms/`，並設定此變數；可用 `--forms-root` 指定來源。
 
-狀態：未決定。
-- A（建議）：後端新增 `GET /api/forms/{file}`，檔名只允許 `^[0-9a-f]{12}\.pdf$`，避免路徑穿越。優點：不增加 app 體積，可獨立更新。
-- B：隨 subsidy-web 建置放入 `public/forms/`。缺點：約 39 MB，WebView 負擔大。
-- C：打包進 Flutter assets。缺點：同樣很大，每次更新都要發版。
-
-### 10.2 填寫放在哪一端
-
-狀態：未決定。
-- A（建議）：subsidy-web 用 `pdf-lib` 填寫，Dart 只負責 `share_pdf`。理由：前端已有 `pdf-lib`、CJK 字型與檢核表 PDF 流程，Dart 端沒有 PDF 繪製套件。
-- B：Dart 端填寫。需要新增 PDF 套件，並自行處理 CJK 字型與座標轉換。
-
-### 10.3 旋轉頁座標
-
-狀態：未驗證。第 3.1 節的映射表是依旋轉方向推導的，尚未用真實檔案實測。
-- 待辦：以 `WEL-0028`（第 1–3 頁為 90° 旋轉）實測，確認映射正確後，才能在草稿代碼中開放旋轉頁填寫。
-- 目前草稿對旋轉頁直接拋出錯誤，屬於刻意保守。
+### 10.3 旋轉頁座標（已實測）
+- 方法：`backend/tools/form_fields/verify/` 內的腳本。pdf-lib 依 §3.1 的映射放洋紅色標記，PyMuPDF 渲染後比對質心。
+- 結果：見 §3.1。沒有無法解釋的偏差。
+- 文字方向：`drawText` 的 `rotate: degrees(R)` 已驗證。
+- 未驗證：Acrobat、Preview、Chrome 等閱讀器的實際顯示；只用 PyMuPDF 渲染。
 
 ## 11. 資料更新流程備註
 
 - 後端以 `include_str!` 內嵌 `subsidies.json`，改資料後必須重建後端，或以 `SUBSIDY_DATA` 覆寫。
 - subsidy-web 的快照同樣在建置時打包，改資料後需重新建置。
 - 執行 `build.py` 後一定要再跑 `audit_prefill.py`，否則預填規則不會生效。
+
+## 12. 前端元件與對接說明（給接線的組員）
+
+2026-11-08 起，subsidy-web 的領域邏輯與兩個元件已整合到 `DetailView.vue`；從「申請表與填寫」展開後使用，不改動資格判斷或對話主線。
+
+### 12.1 檔案
+
+| 檔案 | 作用 |
+|---|---|
+| `src/domain/form-fields.ts` | 讀 `application.form_fields`（逐欄驗證，壞資料丟棄）、`formAvailability(item)` 判斷這筆資源能不能填、`fetchFormPdf` 取回空白 PDF |
+| `src/domain/form-profile.ts` | 本人資料：城市通 `Account` → 待確認草稿、格式驗證、`confirmProfile`（只留下已勾選確認且格式通過的值） |
+| `src/domain/form-fill.ts` | 填寫引擎：`planFill`（純函式，決定填什麼）、`fillForm`（pdf-lib 畫字，含旋轉頁、CropBox、縮字、關閉字形替換） |
+| `src/domain/form-fill-client.ts` | 串起「取 PDF + 載字型 + 填寫 + 包成 File」：`createFilledForm` |
+| `src/components/FormProfileConfirm.vue` | 本人資料確認 UI（帶入城市通資料、逐項確認） |
+| `src/components/FormFillPanel.vue` | 一筆資源的完整填表面板（選表單 → 確認 → 填寫 → 核對 → 下載／分享） |
+| `src/domain/__tests__/form-fill.test.ts`、`form-components.test.ts` | 規則、真實資料、真實 PDF、元件渲染的測試 |
+
+### 12.2 掛載
+
+`DetailView.vue` 已提供「申請表與填寫」展開入口，按需載入組件及 PDF 函式庫；關閉、切換資源或查詢對象後會清除面板與本人資料。編輯或取消任何確認會立即撤銷舊確認、舊 PDF 與尚未完成的產生結果，必須重新確認。
+
+```vue
+<!-- DetailView.vue，建議放在「想申請的話」之後 -->
+<FormFillPanel :item="item" :target="state.session.target" />
+```
+
+- `item`：`Subsidy`；`target`：`state.session.target`（`'self' | 'other' | null`）。元件沒有事件輸出，也不讀寫 store。
+- **請用非同步載入**：`FormFillPanel` 會連帶引入 `pdf-lib`，直接 import 會讓它進主 bundle。做法與 `ChecklistView` 動態載入 `checklist-pdf` 相同：
+  `const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'))`。
+  本次整合採用此方式，PDF 函式庫在展開表單後才載入。
+- 不能填寫的資源（線上系統、Word／ODT、掃描檔等）元件會自己顯示原因與官方入口；沒有分析結果的資料顯示「沒有可用的申請表」。接線方可用 `formAvailability(item).kind === 'fillable'` 決定要不要顯示入口按鈕。
+- 開發環境需同時啟動後端（`/api/forms/*` 由 Vite 的 `/api` 代理轉過去）。
+
+### 12.3 隱私規則（已寫進程式與測試，改動前請先討論）
+
+- **只有替本人申請**（`target === 'self'`）才會帶入或填寫任何個人資料。`planFill` 對 `other`／`null` 一律不填，元件也不顯示帶入按鈕。
+- **城市通 userinfo 只用於填表**，不進資格判斷。`session.ts` 開頭「不讀取 TownPass userinfo 作為任何人的資格條件」仍然成立：`FormProfileConfirm` 只在使用者按下「從城市通帶入我的資料」時才呼叫 `getUserInfo()`，且資料不流向 `answers`、`results` 或任何資格邏輯。
+- **逐項確認**：帶入的值只是草稿。每項要使用者自己勾「確認這是我本人的…」才會填；修改內容會自動取消該項確認。
+- **只存在記憶體**：不寫 sessionStorage／localStorage、不送後端、不放進網址或 log。換資源、換人、換表單時，已填好的檔案會被丟棄並釋放 object URL。
+- **簽名欄、代理人、受款人、家庭成員、主體不明的欄位永遠不填**；寫明親簽的表單會顯示提醒，並且簽名旁的印刷姓名欄也不填。
+- 性別不從身分證字號推測（城市通沒有性別欄位），由使用者自己選。
+- 開發環境（瀏覽器）的 `getUserInfo()` 是模擬帳號，元件會明確提示「帶入的是模擬資料」。
+
+### 12.4 已驗證與未驗證
+
+已驗證：
+- 118 筆可填寫的紀錄都能被正確解析，壞資料（錯誤路徑、非 PDF、缺欄位）不會丟例外也不會產生可填表單。
+- 在真實表單上填寫後 PDF 仍可開啟、頁數不變，旋轉頁也可填；用 PyMuPDF 渲染目視檢查 WEL-0010、0028、0041、0067 四份，並用文字擷取確認姓名、身分證、手機、電話、地址都能被正確讀回。
+- 填寫時必須關閉 OpenType 字形替換，否則拉丁字母後的數字（身分證字號）會字距變寬，且複製／搜尋得到亂碼。`fillForm` 已處理，修正前後都用真實渲染比對過。
+- 元件以 Vue 伺服器端渲染做冒煙測試（替他人時沒有帶入按鈕、輸入框初始為空、每筆資料都能渲染）。
+
+**未驗證，請接線時確認：**
+- 已在 375px 桌面瀏覽器使用合成資料確認產生真實 PDF、編輯／撤銷後舊檔失效、延遲結果不回填，以及關閉後清除草稿；城市通 WebView 的讀屏、下載與原生分享仍須實機驗收。
+- 沒有用 Acrobat、Preview、Chrome 開過填好的 PDF；只用 PyMuPDF 渲染。
+- 沒有在手機實測字型載入時間（NotoSansTC 約 7 MB，完整嵌入）與填好檔案的大小；分享橋接上限 10 MB。
+- 已確認表單以獨立 chunk 載入；實際手機載入時間仍須驗收。
+
+### 12.5 已知限制（欄位位置來自啟發式偵測）
+
+- **偵測位置可能落在標籤格而不是旁邊的空白輸入格。** 例：`WEL-0010` 的「申請人姓名」，填入的姓名會出現在灰色標籤格內、標籤文字下方，而不是右邊的空白格。`WEL-0010` 至 `WEL-0027` 共用這份 PDF，影響 18 筆紀錄。整合時已禁止這份共用 PDF 的姓名欄自動填入，介面會提示手寫；其他已允許的欄位仍需使用者核對。這類偏差有多普遍沒有量化。修正要改 `backend/tools/form_fields/extract_fields.py` 的輸入格判斷，不是前端問題。
+- **逐格輸入的欄位**（身分證用 □□□□□□□□□□ 十個小方格）會把整串字寫在同一個框裡，不會一字一格對齊。
+- **勾選框與日期欄不會填。** 性別只在表單是文字欄時才填「男／女」；「□男 □女」勾選式不填。
+- **太長放不進格子的內容不會被截斷**，會略過並在結果裡提示請手寫；表單已印好的地址前綴（例如「臺北市」）與使用者地址不符時也會略過。
+- 填入位置是欄位框內垂直置中（單行）或靠上（多行）；部分表單仍可能偏離格線，列印前需放大核對，介面上也有這個提醒。
+- **離線**：建置快照只含 JSON，不含 PDF。離線或後端不通時，已選好的表單會顯示取得失敗，無法填寫。
+
+### 12.6 驗證指令
+
+```sh
+cd subsidy-web
+npm run typecheck
+npx vitest run src/domain/__tests__/form-fill.test.ts src/domain/__tests__/form-components.test.ts
+```

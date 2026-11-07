@@ -16,6 +16,7 @@ cargo run --locked --release
 | --- | --- | --- |
 | `HOST` | `127.0.0.1` | 綁定 IP；暴露外部服務前須另行配置部署安全措施 |
 | `PORT` | `8080` | 監聽埠 |
+| `FORMS_DIR` | 編譯時 `backend/data/forms` | 空白申請表 PDF 目錄；搬移執行檔或容器部署時須指定 |
 | `SUBSIDY_DATA` | 編譯內嵌 `data/subsidies.json` | 啟動時讀取的替代 JSON 路徑；相對路徑依程序工作目錄解析 |
 
 ```sh
@@ -46,7 +47,7 @@ cargo build --release --locked --manifest-path backend/Cargo.toml
 python3 scripts/install_macos_service.py --binary backend/target/release/townpass-backend
 ```
 
-若有自訂 `CARGO_TARGET_DIR`，請將 `--binary` 改為實際的 release 執行檔。安裝程式將執行檔與網頁複製到 `~/Library/Application Support/TownPassLocal/releases/` 的獨立版本目錄，建立 `~/Library/LaunchAgents/org.townpass.local.plist`。使用內嵌資料快照，在 `0.0.0.0:5173` 同時提供網頁與 API，無須 Vite 或一直開著終端機；登入後啟動，程序退出時由 launchd 重啟。更新後須重新建置並再次執行安裝程式；舊版本保留，不自動刪除。
+若有自訂 `CARGO_TARGET_DIR`，請將 `--binary` 改為實際的 release 執行檔。安裝程式將執行檔與網頁複製到 `~/Library/Application Support/TownPassLocal/releases/` 的獨立版本目錄，建立 `~/Library/LaunchAgents/org.townpass.local.plist`。使用內嵌資料快照，在 `0.0.0.0:5173` 同時提供網頁與 API，無須 Vite 或一直開著終端機；登入後啟動，程序退出時由 launchd 重啟。更新後須重新建置並再次執行安裝程式；舊版本保留，不自動刪除。空白申請表 PDF 也會複製到 release 的 `forms/`，由 `FORMS_DIR` 指定，避免搬移執行檔後找不到表單。可用 `--forms-root` 指定空白 PDF 來源。
 
 ```sh
 launchctl print gui/$(id -u)/org.townpass.local
