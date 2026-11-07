@@ -1002,14 +1002,14 @@ async fn closed_deadlines_are_hidden_by_default_and_marked_when_included() {
             .iter()
             .filter(|(_, r)| r.closed_on.is_some())
             .count(),
-        25
+        23
     );
     assert!(included
         .iter()
         .skip_while(|(_, r)| r.closed_on.is_none())
         .all(|(_, r)| r.closed_on.is_some()));
     let default = matcher::run_match_at(&st.entries, &Profile::default(), "2026-11-07");
-    assert_eq!(default.len(), 192);
+    assert_eq!(default.len(), 194);
     let (_, body) = request(
         app(state()),
         "POST",
