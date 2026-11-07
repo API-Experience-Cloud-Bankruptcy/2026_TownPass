@@ -43,7 +43,7 @@ export function planProgress(
     docsDone: docs.filter((d) => docChecks[d.key]).length,
     docsTotal: docs.length,
     status,
-    deadline: route.deadline,
+    deadline: route.deadlineSummary,
     applicationStatus: route.applicationStatus,
   };
 }

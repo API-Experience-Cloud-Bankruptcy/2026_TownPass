@@ -180,7 +180,7 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
 <template>
   <section class="pexp" aria-labelledby="pexp-title">
     <h2 id="pexp-title" class="sr-only">下載行動單 PDF</h2>
-    <p class="muted">A4 直式，可以印出來帶去辦。不含姓名、身分證、收入或住址。</p>
+    <p class="muted">不含姓名、身分證、收入或住址。</p>
 
     <div v-if="many" class="pexp__pager" role="group" aria-label="切換要看的行動單">
       <button type="button" class="pexp__nav" :disabled="index === 0" aria-label="上一張" @click="goTo(index - 1)">‹</button>
@@ -192,7 +192,6 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
       </div>
       <button type="button" class="pexp__nav" :disabled="index === items.length - 1" aria-label="下一張" @click="goTo(index + 1)">›</button>
     </div>
-    <p v-if="many" class="pexp__hint muted">左右滑動或按箭頭切換，一次看一張。</p>
 
     <details v-if="planConditionLines.length" class="more more--single">
       <summary>要不要附上你填的條件</summary>

@@ -940,6 +940,11 @@ details.bubble-more.is-closing[open] > summary::after {
   background: var(--bg);
   color: var(--text);
 }
+/* 開啟時焦點在對話框本身（tabindex=-1），不畫外框；按鈕用 Tab 移入時仍有焦點框 */
+.dialog:focus,
+.dialog:focus-visible {
+  outline: none;
+}
 .dialog::backdrop {
   background: rgb(23 27 29 / 45%);
 }

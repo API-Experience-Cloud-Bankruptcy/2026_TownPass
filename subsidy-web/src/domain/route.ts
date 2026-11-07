@@ -1,4 +1,5 @@
 import { projectDocuments } from './documents';
+import { deadlineSummary } from './deadline';
 // JourneyBuilder：只用資料原文組合辦理路線，不自行發明窗口、電話或地址。
 
 import { text } from './match';
@@ -50,6 +51,7 @@ export interface Route {
   sources: RouteSource[];
   rejectedUrls: number;
   deadline: string;
+  deadlineSummary: string;
   applicationStatus: string;
   checkedDate: string;
   status: string;
@@ -144,6 +146,7 @@ export function buildRoute(item: Subsidy, answers: Answers = {}): Route {
     sources,
     rejectedUrls: rejected,
     deadline: text(app.deadline?.raw),
+    deadlineSummary: deadlineSummary(item),
     applicationStatus: text(item.source_meta?.application_status),
     checkedDate: text(item.source_meta?.checked_date),
     status: text(item.source_meta?.verification_status),

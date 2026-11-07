@@ -57,7 +57,6 @@ const past = (step: 'home' | 'needs') =>
 const greetKey = 'greet';
 const greetLines: Line[] = [
   { text: '嗨，我是福利連。' },
-  { text: '回答幾個問題，我幫你找找有哪些補助、津貼、獎助或服務可以先了解。' },
   { text: '這次要幫誰找？', tone: 'title' },
 ];
 const targetLabel = computed(() => (state.session.target === 'other' ? '幫家人或別人找' : '幫自己找'));
@@ -66,7 +65,7 @@ const targetLabel = computed(() => (state.session.target === 'other' ? '幫家�
 const needKey = computed(() => `need:${target.value}`);
 const needLines = computed<Line[]>(() => [
   { text: `${ask.value}需要哪方面的幫忙？`, tone: 'title' },
-  { text: target.value === 'other' ? '請依對方的情況回答；能不能代辦，要看各項申請規定。' : '不確定也沒關係，我可以一步步帶你找。', tone: 'muted' },
+  ...(target.value === 'other' ? [{ text: '能不能代辦，要看各項申請規定。', tone: 'muted' as const }] : []),
 ]);
 const needAnswer = computed(() => {
   if (state.session.query) return `找「${state.session.query}」`;
@@ -881,7 +880,6 @@ async function onInput() {
                   </span>
                 </button>
               </div>
-              <p class="chat__tip">也可以直接輸入需求或資源名稱。</p>
             </div>
           </template>
         </BotMessage>
@@ -988,7 +986,7 @@ async function onInput() {
                   </TransitionGroup>
                 </BotMessage>
 
-                <BotMessage v-if="isTyped(resultsKey) && sections.length" :key="sectionsKey" :msg-key="sectionsKey" :lines="[{ text: '另外還有這些，點開可以看：' }]" wide>
+                <BotMessage v-if="isTyped(resultsKey) && sections.length" :key="sectionsKey" :msg-key="sectionsKey" :lines="[{ text: '其他資源：' }]" wide>
                   <div class="bubble-groups">
                     <details v-for="s in sections" :key="s.key" v-smooth-details class="bubble-more">
                       <summary>{{ s.title }}（{{ s.list.length }}）</summary>

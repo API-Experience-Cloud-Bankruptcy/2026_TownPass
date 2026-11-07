@@ -17,7 +17,8 @@ watch(
       if (typeof el.showModal === 'function') el.showModal();
       else el.setAttribute('open', '');
       await nextTick();
-      el.querySelector<HTMLElement>('[data-autofocus]')?.focus();
+      // 焦點放在對話框本身：讀屏會報讀標題，按鈕不會一打開就被畫上焦點粗框，Enter 也不會誤觸。
+      el.focus();
     } else if (!open && el.open) {
       // 先播離場動畫再關；減少動態效果或不支援動畫時直接關。
       const closing = typeof el.getAnimations === 'function' && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -40,11 +41,11 @@ function onCancel(event: Event) {
 </script>
 
 <template>
-  <dialog ref="dialog" class="dialog" :aria-labelledby="titleId" @cancel="onCancel">
+  <dialog ref="dialog" class="dialog" tabindex="-1" autofocus :aria-labelledby="titleId" @cancel="onCancel">
     <h2 :id="titleId" class="dialog__title">{{ title }}</h2>
     <div class="dialog__body"><slot /></div>
     <div class="dialog__actions">
-      <button type="button" class="btn btn--ghost" data-autofocus @click="emit('cancel')">{{ cancelLabel ?? '取消' }}</button>
+      <button type="button" class="btn btn--ghost" @click="emit('cancel')">{{ cancelLabel ?? '取消' }}</button>
       <button type="button" class="btn" :class="danger ? 'btn--danger' : 'btn--primary'" @click="emit('confirm')">
         {{ confirmLabel }}
       </button>

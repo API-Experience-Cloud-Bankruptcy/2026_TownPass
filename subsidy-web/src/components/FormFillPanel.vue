@@ -144,7 +144,7 @@ async function share() {
         </div>
         <details class="more more--single">
           <summary>在這裡預覽</summary>
-          <div class="more__body"><p class="muted">若這裡無法顯示，請用上方按鈕儲存 PDF 後再開啟。</p><iframe :src="pdfUrl" class="pdf-preview" title="已填申請表預覽"></iframe></div>
+          <div class="more__body"><iframe :src="pdfUrl" class="pdf-preview" title="已填申請表預覽"></iframe></div>
         </details>
       </section>
       </Expand>

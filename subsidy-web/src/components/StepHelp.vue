@@ -39,7 +39,6 @@ async function close() {
       <h3 :id="`${id}-title`" ref="heading" tabindex="-1">這一步卡在哪裡？</h3>
       <p class="muted">{{ help.name }}・第 {{ help.stepNumber }} 步</p>
       <p><LinkedText :text="help.step" /></p>
-      <p class="muted">以下是可能遇到的問題，請選擇符合你情況的一項。</p>
       <div class="actions">
         <button v-for="problem in help.suggested" :key="problem.id" type="button" class="btn btn--block" :aria-pressed="selected?.id === problem.id" @click="choose(problem)">{{ problem.label }}</button>
       </div>

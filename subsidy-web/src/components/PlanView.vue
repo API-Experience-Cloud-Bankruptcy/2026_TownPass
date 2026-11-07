@@ -45,7 +45,6 @@ const planText = computed(() => buildPlanText({
 
     <div v-if="planItems.length === 0" class="card plan-empty">
       <p class="plan-empty__title">還沒有行動單</p>
-      <p class="muted">看到想申請的補助，按「加入行動單」，就會在這裡一步一步帶你準備。</p>
       <button type="button" class="btn btn--primary btn--block" @click="tab('home')">開始找資源</button>
     </div>
 
@@ -67,7 +66,7 @@ const planText = computed(() => buildPlanText({
             <span class="plan-card__meta">
               <span v-if="progress.total">步驟 {{ progress.doneCount }}／{{ progress.total }}</span>
               <span v-if="progress.docsTotal">文件 {{ progress.docsDone }}／{{ progress.docsTotal }}</span>
-              <span v-if="progress.deadline" class="plan-card__flag">期限：{{ progress.deadline }}</span>
+              <span v-if="progress.deadline" class="plan-card__deadline">期限：{{ progress.deadline }}</span>
               <span v-if="applicationStatusAlert(progress.applicationStatus)" class="plan-card__flag">{{ applicationStatusAlert(progress.applicationStatus) }}</span>
             </span>
             <span class="plan-card__chev" aria-hidden="true">›</span>
@@ -85,3 +84,7 @@ const planText = computed(() => buildPlanText({
     </template>
   </div>
 </template>
+
+<style scoped>
+.plan-card__deadline { flex-basis: 100%; color: var(--text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+</style>

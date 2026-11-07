@@ -186,6 +186,7 @@ export function buildChecklist(input: PlanInput): Checklist {
     blocks.push({ kind: 'heading', text: '待確認與期限' });
     if (result?.pending?.length) for (const [n, p] of result.pending.entries()) blocks.push({ kind: 'check', key: `${item.id}:pending:${n}`, checked: false, text: `待確認：${paperText(p)}` });
     else line('待確認', '請向窗口核對完整資格、文件及受理情形；未列出待確認項目不代表資格已確認。');
+    line('申請期限', route.deadlineSummary);
     line('期限（原文）', route.deadline || '原文未提供，請確認是否仍受理。');
     line('資料記載的受理狀態', route.applicationStatus || '未註明');
     if (item.application?.deadline?.start) line('資料記載的開始日期', item.application.deadline.start);
@@ -252,7 +253,7 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
     const result = input.results.get(item.id);
     const field = (list: FormField[], label: string, value: unknown) => { const v = text(value); if (v) list.push({ label, text: paperText(v) }); };
     const screening = result ? FIT_LABEL[result.fit] : '尚無結果，請向窗口確認資格。';
-    overview.push({ no, id: item.id, name: item.name, agency: route.agency || '未提供', channel: route.channel || '未提供，請至來源網站確認', deadline: route.deadline || '原文未提供，請確認是否仍受理', screening });
+    overview.push({ no, id: item.id, name: item.name, agency: route.agency || '未提供', channel: route.channel || '未提供，請至來源網站確認', deadline: route.deadlineSummary, screening });
     const summary: FormField[] = [];
     const guide = plainLanguageFor(item);
     if (guide) {
@@ -271,6 +272,7 @@ function buildForm(input: PlanInput, date: string, privacyNotice: string): Check
     field(summary, '補助內容（原文）', item.benefit?.raw || '原文未提供，請向窗口確認。');
     for (const amount of item.benefit?.amounts ?? []) field(summary, '金額補充（原文）', ruleText(amount));
     field(summary, '資格摘要（原文）', item.eligibility?.raw_summary);
+    field(summary, '申請期限', route.deadlineSummary);
     field(summary, '申請期限（原文）', route.deadline || '原文未提供，請確認是否仍受理。');
     field(summary, '資料記載的受理狀態', route.applicationStatus || '未註明');
     field(summary, '資料記載的開始日期', item.application?.deadline?.start);

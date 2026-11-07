@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DeadlineInfo from './DeadlineInfo.vue';
 // 單張行動單：主要是一步一步做，完成到哪一步存在本人行動單；補助內容另開詳情。
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { prefersReducedMotion } from '../chat/typing';
@@ -153,7 +154,7 @@ const planText = computed(() => item.value ? buildPlanText({
           <template v-else>已準備 <span class="num" :class="{ bump: stepBump }">{{ progress.doneCount }}</span>／{{ progress.total }} 步</template>
         </p>
       </template>
-      <p v-if="route.deadline" class="alert">期限：{{ route.deadline }}</p>
+      <DeadlineInfo :summary="route.deadlineSummary" :raw="route.deadline" />
       <p v-if="statusAlert" class="alert">{{ statusAlert }}</p>
       <button type="button" class="btn btn--block task-head__detail" @click="openDetail(item.id)">
         看補助詳細內容<span class="task-head__chev" aria-hidden="true">›</span>
@@ -202,7 +203,6 @@ const planText = computed(() => item.value ? buildPlanText({
             </div>
           </li>
         </ol>
-        <p v-if="!route.splitFromArrow" class="muted">原文沒有分步，這裡將整段列為一步。</p>
 
         <Transition name="rise">
           <div v-if="progress.status === 'done'" class="task-done">
@@ -211,7 +211,7 @@ const planText = computed(() => item.value ? buildPlanText({
             <button type="button" class="btn btn--text" @click="restart">全部改回未完成</button>
           </div>
         </Transition>
-        <p v-if="progress.status !== 'done'" class="muted">點左邊圓圈可以勾選或取消；勾選只記錄你的準備，不會送件。</p>
+        <p v-if="progress.status !== 'done'" class="muted">勾選只記錄準備進度，不會送件。</p>
       </template>
 
       <template v-else>

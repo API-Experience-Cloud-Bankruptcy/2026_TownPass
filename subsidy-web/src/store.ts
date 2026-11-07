@@ -242,12 +242,11 @@ export function back(): void {
 /** 直接切換主要分頁，清掉返回紀錄。 */
 export function tab(view: View): void {
   if (PLAN_VIEWS.includes(view) && state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
-  if (view === 'home' && !CHAT_VIEWS.includes(state.view) && lastChatView !== 'home') {
-    pendingResume.value = true;
-    return;
-  }
+  // 回到進行中的對話：先切回原本那一步，畫面進場後再問要不要接著（見 App.vue）。
+  const resume = view === 'home' && !CHAT_VIEWS.includes(state.view) && lastChatView !== 'home';
   state.history = [];
-  state.view = view;
+  state.view = resume ? lastChatView : view;
+  if (resume) pendingResume.value = true;
 }
 
 export function continueConversation(): void {

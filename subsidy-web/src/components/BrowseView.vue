@@ -101,7 +101,6 @@ function chooseAll() { reset(); showAll.value = true; focusHeading(); }
       <p v-if="state.loading" key="loading" role="status">正在載入補助資料…</p>
       <div v-else-if="!showingItems" key="home" class="browse-home">
         <button type="button" class="btn btn--secondary btn--block" @click="chooseAll">查看全部 {{ all.length }} 項福利與補助</button>
-        <p class="muted">可以依分類找，也能查看全部項目，包含尚未開放及受理時間待確認的補助。</p>
         <ul class="browse-grid" aria-label="補助分類">
           <li v-for="c in categories" :key="c.id">
             <button type="button" class="browse-category" @click="chooseCategory(c.id)">

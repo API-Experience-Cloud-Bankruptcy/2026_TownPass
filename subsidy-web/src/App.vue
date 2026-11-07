@@ -134,13 +134,17 @@ watch(
   },
   { flush: 'pre' },
 );
+/** 續接提示等「找資源」頁進場完成才打開，不在切換前先跳出。 */
+const resumeReady = ref(false);
 function onPageBeforeEnter() {
+  resumeReady.value = false;
   shownKey.value = pageKey.value;
   shownView.value = state.view;
   if (!isChat.value) document.getElementById('main')?.scrollTo?.(0, 0);
 }
 function onPageEntered() {
   focusView(isChat.value);
+  resumeReady.value = isChat.value;
 }
 
 watch(
@@ -320,7 +324,7 @@ const dialogTitle = computed(() =>
   </main>
 
   <ConfirmDialog
-    :open="pendingResume"
+    :open="pendingResume && resumeReady"
     title="要接著上次的對話嗎？"
     confirm-label="繼續對話"
     cancel-label="開新對話"

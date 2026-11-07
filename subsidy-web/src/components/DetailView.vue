@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DeadlineInfo from './DeadlineInfo.vue';
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { text } from '../domain/match';
 import { buildRoute, SOURCE_ROLE } from '../domain/route';
@@ -57,7 +58,7 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
 
     <section v-if="plain" class="block card" aria-labelledby="d-plain-h">
       <h2 id="d-plain-h" class="section-title">先看重點</h2>
-      <p class="muted">這是依現有資料整理的白話導讀，完整條件與來源在下方；是否符合資格仍須審核。</p>
+      <p class="muted">是否符合資格仍須由承辦機關審核。</p>
       <dl class="facts">
         <div><dt>誰可以先了解</dt><dd>{{ plain.audience }}</dd></div>
         <div><dt>能得到什麼幫助</dt><dd>{{ plain.support }}</dd></div>
@@ -75,7 +76,7 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
         <summary>完整給付內容與條件（原文）</summary>
         <div class="more__body"><SourceText :text="benefit" /></div>
       </details>
-      <p v-if="benefitPreview !== benefit" class="muted">以上為原文節錄，金額、適用項目與條件請展開確認。</p>
+      <p v-if="benefitPreview !== benefit" class="muted">以上為原文節錄，完整金額與適用條件以原文為準。</p>
     </section>
 
     <section class="block card" aria-labelledby="d-limit-h">
@@ -84,7 +85,7 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
       <dl class="facts">
         <div v-if="summary"><dt>適用對象（原文）</dt><dd><SourceText :text="summary" /></dd></div>
         <div v-if="statusText"><dt>受理情形</dt><dd><SourceText :text="statusText" /></dd></div>
-        <div v-if="route.deadline"><dt>期限</dt><dd><SourceText :text="route.deadline" /></dd></div>
+        <div><dt>申請期限</dt><dd><DeadlineInfo hide-label :summary="route.deadlineSummary" :raw="route.deadline" /></dd></div>
       </dl>
       <template v-if="result?.blocked_by.length">
         <h3 class="sub-title">與填寫條件不符的部分</h3>

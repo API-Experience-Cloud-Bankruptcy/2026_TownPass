@@ -1,4 +1,5 @@
 // 補助總覽獨立於個人問答：分類、時效及搜尋均不改動答案。
+import { deadlineSummary } from './deadline';
 import { availability } from './adaptive';
 import { taipeiToday } from './reviewed-rules';
 import { searchScore } from './situations';
@@ -70,6 +71,9 @@ export function browseStatusLabel(item: Subsidy, today: string): string {
   const d = item.application.deadline;
   if (status === 'closed') return /^\d{4}-\d{2}-\d{2}$/.test(d.end ?? '') ? `已截止（${d.end}）` : '已截止';
   if (status === 'upcoming') return /^\d{4}-\d{2}-\d{2}$/.test(d.start ?? '') ? `尚未開放（${d.start} 起）` : '尚未開放';
-  if (status === 'uncertain') return '受理時間待確認';
-  return d.type === 'rolling' ? '依個案期限申請' : '目前在受理期間，資格仍須審核';
+  if (status === 'uncertain') {
+    const summary = deadlineSummary(item);
+    return summary === '申請期限待確認' ? summary : `${summary}（受理情形待確認）`;
+  }
+  return deadlineSummary(item);
 }

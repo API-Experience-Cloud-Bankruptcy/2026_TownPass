@@ -122,7 +122,8 @@ export function buildPlanText(input: PlanInput): string {
     if (route.agency) lines.push(`主管／承辦：${route.agency}`);
     if (route.channel) lines.push(`受理窗口（原文）：${route.channel}`);
     if (route.methods.length) lines.push(`辦理方式：${route.methods.join('、')}`);
-    if (route.deadline) lines.push(`期限：${route.deadline}`);
+    lines.push(`期限：${route.deadlineSummary}`);
+    if (route.deadline && route.deadline !== route.deadlineSummary) lines.push(`完整期限說明：${route.deadline}`);
     if (route.steps.length) {
       lines.push(route.splitFromArrow ? '步驟：' : '流程（原文）：');
       const done = new Set(input.stepDone[item.id] ?? []);

@@ -112,14 +112,12 @@ onMounted(() => { void preview(); });
   <div class="view checklist-view">
     <div class="view-head card card--hero">
       <h2 class="section-title">申請準備 PDF</h2>
-      <p class="lead">將這項補助整理成 A4 PDF，交給對方照著準備。</p>
-      <p class="muted">內容較多會自動分頁。檢核表不是核准或送件證明。</p>
+      <p class="muted">檢核表不是核准或送件證明。</p>
     </div>
     <template v-if="planItems.length">
       <details v-if="merged.documents.length" class="more more--single card card--list">
         <summary>已經準備好的文件（選填）</summary>
         <div class="more__body">
-          <p class="muted">勾選會帶到 PDF；未勾選的項目保留空格，讓對方在紙上打勾。</p>
           <label v-for="doc in merged.documents" :key="doc.key" class="check">
             <input type="checkbox" :checked="!!docChecks[doc.key]" @change="toggleDoc(doc.key)" />
             <span class="check__body">
@@ -143,7 +141,6 @@ onMounted(() => { void preview(); });
         </fieldset>
       </details>
       <div class="actions card" :aria-busy="busy">
-        <p class="muted">紙本包含：文件清單、辦理步驟、資格與期限提醒、窗口與來源、求助問句、手寫紀錄欄。</p>
         <button type="button" class="btn btn--primary btn--block" :disabled="busy" @click="preview">
           <Transition name="fade" mode="out-in">
             <span :key="busy ? 'busy' : previewOpen ? 'again' : 'idle'">{{ busy ? '正在製作 PDF…' : previewOpen ? '重新製作 PDF' : '預覽 A4 檢核表' }}</span>
@@ -165,7 +162,7 @@ onMounted(() => { void preview(); });
         </div>
         <details class="more more--single">
           <summary>查看 A4 PDF 排版</summary>
-          <div class="more__body"><p class="muted">若這裡無法顯示，請用上方的按鈕存下 PDF 再開啟。下方另有完整文字。</p><iframe :src="pdfUrl" class="pdf-preview" title="A4 行動檢核表 PDF 預覽"></iframe></div>
+          <div class="more__body"><iframe :src="pdfUrl" class="pdf-preview" title="A4 行動檢核表 PDF 預覽"></iframe></div>
         </details>
       </section>
       </Expand>

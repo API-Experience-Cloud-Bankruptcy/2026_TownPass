@@ -107,7 +107,7 @@ describe('逐頁找資源', () => {
     state.session.answers = { age: 30 }; state.qIndex = 1;
     const route = [...state.questionRoute];
     tab('plan'); tab('home');
-    expect(pendingResume.value).toBe(true); expect(state.view).toBe('plan');
+    expect(pendingResume.value).toBe(true); expect(state.view).toBe('questions');
     continueConversation();
     expect(state.view).toBe('questions'); expect(state.qIndex).toBe(1);
     expect(state.questionRoute).toEqual(route); expect(state.session.answers.age).toBe(30);

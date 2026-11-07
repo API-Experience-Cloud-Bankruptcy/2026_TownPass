@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import DeadlineInfo from './DeadlineInfo.vue';
 // 詳情頁的辦理方式：唯讀。實際一步一步勾選在本人行動單（PlanItemView）。
 import { computed } from 'vue';
 import { buildRoute } from '../domain/route';
@@ -36,8 +37,7 @@ const total = computed(() => route.value.steps.length);
             </div>
           </li>
         </ol>
-        <p v-if="total && !route.splitFromArrow" class="muted">原文沒有分步，這裡保留整段內容。</p>
-        <p v-if="route.deadline && !hideDeadline" class="note">期限：{{ route.deadline }}</p>
+        <DeadlineInfo v-if="!hideDeadline" :summary="route.deadlineSummary" :raw="route.deadline" />
       </div>
     </details>
 
