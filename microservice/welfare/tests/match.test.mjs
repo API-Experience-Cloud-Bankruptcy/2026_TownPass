@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import { matchAll, matchItem } from '../src/lib/match.ts';
 import { interpretByKeywords } from '../src/lib/intake.ts';
 import { phoneLabel, telHref } from '../src/lib/phone.ts';
+import { demoAnswers, isDemo } from '../src/lib/demo.ts';
+import { WELFARE_ITEMS } from '../src/data/welfare-items.ts';
 
 const now = new Date('2026-11-07T00:00:00+08:00');
 
@@ -100,6 +102,18 @@ test('keyword intake maps free text to categories and profile', () => {
   assert.equal(r2.profile.birthYear, 1961);
   assert.equal(r2.profile.employed, false);
   assert.equal(r2.profile.renter, true);
+});
+
+test('demo profile: 陳阿嬤 has likely and to-confirm results', () => {
+  const a = demoAnswers(now);
+  assert.equal(a.profile.birthYear, 1948);
+  const g = matchAll(WELFARE_ITEMS, a.profile, { unknownIdentities: a.unknownIdentities, now });
+  assert.ok(g.match.length > 0);
+  assert.ok(g.maybe.length > 0);
+  assert.equal(isDemo('1'), true);
+  assert.equal(isDemo(['1']), true);
+  assert.equal(isDemo(undefined), false);
+  assert.equal(isDemo('0'), false);
 });
 
 test('phone strings become dialable links', () => {
