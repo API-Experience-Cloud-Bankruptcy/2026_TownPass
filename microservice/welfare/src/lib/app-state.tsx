@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { Platform } from 'react-native';
 
 import type { Category, Identity, Profile } from '../data/welfare-schema';
+import type { Origin } from './nearby';
 
 export type FontLevel = 'standard' | 'large' | 'xlarge';
 export const FONT_SCALE: Record<FontLevel, number> = { standard: 1, large: 1.2, xlarge: 1.45 };
@@ -69,6 +70,9 @@ interface AppState extends Settings {
   chosen: string[];
   toggleChosen: (id: string) => void;
   setChosen: (ids: string[]) => void;
+  /** Where nearby places are measured from; memory only, never stored. */
+  origin: Origin | null;
+  setOrigin: (o: Origin | null) => void;
   loaded: boolean;
 }
 
@@ -95,6 +99,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [answers, setAnswers] = useState<Answers>(EMPTY_ANSWERS);
   const [chosen, setChosen] = useState<string[]>([]);
+  const [origin, setOrigin] = useState<Origin | null>(null);
 
   // Read after mount so server-rendered HTML and the first client render agree.
   useEffect(() => {
@@ -148,9 +153,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       chosen,
       toggleChosen: (id) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id])),
       setChosen,
+      origin,
+      setOrigin,
       loaded,
     }),
-    [settings, categories, answers, chosen, loaded],
+    [settings, categories, answers, chosen, origin, loaded],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

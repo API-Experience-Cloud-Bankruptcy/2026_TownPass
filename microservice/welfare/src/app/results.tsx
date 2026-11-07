@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ItemCard } from '@/components/item-card';
+import { NearbyPlaces } from '@/components/nearby-places';
 import { Btn, Card, Screen, Section, T } from '@/components/ui-kit';
 import { CATEGORY_LABEL, itemsInCategories, WELFARE_ITEMS } from '@/data';
 import { useApp } from '@/lib/app-state';
@@ -94,6 +95,8 @@ export default function Results() {
           ))}
         </Section>
       ) : null}
+
+      <NearbyPlaces />
 
       {total === 0 ? (
         <Card>

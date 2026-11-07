@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { ApplyButtons, Bullets } from '@/components/item-card';
+import { NearbyPlaces } from '@/components/nearby-places';
 import { Btn, Card, Screen, T } from '@/components/ui-kit';
 import { CATEGORY_LABEL, WELFARE_ITEMS } from '@/data';
 import type { WelfareItem } from '@/data/welfare-schema';
@@ -77,6 +78,8 @@ export default function ItemDetail() {
         {item.apply.counter ? <T>臨櫃：{item.apply.counter}</T> : null}
         <ApplyButtons item={item} />
       </Card>
+
+      <NearbyPlaces />
 
       <Btn
         label={isChosen ? '已加入要辦清單' : '加入要辦清單'}
