@@ -253,3 +253,74 @@ const outcome = await sharePdfFile(new File([bytes], '申請表.pdf', { type: 'a
 - 後端以 `include_str!` 內嵌 `subsidies.json`，改資料後必須重建後端，或以 `SUBSIDY_DATA` 覆寫。
 - subsidy-web 的快照同樣在建置時打包，改資料後需重新建置。
 - 執行 `build.py` 後一定要再跑 `audit_prefill.py`，否則預填規則不會生效。
+
+## 12. 前端元件與對接說明（給接線的組員）
+
+2026-11-08 起，subsidy-web 已有「填申請表」所需的領域邏輯與兩個元件。**它們還沒有掛進任何頁面**（沒有改 `App.vue`、`DetailView.vue`、`store.ts`），由負責接線的人決定放哪裡。
+
+### 12.1 檔案
+
+| 檔案 | 作用 |
+|---|---|
+| `src/domain/form-fields.ts` | 讀 `application.form_fields`（逐欄驗證，壞資料丟棄）、`formAvailability(item)` 判斷這筆資源能不能填、`fetchFormPdf` 取回空白 PDF |
+| `src/domain/form-profile.ts` | 本人資料：城市通 `Account` → 待確認草稿、格式驗證、`confirmProfile`（只留下已勾選確認且格式通過的值） |
+| `src/domain/form-fill.ts` | 填寫引擎：`planFill`（純函式，決定填什麼）、`fillForm`（pdf-lib 畫字，含旋轉頁、CropBox、縮字、關閉字形替換） |
+| `src/domain/form-fill-client.ts` | 串起「取 PDF + 載字型 + 填寫 + 包成 File」：`createFilledForm` |
+| `src/components/FormProfileConfirm.vue` | 本人資料確認 UI（帶入城市通資料、逐項確認） |
+| `src/components/FormFillPanel.vue` | 一筆資源的完整填表面板（選表單 → 確認 → 填寫 → 核對 → 下載／分享） |
+| `src/domain/__tests__/form-fill.test.ts`、`form-components.test.ts` | 規則、真實資料、真實 PDF、元件渲染的測試 |
+
+### 12.2 掛載
+
+```vue
+<!-- DetailView.vue，建議放在「想申請的話」之後 -->
+<FormFillPanel :item="item" :target="state.session.target" />
+```
+
+- `item`：`Subsidy`；`target`：`state.session.target`（`'self' | 'other' | null`）。元件沒有事件輸出，也不讀寫 store。
+- **請用非同步載入**：`FormFillPanel` 會連帶引入 `pdf-lib`，直接 import 會讓它進主 bundle。做法與 `ChecklistView` 動態載入 `checklist-pdf` 相同：
+  `const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'))`。
+  這點尚未實測（元件還沒被掛載，沒有量過 bundle 變化）。
+- 不能填寫的資源（線上系統、Word／ODT、掃描檔等）元件會自己顯示原因與官方入口；沒有分析結果的資料顯示「沒有可用的申請表」。接線方可用 `formAvailability(item).kind === 'fillable'` 決定要不要顯示入口按鈕。
+- 開發環境需同時啟動後端（`/api/forms/*` 由 Vite 的 `/api` 代理轉過去）。
+
+### 12.3 隱私規則（已寫進程式與測試，改動前請先討論）
+
+- **只有替本人申請**（`target === 'self'`）才會帶入或填寫任何個人資料。`planFill` 對 `other`／`null` 一律不填，元件也不顯示帶入按鈕。
+- **城市通 userinfo 只用於填表**，不進資格判斷。`session.ts` 開頭「不讀取 TownPass userinfo 作為任何人的資格條件」仍然成立：`FormProfileConfirm` 只在使用者按下「從城市通帶入我的資料」時才呼叫 `getUserInfo()`，且資料不流向 `answers`、`results` 或任何資格邏輯。
+- **逐項確認**：帶入的值只是草稿。每項要使用者自己勾「確認這是我本人的…」才會填；修改內容會自動取消該項確認。
+- **只存在記憶體**：不寫 sessionStorage／localStorage、不送後端、不放進網址或 log。換資源、換人、換表單時，已填好的檔案會被丟棄並釋放 object URL。
+- **簽名欄、代理人、受款人、家庭成員、主體不明的欄位永遠不填**；寫明親簽的表單會顯示提醒，並且簽名旁的印刷姓名欄也不填。
+- 性別不從身分證字號推測（城市通沒有性別欄位），由使用者自己選。
+- 開發環境（瀏覽器）的 `getUserInfo()` 是模擬帳號，元件會明確提示「帶入的是模擬資料」。
+
+### 12.4 已驗證與未驗證
+
+已驗證：
+- 118 筆可填寫的紀錄都能被正確解析，壞資料（錯誤路徑、非 PDF、缺欄位）不會丟例外也不會產生可填表單。
+- 在真實表單上填寫後 PDF 仍可開啟、頁數不變，旋轉頁也可填；用 PyMuPDF 渲染目視檢查 WEL-0010、0028、0041、0067 四份，並用文字擷取確認姓名、身分證、手機、電話、地址都能被正確讀回。
+- 填寫時必須關閉 OpenType 字形替換，否則拉丁字母後的數字（身分證字號）會字距變寬，且複製／搜尋得到亂碼。`fillForm` 已處理，修正前後都用真實渲染比對過。
+- 元件以 Vue 伺服器端渲染做冒煙測試（替他人時沒有帶入按鈕、輸入框初始為空、每筆資料都能渲染）。
+
+**未驗證，請接線時確認：**
+- 沒有在真正的瀏覽器或城市通 WebView 裡點過 UI；互動邏輯（勾選、帶入、預覽、分享）只有型別檢查，沒有互動測試。
+- 沒有用 Acrobat、Preview、Chrome 開過填好的 PDF；只用 PyMuPDF 渲染。
+- 沒有在手機實測字型載入時間（NotoSansTC 約 7 MB，完整嵌入）與填好檔案的大小；分享橋接上限 10 MB。
+- 沒有量過 bundle 變化（見 12.2）。
+
+### 12.5 已知限制（欄位位置來自啟發式偵測）
+
+- **偵測位置可能落在標籤格而不是旁邊的空白輸入格。** 例：`WEL-0010` 的「申請人姓名」，填入的姓名會出現在灰色標籤格內、標籤文字下方，而不是右邊的空白格。`WEL-0010` 至 `WEL-0027` 共用這份 PDF，影響 18 筆紀錄。這類偏差有多普遍沒有量化。修正要改 `backend/tools/form_fields/extract_fields.py` 的輸入格判斷，不是前端問題。
+- **逐格輸入的欄位**（身分證用 □□□□□□□□□□ 十個小方格）會把整串字寫在同一個框裡，不會一字一格對齊。
+- **勾選框與日期欄不會填。** 性別只在表單是文字欄時才填「男／女」；「□男 □女」勾選式不填。
+- **太長放不進格子的內容不會被截斷**，會略過並在結果裡提示請手寫；表單已印好的地址前綴（例如「臺北市」）與使用者地址不符時也會略過。
+- 填入位置是欄位框內垂直置中（單行）或靠上（多行）；部分表單仍可能偏離格線，列印前需放大核對，介面上也有這個提醒。
+- **離線**：建置快照只含 JSON，不含 PDF。離線或後端不通時，已選好的表單會顯示取得失敗，無法填寫。
+
+### 12.6 驗證指令
+
+```sh
+cd subsidy-web
+npm run typecheck
+npx vitest run src/domain/__tests__/form-fill.test.ts src/domain/__tests__/form-components.test.ts
+```
