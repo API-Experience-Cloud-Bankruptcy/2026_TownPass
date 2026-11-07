@@ -60,12 +60,12 @@ export default function Home() {
     if (!result) return;
     const p = result.profile;
     setAnswers({
+      ...answers,
       profile: {
         ...answers.profile,
         ...p,
         identities: [...new Set([...answers.profile.identities, ...p.identities])],
       },
-      unknownIdentities: answers.unknownIdentities,
     });
     start(result.categories);
   }

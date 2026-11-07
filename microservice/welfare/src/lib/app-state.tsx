@@ -55,6 +55,8 @@ export interface Answers {
   profile: Profile;
   /** Identities the person skipped answering about. */
   unknownIdentities: Identity[];
+  /** Ids of questions the person answered or skipped; an empty answer is still an answer. */
+  answered?: string[];
 }
 
 interface AppState extends Settings {
