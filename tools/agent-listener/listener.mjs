@@ -3,7 +3,7 @@
 // Requires: Node 20+, git, GitHub CLI (`gh auth login` done), and `claude` or `codex` on PATH.
 // Usage: node tools/agent-listener/listener.mjs init | setup-labels | once | watch
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, rmSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -73,7 +73,7 @@ function init(args) {
 function ensureIgnored() {
   const exclude = join(ROOT, '.git', 'info', 'exclude')
   const text = existsSync(exclude) ? readFileSync(exclude, 'utf8') : ''
-  for (const p of ['.agent-listener/', '.worktrees/']) if (!text.includes(p)) appendFileSync(exclude, `\n${p}\n`)
+  for (const p of ['.agent-listener/', '.worktrees/', '.agent-commit-msg']) if (!text.includes(p)) appendFileSync(exclude, `\n${p}\n`)
 }
 
 function setupLabels() {
@@ -98,7 +98,7 @@ function agentPrompt(cfg, issue, instruction) {
     issue.body || '(empty)',
     instruction ? `\nFollow-up instruction from the PM:\n${instruction}` : '',
     '',
-    'When done: commit your changes with the commit format from AGENTS.md (several commits are fine), run the checks AGENTS.md requires for your area, and finish with a short report in Traditional Chinese: what changed, how you verified it (commands and results), and anything left open or needing a decision. If you cannot finish, commit what is safe and explain what blocks you.',
+    'When done: commit your changes with the commit format from AGENTS.md (several commits are fine; if git refuses to commit, leave the changes and write the commit message to .agent-commit-msg), run the checks AGENTS.md requires for your area, and finish with a short report in Traditional Chinese: what changed, how you verified it (commands and results), and anything left open or needing a decision. If you cannot finish, commit what is safe and explain what blocks you.',
   ].join('\n')
 }
 
@@ -113,7 +113,9 @@ function runAgent(cfg, cwd, prompt) {
       if (cfg.model) args.push('--model', cfg.model)
     } else {
       cmd = 'codex'
-      args = ['exec', '--sandbox', 'workspace-write', '-c', 'sandbox_workspace_write.network_access=true', '-C', cwd, '-']
+      // A worktree keeps its git metadata in the main clone's .git, outside the sandbox; allow it so commits work.
+      const gitDir = resolve(cwd, git(['rev-parse', '--git-common-dir'], { cwd }))
+      args = ['exec', '--sandbox', 'workspace-write', '-c', 'sandbox_workspace_write.network_access=true', '-c', `sandbox_workspace_write.writable_roots=${JSON.stringify([gitDir])}`, '-C', cwd, '-']
       if (cfg.model) args.splice(1, 0, '-m', cfg.model)
     }
     log('agent start', cmd, 'in', cwd)
@@ -159,10 +161,22 @@ function rebaseOrAbort(dir) {
 // Remote tip of the issue branch when work started; the push only succeeds if nobody else moved it.
 function remoteTip(branch) {
   const line = git(['ls-remote', '--heads', 'origin', branch])
-  return line ? line.split(/s+/)[0] : ''
+  return line ? line.split(/\s+/)[0] : ''
+}
+
+// If the agent could not commit (for example a sandbox blocked git), commit its changes for it.
+function commitLeftovers(issue, wt) {
+  if (!git(['status', '--porcelain'], { cwd: wt.dir })) return
+  const msgFile = join(wt.dir, '.agent-commit-msg')
+  const message = existsSync(msgFile) ? readFileSync(msgFile, 'utf8').trim() : `Chore: 完成 #${issue.number} ${issue.title}`.slice(0, 72)
+  git(['add', '-A'], { cwd: wt.dir })
+  git(['commit', '-m', message], { cwd: wt.dir })
+  if (existsSync(msgFile)) rmSync(msgFile)
+  log('committed leftovers for issue', issue.number)
 }
 
 function publish(cfg, issue, wt, report, state, expectedTip) {
+  commitLeftovers(issue, wt)
   const ahead = Number(git(['rev-list', '--count', 'origin/main..HEAD'], { cwd: wt.dir }))
   const dirty = git(['status', '--porcelain'], { cwd: wt.dir })
   if (ahead === 0) {
