@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:town_pass/gen/assets.gen.dart';
 
 abstract final class TrendingServiceModel {
+  /// 「補助專區」微服務網址（subsidy-web/）。建置時指定：
+  /// 開發：flutter run --dart-define=SUBSIDY_URL=http://<電腦區網 IP>:5173
+  /// 正式：flutter run --dart-define=SUBSIDY_URL=https://<專案>.web.app/
+  /// 未指定時入口不開啟任何頁面。
+  static const String subsidyUrl = String.fromEnvironment('SUBSIDY_URL');
+
   static List<TrendingService> get serviceList {
     return [
       TrendingService(
@@ -19,6 +25,12 @@ abstract final class TrendingServiceModel {
         icon: Assets.svg.iconLocationSearch.svg(),
         title: '施工資訊',
         url: '',
+      ),
+      TrendingService(
+        icon: Assets.svg.iconSubsidy.svg(),
+        title: '補助專區',
+        url: subsidyUrl,
+        forceWebViewTitle: '補助專區',
       ),
       // 在此列表後加入新熱門按鈕
       // add new trending service button here
