@@ -8,7 +8,7 @@ import LogoMark from '../LogoMark.vue';
 import { splashGone } from '../../brand/splash';
 import { charsAt, isTyped, markTyped, prefersReducedMotion, type Line } from '../../chat/typing';
 
-const props = defineProps<{ msgKey: string; lines: Line[]; active?: boolean; wide?: boolean }>();
+const props = defineProps<{ msgKey: string; lines: Line[]; active?: boolean; wide?: boolean; live?: boolean }>();
 const emit = defineEmits<{ done: [] }>();
 
 const content = computed(() => props.lines.filter((l) => l.text));
@@ -93,7 +93,7 @@ const visible = computed(() => {
 </script>
 
 <template>
-  <div class="msg msg--bot" :class="{ 'msg--wide': wide }">
+  <div class="msg msg--bot" :class="{ 'msg--wide': wide }" :role="live ? 'status' : undefined">
     <span class="avatar" aria-hidden="true"><LogoMark :thinking="waiting" /></span>
     <div class="msg__col">
       <div

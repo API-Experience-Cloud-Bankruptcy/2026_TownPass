@@ -19,6 +19,11 @@ export function markTyped(key: string): void {
   typed.add(key);
 }
 
+/** 修改某一則時，之後的訊息要重新播放；keep 回傳 true 的保留（修改點以上仍在畫面上的訊息）。 */
+export function forgetTyped(keep: (key: string) => boolean): void {
+  for (const key of [...typed]) if (!keep(key)) typed.delete(key);
+}
+
 /** 換人或清除資料時重來。 */
 export function resetTyped(): void {
   typed.clear();

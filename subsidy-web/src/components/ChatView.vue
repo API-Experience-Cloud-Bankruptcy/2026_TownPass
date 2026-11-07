@@ -4,7 +4,7 @@
 // 對話紀錄由狀態推導：點自己過去的回答即可回到那一步修改。
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import LogoMark from './LogoMark.vue';
-import { followBottom, isTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
+import { followBottom, forgetTyped, isTyped, releaseFollow, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, MAX_AGE, titleFor } from '../domain/questions';
 import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
 import { explicitSelfAge, factApplies, InterpretationTurn, type CandidateFact, type ChatChoice, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
@@ -40,6 +40,7 @@ import {
   uncertainCandidates,
 } from '../store';
 import BotMessage from './chat/BotMessage.vue';
+import TurnMessages from './chat/TurnMessages.vue';
 import UserMessage from './chat/UserMessage.vue';
 import WheelPicker from './chat/WheelPicker.vue';
 import ResultCard from './ResultCard.vue';
@@ -99,9 +100,16 @@ function qLines(q: Question, withMeta: boolean): Line[] {
 function editQuestion(q: Question) {
   const i = questions.value.findIndex((x) => x.id === q.id);
   if (i < 0) return;
-  rewind();
+  rewind(`q:${q.id}`);
   if (view.value !== 'questions') go('questions');
   state.qIndex = i;
+}
+
+/** 結果頁「改答案」：從第一題重新走，之後的紀錄與動畫同「修改」處理。 */
+function redoAnswers() {
+  const first = questions.value[0];
+  rewind(first ? `q:${first.id}` : 'results');
+  startQuestions();
 }
 
 async function submit(value: string | number | boolean | undefined, typedText?: string) {
@@ -198,7 +206,8 @@ const query = ref('');
 const typedAnswers = ref<Record<string, { value: string | number | boolean | undefined; text: string }>>({});
 const typedTarget = ref<{ target: string; text: string } | null>(null);
 const typedNeed = ref<{ situation: string | null; query: string; text: string } | null>(null);
-const turns = ref<{ id: number; text: string; reply: string; hidden?: boolean }[]>([]);
+/** at：送出時所在的那一步（home、needs、q:題目 id、results），對話紀錄依此排在那一步的位置。 */
+const turns = ref<{ id: number; text: string; reply: string; hidden?: boolean; at: string }[]>([]);
 let turnId = 0;
 const interpreting = ref(false);
 const turn = new InterpretationTurn();
@@ -270,9 +279,55 @@ watch(() => state.session, (_session, previous) => {
   if (previous.target === null && state.session.target !== null) return;
   turn.cancel(); turns.value = []; typedAnswers.value = {}; typedTarget.value = null; typedNeed.value = null; query.value = ''; proposal.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; fallbackCount.value = 0;
 }, { flush: 'sync' });
-/** 按「改答案／改對象／換需求」回到某一則：之後的訊息全部收掉，包含打字送出的訊息與進行中的理解。 */
-function rewind() {
-  turn.cancel(); interpreting.value = false; turns.value = []; query.value = ''; proposal.value = null; selectedFacts.value = []; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = [];
+/** 這一步在對話中的先後：打招呼 → 需求 → 依題目順序 → 結果；不在目前路線上的題目排最後。 */
+function stepRank(at: string): number {
+  if (at === 'home') return 0;
+  if (at === 'needs') return 1;
+  if (at.startsWith('q:')) {
+    const i = questions.value.findIndex((q) => `q:${q.id}` === at);
+    return 2 + (i < 0 ? questions.value.length : i);
+  }
+  return Number.POSITIVE_INFINITY;
+}
+/** 在某一步顯示的打字往來；畫面上找不到那一步的（例如結果頁、已不在路線上的題目）一律接在最後。 */
+const shownTurns = computed(() => turns.value.filter((t) => !t.hidden));
+const placedSteps = computed(() => {
+  const steps = new Set(['home']);
+  if (past('home') && isTyped(greetKey)) steps.add('needs');
+  if (past('needs') && isTyped(needKey.value)) {
+    for (const q of answered.value) steps.add(`q:${q.id}`);
+    if (current.value) steps.add(`q:${current.value.id}`);
+  }
+  return steps;
+});
+const turnsAt = (step: string) => shownTurns.value.filter((t) => t.at === step);
+const tailTurns = computed(() => shownTurns.value.filter((t) => !placedSteps.value.has(t.at)));
+function currentStep(): string {
+  if (view.value === 'home') return 'home';
+  if (view.value === 'needs' || view.value === 'search') return 'needs';
+  if (view.value === 'questions') return `q:${current.value?.id ?? ''}`;
+  return 'results';
+}
+/**
+ * 按「修改」回到某一則（from：那一則所在的步驟）：那一則之下的訊息全部收掉，
+ * 包含打字送出的原句、福利連的回覆、打字填的答案文字與進行中的理解；
+ * 之後重新出現的訊息也要重新播放打字動畫，不能直接整段跳出。必須在改變流程狀態前呼叫。
+ */
+function rewind(from: string) {
+  turn.cancel(); interpreting.value = false; query.value = ''; proposal.value = null; selectedFacts.value = []; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = [];
+  const cut = stepRank(from);
+  turns.value = turns.value.filter((t) => stepRank(t.at) < cut);
+  if (cut <= 0) typedTarget.value = null;
+  if (cut <= 1) { typedNeed.value = null; typedAnswers.value = {}; }
+  // 修改點以上仍在畫面上的訊息保留「已播放」；被修改的那題本身也還在原處，不重打。
+  const kept = new Set(['greet']);
+  if (cut > 0) kept.add(needKey.value);
+  questions.value.forEach((q, i) => {
+    if (2 + i >= cut) delete typedAnswers.value[q.id];
+    if (2 + i <= cut) kept.add(`q:${q.id}`);
+  });
+  for (const t of turns.value) kept.add(`turn:${t.id}:${t.reply}`);
+  forgetTyped((key) => kept.has(key));
 }
 const statusText = computed(() => {
   const s = modelStatus.value;
@@ -466,7 +521,7 @@ function activeInputContext(): InterpretationContext {
   return { ...context.value, choices, question: useQuestion ? context.value.question : undefined, followupQuestion: clarification.value?.prompt };
 }
 function addInputTurn(text: string, reply = '') {
-  const id = ++turnId; turns.value.push({ id, text, reply }); return id;
+  const id = ++turnId; turns.value.push({ id, text, reply, at: currentStep() }); return id;
 }
 function offerChoices(id: number, text: string, choices: ChatChoice[], lead: string) {
   recovery.value = null; proposal.value = null; searchSuggestions.value = [];
@@ -699,9 +754,10 @@ async function onInput() {
           </div>
         </template>
       </BotMessage>
+      <TurnMessages :turns="turnsAt('home')" />
 
       <template v-if="past('home') && isTyped(greetKey)">
-        <UserMessage :text="typedTarget?.target === state.session.target ? typedTarget.text : targetLabel" edit-label="修改對象" @edit="rewind(); tab('home')" />
+        <UserMessage :text="typedTarget?.target === state.session.target ? typedTarget.text : targetLabel" edit-label="修改對象" @edit="rewind('home'); tab('home')" />
 
         <!-- 2. 選需求 -->
         <BotMessage :key="needKey" :msg-key="needKey" :lines="needLines" :active="view === 'needs' || view === 'search'">
@@ -733,22 +789,19 @@ async function onInput() {
             </div>
           </template>
         </BotMessage>
+        <TurnMessages :turns="turnsAt('needs')" />
 
         <template v-if="past('needs') && isTyped(needKey)">
-          <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="修改需求" @edit="rewind(); go('needs')" />
+          <UserMessage :text="typedNeed && typedNeed.situation === state.session.situation && typedNeed.query === state.session.query ? typedNeed.text : needAnswer" edit-label="修改需求" @edit="rewind('needs'); go('needs')" />
 
-          <!-- 3. 問答紀錄 -->
+          <!-- 3. 問答紀錄：在這題打字的往來排在題目前（與作答當下的順序一致） -->
           <template v-for="q in answered" :key="q.id">
+            <TurnMessages :turns="turnsAt(`q:${q.id}`)" />
             <BotMessage :msg-key="`q:${q.id}`" :lines="qLines(q, false)" />
             <UserMessage :text="answerText(q)" edit-label="修改答案" @edit="editQuestion(q)" />
           </template>
 
-          <template v-if="view === 'questions'">
-            <template v-for="t in turns.filter(t => !t.hidden)" :key="t.id">
-              <UserMessage :text="t.text" />
-              <div v-if="t.reply" class="msg msg--bot"><p class="bubble" role="status">{{ t.reply }}</p></div>
-            </template>
-          </template>
+          <TurnMessages v-if="current" :turns="turnsAt(`q:${current.id}`)" />
           <!-- 目前的題目：確認完成後接在使用者原句與回覆之後 -->
           <template v-if="view === 'questions'">
 
@@ -866,7 +919,7 @@ async function onInput() {
                     <span class="reply__label">{{ state.session.target === 'other' ? '製作 A4 檢核表' : '看行動單' }}（{{ planItems.length }} 項）</span>
                   </button>
                   <div class="replies__row">
-                    <button v-if="answeredCount" type="button" class="reply reply--quiet" @click="startQuestions"><span class="reply__label">改答案</span></button>
+                    <button v-if="answeredCount" type="button" class="reply reply--quiet" @click="redoAnswers"><span class="reply__label">改答案</span></button>
                     <button type="button" class="reply reply--quiet" @click="go('needs')"><span class="reply__label">換需求</span></button>
                     <button v-if="!exploring && state.session.target" type="button" class="reply reply--quiet" @click="startExplore"><span class="reply__label">帶我找</span></button>
                     <button type="button" class="reply reply--quiet" @click="tab('help')"><span class="reply__label">找人幫忙</span></button>
@@ -877,12 +930,7 @@ async function onInput() {
           </template>
         </template>
       </template>
-      <template v-if="view !== 'questions'">
-        <template v-for="t in turns.filter(t => !t.hidden)" :key="t.id">
-          <UserMessage :text="t.text" />
-          <div v-if="t.reply" class="msg msg--bot"><p class="bubble" role="status">{{ t.reply }}</p></div>
-        </template>
-      </template>
+      <TurnMessages :turns="tailTurns" />
       <section v-if="actionProposal" class="conversation-proposal" aria-labelledby="action-proposal-title">
         <h2 id="action-proposal-title">{{ actionProposal.kind === 'search' ? '確認查找方向' : '確認你的意思' }}</h2>
         <template v-if="actionProposal.kind === 'search'">
