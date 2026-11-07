@@ -115,6 +115,34 @@ def cell_at(H, V, x, y, W, Hh):
     return c
 
 
+def merge_stacked(out):
+    """Join short text fragments stacked in one column into a single label (e.g. 姓 / 名 -> 姓名)."""
+    def ok(o, n):
+        t = o['text']
+        return (not o['runs'] and len(norm(t)) <= n and not re.search(r'[□☐▢：:]', t[-1:] if n == 4 else ''))
+    changed = True
+    while changed:
+        changed = False
+        for a in out:
+            if a['runs'] or re.search(r'[□☐▢]', a['text']) or re.search(r'[：:]\s*$', a['text']) or len(norm(a['text'])) > 4:
+                continue
+            ba = a['bbox']
+            for b in out:
+                if b is a or b['runs'] or re.search(r'[□☐▢]', b['text']) or len(norm(b['text'])) > 6:
+                    continue
+                bb = b['bbox']
+                gap = bb[1] - ba[3]
+                if -1 <= gap <= 5 and abs((ba[0] + ba[2]) / 2 - (bb[0] + bb[2]) / 2) <= max(6, .35 * max(ba[2] - ba[0], bb[2] - bb[0])) \
+                        and abs((ba[3] - ba[1]) - (bb[3] - bb[1])) < 4:
+                    a['text'] = a['text'] + b['text']; a['raw'] = a['text']
+                    a['bbox'] = (min(ba[0], bb[0]), ba[1], max(ba[2], bb[2]), bb[3])
+                    out.remove(b); changed = True
+                    break
+            if changed:
+                break
+    return out
+
+
 def page_lines(page):
     """text segments (line pieces separated by wide gaps) in display coordinates."""
     M = page.rotation_matrix
@@ -165,6 +193,7 @@ def page_lines(page):
                 m = re.search(r'[_＿]{2,}', text)
                 out.append(dict(bbox=(x0, y0, x1, y1), text=text.strip(), raw=text,
                                 runs=[r for r in runs if r[4] >= 2], first_us=m.start() if m else None))
+    out = merge_stacked(out)
     # digit-box segments (□□□□□□...) attach to the label on their left
     for o in out:
         o['digitbox'] = bool(re.fullmatch(r'[□☐]{6,}', o['text']))
@@ -236,6 +265,10 @@ def analyse_page(page, pno):
                 lim = min(o['bbox'][0] for o in row_others)
                 if lim - lx1 >= 30:
                     return (lx1 + 2, b[1] - 2, lim - 2, b[3] + 2), 'inline-in-cell'
+            if LABEL_COLON.search(ln['text']) and has_text_in([o for o in lines if o is not ln], c):
+                if c[2] - lx1 >= 30:
+                    return (lx1 + 2, b[1] - 2, c[2] - 2, b[3] + 2), 'inline-in-cell'
+                return None, 'no-space'
             c2 = cell_at(H, V, c[2] + 3, cy, W, Hh)
             if c2 and not has_text_in(lines, c2):
                 return c2, 'cell-neighbour-right'
