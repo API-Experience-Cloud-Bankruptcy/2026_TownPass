@@ -1,7 +1,7 @@
 // Source-bound discovery is kept separate from necessary qualification gates.
 import manifest from '../../../backend/rules/adaptive-reviewed.json';
 import templates from '../../../backend/rules/question-templates.json';
-import { reviewFor, sourceFingerprint } from './reviewed-rules';
+import { requirementVerdict, reviewFor, sourceFingerprint, taipeiToday, type ReviewedRecord } from './reviewed-rules';
 import { evaluateAll } from './match';
 import type { Answers, Question, Subsidy } from './types';
 
@@ -78,6 +78,20 @@ export function questionApplies(q: Question, answers: Answers, situation: string
   if (q.purpose!=='qualification'&&q.situations?.length && (!area || !q.situations.includes(area))) return false;
   return Object.entries(q.depends_on ?? {}).every(([field,values]) => values.includes(scalarAnswer(answers,field) as string|boolean));
 }
+const ENTRY_FIELDS=new Set(['need_area','explore_context','expense_priority']);
+const TOP_LEVEL_FIELDS=new Set(['age','region','is_student','household_type']);
+function withAnswer(answers: Answers, field: string, value: string|boolean): Answers {
+  return TOP_LEVEL_FIELDS.has(field) ? {...answers,[field]:value} : {...answers,extra:{...answers.extra,[field]:value}};
+}
+/** Whether answering `value` would move any surviving resource. */
+function optionChanges(field: string, value: string|boolean, items: Subsidy[], reviews: Map<string,AdaptiveReview|null>, gates: Map<string,ReviewedRecord|null>, answers: Answers, today: string): boolean {
+  const next=withAnswer(answers,field,value);
+  return items.some(i=>{
+    const facet=reviews.get(i.id)?.facets.find(f=>f.field===field);
+    if(facet&&!facet.values.includes(String(value))) return true;
+    return !!gates.get(i.id)?.requirements.some(r=>r.field===field&&requirementVerdict(r,next,today)===false);
+  });
+}
 /** Re-rank after each answer using current supported partitions and gate coverage. */
 export function rankQuestions(bank: Question[], items: Subsidy[], answers: Answers, situation: string | null, visited: Set<string>): Question[] {
   // These indexes live for this recomputation only; mutated original data cannot reuse an old binding.
@@ -89,6 +103,7 @@ export function rankQuestions(bank: Question[], items: Subsidy[], answers: Answe
   const supported=remaining;
   const supportedSet=new Set(supported.map(i=>i.id));
   const area = branchArea(answers,situation);
+  const today=taipeiToday();
   return bank.filter(q => !visited.has(q.id) && questionApplies(q,answers,situation) && q.resource_ids.some(id => supportedSet.has(id)))
     .map((q,index) => {
       const supportedIds = new Set(q.resource_ids);
@@ -110,6 +125,11 @@ export function rankQuestions(bank: Question[], items: Subsidy[], answers: Answe
         const filtered=options.filter(o=>values.has(String(o.value)));
         if(filtered.length>0) options=filtered;
       }
-      return {q:{...q,options},score,index};
-    }).sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.q);
+      // A choice needs two real options, and one of them must change the surviving resources.
+      // Without any source-bound facet or gate for the field the effect is unknown, so it stays.
+      const choice=q.kind!=='number'&&!ENTRY_FIELDS.has(q.field);
+      const evaluable=supported.some(i=>reviews.get(i.id)?.facets.some(f=>f.field===q.field)||gates.get(i.id)?.requirements.some(r=>r.field===q.field));
+      const useful=!choice||((options?.length??0)>=2&&(!evaluable||options!.some(o=>optionChanges(q.field,o.value,supported,reviews,gates,answers,today))));
+      return {q:{...q,options},score,index,useful};
+    }).filter(x=>x.useful).sort((a,b)=>b.score-a.score||a.index-b.index).map(x=>x.q);
 }
