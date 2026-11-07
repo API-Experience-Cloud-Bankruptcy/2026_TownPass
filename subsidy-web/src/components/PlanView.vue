@@ -50,8 +50,8 @@ const planText = computed(() => buildPlanText({
     </div>
 
     <template v-else>
-      <ul class="plan-cards no-print">
-        <li v-for="{ item, progress } in cards" :key="item.id">
+      <TransitionGroup name="list" tag="ul" class="plan-cards no-print" appear>
+        <li v-for="({ item, progress }, i) in cards" :key="item.id" :style="{ '--i': String(i) }">
           <button
             type="button"
             class="plan-card"
@@ -73,7 +73,7 @@ const planText = computed(() => buildPlanText({
             <span class="plan-card__chev" aria-hidden="true">›</span>
           </button>
         </li>
-      </ul>
+      </TransitionGroup>
 
       <details class="more card card--list no-print" :open="exportOpen" @toggle="exportOpen = ($event.target as HTMLDetailsElement).open">
         <summary>下載行動單 PDF（{{ planItems.length }} 張）</summary>

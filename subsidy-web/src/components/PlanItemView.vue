@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 單張行動單：主要是一步一步做，完成到哪一步存在本人行動單；補助內容另開詳情。
-import { computed, defineAsyncComponent, nextTick, ref } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { prefersReducedMotion } from '../chat/typing';
 import { mergeDocuments, OTHER_REGION_TITLE, regionText } from '../domain/documents';
 import { buildPlanText } from '../domain/export';
 import { PLAN_STATUS_LABEL, planProgress } from '../domain/plan-progress';
@@ -13,6 +14,7 @@ import {
 import ConfirmDialog from './ConfirmDialog.vue';
 import ExternalLink from './ExternalLink.vue';
 import LinkedText from './LinkedText.vue';
+import Expand from './motion/Expand.vue';
 import PlanExport from './PlanExport.vue';
 
 const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
@@ -38,16 +40,52 @@ function alsoUsedIn(usedBy: { id: string; name: string }[]): string {
 // 完成一步後，焦點移到下一步，並朗讀結果。
 const announce = ref('');
 const stepRefs = ref<HTMLElement[]>([]);
+const popIndex = ref(-1);
+let popFrame = 0;
+function markPop(index: number) {
+  popIndex.value = -1;
+  cancelAnimationFrame(popFrame);
+  popFrame = requestAnimationFrame(() => { popIndex.value = index; });
+}
+const stepBump = ref(false);
+const docBump = ref(false);
+const docPop = ref('');
+function pulse(flag: { value: boolean }) {
+  flag.value = false;
+  requestAnimationFrame(() => { flag.value = true; });
+}
+watch(() => progress.value?.doneCount, (next, prev) => {
+  if (prev === undefined || next === prev) return;
+  pulse(stepBump);
+});
+watch(() => progress.value?.docsDone, (next, prev) => {
+  if (prev === undefined || next === prev) return;
+  pulse(docBump);
+});
 async function complete(index: number) {
   if (!item.value || !progress.value) return;
   const wasDone = progress.value.done.has(index);
+  if (!wasDone) markPop(index);
   toggleStep(item.value.id, index);
   await nextTick();
   const p = progress.value;
   if (wasDone) announce.value = `第 ${index + 1} 步改回未完成`;
   else if (p.current === -1) announce.value = `第 ${index + 1} 步完成，步驟都完成了`;
   else announce.value = `第 ${index + 1} 步完成，下一步是第 ${p.current + 1} 步`;
-  if (!wasDone && p.current >= 0) stepRefs.value[p.current]?.focus();
+  if (!wasDone && p.current >= 0) {
+    const el = stepRefs.value[p.current];
+    el?.focus({ preventScroll: true });
+    el?.closest('.task-step')?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
+  }
+}
+function onDoc(key: string) {
+  toggleDoc(key);
+  docPop.value = '';
+  requestAnimationFrame(() => { docPop.value = key; });
+}
+function clearDocPop(event: AnimationEvent, key: string) {
+  if ((event.target as HTMLElement).tagName !== 'INPUT' || docPop.value !== key) return;
+  docPop.value = '';
 }
 function restart() {
   if (!item.value) return;
@@ -56,10 +94,23 @@ function restart() {
 }
 
 const confirmRemove = ref(false);
+const leaving = ref(false);
+let leaveTimer = 0;
 function remove() {
   confirmRemove.value = false;
-  if (item.value) removeFromPlan(item.value.id);
+  const id = item.value?.id;
+  if (!id) return;
+  if (prefersReducedMotion()) { removeFromPlan(id); return; }
+  leaving.value = true;
+  window.clearTimeout(leaveTimer);
+  leaveTimer = window.setTimeout(() => { if (leaving.value) removeFromPlan(id); }, 180);
 }
+function onLeave(event: AnimationEvent) {
+  if (event.target !== event.currentTarget || !leaving.value || !item.value) return;
+  window.clearTimeout(leaveTimer);
+  removeFromPlan(item.value.id);
+}
+onBeforeUnmount(() => { window.clearTimeout(leaveTimer); cancelAnimationFrame(popFrame); });
 
 const formOpen = ref(false);
 const exportOpen = ref(false);
@@ -81,7 +132,7 @@ const planText = computed(() => item.value ? buildPlanText({
 </script>
 
 <template>
-  <div v-if="item && route && progress" class="view">
+  <div v-if="item && route && progress" class="view" :class="{ 'task-leave': leaving }" @animationend="onLeave">
     <div class="card card--hero task-head">
       <p class="task-head__badge" :class="`task-head__badge--${progress.status}`">{{ PLAN_STATUS_LABEL[progress.status] }}</p>
       <h1 id="view-title" class="view-title" tabindex="-1">{{ item.name }}</h1>
@@ -96,12 +147,15 @@ const planText = computed(() => item.value ? buildPlanText({
           :aria-valuemax="progress.total"
           :aria-valuetext="progressText(progress.doneCount, progress.total)"
         ><span class="progress__bar" :style="{ width: `${percent}%` }" /></span>
-        <p class="muted">{{ progressText(progress.doneCount, progress.total) }}</p>
+        <p class="muted">
+          <template v-if="progress.doneCount >= progress.total"><span class="num" :class="{ bump: stepBump }">{{ progress.total }}</span> 步都準備好了</template>
+          <template v-else>已準備 <span class="num" :class="{ bump: stepBump }">{{ progress.doneCount }}</span>／{{ progress.total }} 步</template>
+        </p>
       </template>
       <p v-if="route.deadline" class="alert">期限：{{ route.deadline }}</p>
       <p v-if="statusAlert" class="alert">{{ statusAlert }}</p>
       <button type="button" class="btn btn--block task-head__detail" @click="openDetail(item.id)">
-        看補助詳細內容<span aria-hidden="true">›</span>
+        看補助詳細內容<span class="task-head__chev" aria-hidden="true">›</span>
       </button>
     </div>
 
@@ -124,33 +178,39 @@ const planText = computed(() => item.value ? buildPlanText({
               :aria-pressed="progress.done.has(i)"
               @click="complete(i)"
             >
-              <span aria-hidden="true">{{ progress.done.has(i) ? '✓' : i + 1 }}</span>
+              <span class="task-step__glyph" :class="{ 'is-pop': popIndex === i }" aria-hidden="true">{{ progress.done.has(i) ? '✓' : i + 1 }}</span>
               <span class="sr-only">第 {{ i + 1 }} 步{{ progress.done.has(i) ? '已完成，按一下改回未完成' : '，標記為完成' }}</span>
             </button>
             <div class="task-step__body">
               <p :ref="(el) => { if (el) stepRefs[i] = el as HTMLElement }" class="task-step__text" tabindex="-1">
-                <span v-if="i === progress.current" class="task-step__now">現在做這步</span>
-                {{ sourceExcerpt(step) }}
+                <span class="task-step__line">
+                  <span v-if="i === progress.current" class="task-step__now">現在做這步</span>
+                  {{ sourceExcerpt(step) }}
+                </span>
               </p>
               <details v-if="sourceExcerpt(step) !== step" class="more more--inline">
                 <summary>看完整原文</summary>
                 <div class="more__body"><p><LinkedText :text="step" /></p></div>
               </details>
-              <div v-if="i === progress.current" class="task-step__actions">
-                <button type="button" class="btn btn--primary btn--block" @click="complete(i)">這步完成了</button>
-                <button type="button" class="btn btn--text" @click="openHelp(item.id, step)">這一步做不到</button>
-              </div>
+              <Expand>
+                <div v-if="i === progress.current" class="task-step__actions">
+                  <button type="button" class="btn btn--primary btn--block" @click="complete(i)">這步完成了</button>
+                  <button type="button" class="btn btn--text" @click="openHelp(item.id, step)">這一步做不到</button>
+                </div>
+              </Expand>
             </div>
           </li>
         </ol>
         <p v-if="!route.splitFromArrow" class="muted">原文沒有分步，這裡將整段列為一步。</p>
 
-        <div v-if="progress.status === 'done'" class="task-done">
-          <p class="task-done__title">步驟都完成了</p>
-          <p>請照官方方式送件，並留下收件證明。這裡的勾選不代表已受理。</p>
-          <button type="button" class="btn btn--text" @click="restart">全部改回未完成</button>
-        </div>
-        <p v-else class="muted">點左邊圓圈可以勾選或取消；勾選只記錄你的準備，不會送件。</p>
+        <Transition name="rise">
+          <div v-if="progress.status === 'done'" class="task-done">
+            <p class="task-done__title">步驟都完成了</p>
+            <p>請照官方方式送件，並留下收件證明。這裡的勾選不代表已受理。</p>
+            <button type="button" class="btn btn--text" @click="restart">全部改回未完成</button>
+          </div>
+        </Transition>
+        <p v-if="progress.status !== 'done'" class="muted">點左邊圓圈可以勾選或取消；勾選只記錄你的準備，不會送件。</p>
       </template>
 
       <template v-else>
@@ -159,15 +219,15 @@ const planText = computed(() => item.value ? buildPlanText({
       </template>
     </section>
 
-    <section class="card" aria-labelledby="task-docs-h">
+    <section class="card task-docs" aria-labelledby="task-docs-h">
       <h2 id="task-docs-h" class="section-title">要帶的文件</h2>
-      <p v-if="ownDocs.length" class="muted">已準備 {{ progress.docsDone }}／{{ progress.docsTotal }}</p>
+      <p v-if="ownDocs.length" class="muted">已準備 <span class="num" :class="{ bump: docBump }">{{ progress.docsDone }}</span>／{{ progress.docsTotal }}</p>
       <p v-else-if="docsMissing">原文沒有列出文件，不代表不用帶，請先問承辦窗口。</p>
       <p v-else>目前沒有可直接列為準備項目的文件，請向承辦窗口確認。</p>
       <ul v-if="ownDocs.length" class="rows">
         <li v-for="d in ownDocs" :key="d.key">
-          <label class="check">
-            <input type="checkbox" :checked="!!state.personalPlan.docChecks[d.key]" @change="toggleDoc(d.key)" />
+          <label class="check" :class="{ 'is-pop': docPop === d.key }" @animationend="clearDocPop($event, d.key)">
+            <input type="checkbox" :checked="!!state.personalPlan.docChecks[d.key]" @change="onDoc(d.key)" />
             <span class="check__body">
               <span>{{ d.name }}<span v-if="d.required === false" class="muted">（非必要）</span></span>
               <span v-if="d.hasVariant" class="muted">同名但要求不同，請分開準備</span>
@@ -182,8 +242,8 @@ const planText = computed(() => item.value ? buildPlanText({
         <summary>{{ OTHER_REGION_TITLE }}（{{ ownOtherRegion.length }}）</summary>
         <ul class="rows">
           <li v-for="d in ownOtherRegion" :key="d.key">
-            <label class="check">
-              <input type="checkbox" :checked="!!state.personalPlan.docChecks[d.key]" @change="toggleDoc(d.key)" />
+            <label class="check" :class="{ 'is-pop': docPop === d.key }" @animationend="clearDocPop($event, d.key)">
+              <input type="checkbox" :checked="!!state.personalPlan.docChecks[d.key]" @change="onDoc(d.key)" />
               <span class="check__body">
                 <span>{{ d.name }}<span v-if="d.required === false" class="muted">（非必要）</span></span>
                 <span class="muted">{{ regionText(d.regions) }}</span>

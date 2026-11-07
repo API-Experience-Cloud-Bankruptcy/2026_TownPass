@@ -96,7 +96,7 @@ function onItemChange() {
       <p class="muted">幫你整理要問的話，不會替你建立案件或轉介。</p>
     </div>
 
-    <section v-if="stage === 'reason'" class="actions" aria-labelledby="help-reason-h">
+    <section v-if="stage === 'reason'" class="actions help-stage" aria-labelledby="help-reason-h">
       <h2 id="help-reason-h" ref="stageHeading" tabindex="-1" class="stage-title">卡在哪裡？</h2>
       <p v-if="item" class="muted">{{ item.name }}<template v-if="stepText">・{{ stepText }}</template></p>
       <ul class="rows">
@@ -109,7 +109,7 @@ function onItemChange() {
       </ul>
     </section>
 
-    <section v-else-if="stage === 'resource'" class="actions" aria-labelledby="help-item-h">
+    <section v-else-if="stage === 'resource'" class="actions help-stage" aria-labelledby="help-item-h">
       <h2 id="help-item-h" ref="stageHeading" tabindex="-1" class="stage-title">要問哪一項？</h2>
       <label class="field" for="help-item">
         <span class="field__label">項目</span>
@@ -121,7 +121,7 @@ function onItemChange() {
       <button type="button" class="btn btn--primary btn--block" @click="confirmResource">下一步</button>
     </section>
 
-    <section v-else-if="stage === 'advice'" class="actions" aria-labelledby="advice-h">
+    <section v-else-if="stage === 'advice'" class="actions help-stage" aria-labelledby="advice-h">
       <h2 id="advice-h" ref="stageHeading" tabindex="-1" class="stage-title">可以這樣做</h2>
       <p class="muted">{{ item?.name ?? '一般詢問' }}<template v-if="stepText">・{{ stepText }}</template></p>
       <template v-if="advice">
@@ -150,7 +150,7 @@ function onItemChange() {
       <button type="button" class="btn btn--text" @click="changeResource">換一個項目</button>
     </section>
 
-    <section v-else class="actions" aria-labelledby="help-export-h">
+    <section v-else class="actions help-stage" aria-labelledby="help-export-h">
       <h2 id="help-export-h" ref="stageHeading" tabindex="-1" class="sr-only">要問的話</h2>
       <ShareBox v-model:included="included" title="要問的話" :body="helpText" filename="求助詢問文字.txt" :conditions="conditionLines" />
     </section>

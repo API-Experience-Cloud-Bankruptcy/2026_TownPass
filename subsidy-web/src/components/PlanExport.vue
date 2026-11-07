@@ -167,6 +167,12 @@ async function copyCurrent() {
 }
 
 const pagerLabel = computed(() => `第 ${index.value + 1}／${props.items.length} 張`);
+const countBump = ref(false);
+watch(index, (next, prev) => {
+  if (prev === undefined || next === prev) return;
+  countBump.value = false;
+  requestAnimationFrame(() => { countBump.value = true; });
+});
 const statusEl = ref<HTMLElement | null>(null);
 watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIntoView?.({ block: 'nearest' }); } });
 </script>
@@ -179,7 +185,7 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
     <div v-if="many" class="pexp__pager" role="group" aria-label="切換要看的行動單">
       <button type="button" class="pexp__nav" :disabled="index === 0" aria-label="上一張" @click="goTo(index - 1)">‹</button>
       <div class="pexp__where">
-        <span class="pexp__count" aria-live="polite">{{ pagerLabel }}</span>
+        <span class="pexp__count" :class="{ bump: countBump }" aria-live="polite">{{ pagerLabel }}</span>
         <span class="pexp__dots" aria-hidden="true">
           <span v-for="(_, i) in items" :key="i" class="pexp__dot" :class="{ 'is-on': i === index }" />
         </span>
@@ -312,13 +318,14 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
 
 .pexp__pager { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .pexp__nav {
+  display: grid; place-items: center; padding: 0;
   width: var(--touch); height: var(--touch); flex: none;
   border: 1px solid var(--line-strong); border-radius: 50%; background: var(--bg); color: var(--accent);
   font-size: 1.75rem; line-height: 1; cursor: pointer;
 }
 .pexp__nav:disabled { color: var(--disabled-text); border-color: var(--line); cursor: default; }
 .pexp__where { display: grid; justify-items: center; gap: var(--space-1); }
-.pexp__count { font-size: var(--fs-section); font-weight: var(--fw-bold); }
+.pexp__count { display: inline-block; font-size: var(--fs-section); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; }
 .pexp__dots { display: flex; gap: 6px; }
 .pexp__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); transition: width var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease); }
 .pexp__dot.is-on { width: 20px; border-radius: 4px; background: var(--brand); }
@@ -330,7 +337,8 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
   grid-auto-flow: column; grid-auto-columns: 100%;
   overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
   scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  align-items: start; overflow-y: hidden; transition: height var(--dur) var(--ease);
+  align-items: start; overflow-y: hidden; scroll-behavior: smooth;
+  transition: height var(--dur-expand) var(--ease);
 }
 .pexp__track--many::-webkit-scrollbar { display: none; }
 .pexp__track--many > .paper { scroll-snap-align: start; scroll-snap-stop: always; }
@@ -356,8 +364,10 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
 .paper__row { display: flex; gap: var(--space-3); align-items: flex-start; line-height: var(--lh-body); }
 .paper__row.is-done > span:last-child { color: var(--muted); }
 .paper__box {
-  flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; margin-top: 1px;
+  flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px;
+  margin-top: max(0px, calc((1rem * var(--lh-body) - 26px) / 2));
   border: 2px solid var(--line-strong); border-radius: 50%; font-size: var(--fs-small); font-weight: var(--fw-bold); color: var(--text-2);
+  line-height: 1;
 }
 .paper__box--check { border-radius: 6px; }
 .is-done > .paper__box { border-color: var(--done-line); background: var(--done-bg); color: var(--done-ink); }
@@ -376,4 +386,9 @@ watch(status, async (s) => { if (s) { await nextTick(); statusEl.value?.scrollIn
 .paper__more[open] > summary { margin-bottom: var(--space-2); }
 
 .pexp__actions { display: grid; gap: var(--space-2); }
+.pexp__actions .btn,
+.pexp :deep(.check) { line-height: 1.2; }
+.pexp :deep(.check input) {
+  margin-top: max(0px, calc((1rem * var(--lh-body) - 24px) / 2));
+}
 </style>

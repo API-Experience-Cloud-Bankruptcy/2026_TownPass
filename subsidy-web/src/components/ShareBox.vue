@@ -3,6 +3,7 @@
 // 分享取消與失敗分開提示；所有失敗都保留可選取文字備援。
 import { computed, nextTick, ref, watch } from 'vue';
 import { copyText, downloadText, shareText } from '../domain/export';
+import Expand from './motion/Expand.vue';
 
 const props = defineProps<{
   title: string;
@@ -105,17 +106,19 @@ function onPrint() {
     </details>
 
     <button v-if="!previewOpen" type="button" class="btn btn--primary btn--block" @click="openPreview">先看全文</button>
-    <template v-if="previewOpen">
-      <h3 ref="previewHeading" class="section-title" tabindex="-1">全文</h3>
-      <pre :id="previewId" class="share__preview selectable" tabindex="0" :aria-label="`${title}全文`">{{ body }}</pre>
-      <button type="button" class="btn btn--primary btn--block" @click="onCopy">複製文字</button>
-      <div class="share__grid">
-        <button type="button" class="btn" @click="onShare">分享</button>
-        <button type="button" class="btn" @click="onDownload">下載文字檔</button>
-        <button v-if="printable" type="button" class="btn" @click="onPrint">列印／另存 PDF</button>
+    <Expand>
+      <div v-if="previewOpen" class="share__panel">
+        <h3 ref="previewHeading" class="section-title" tabindex="-1">全文</h3>
+        <pre :id="previewId" class="share__preview selectable" tabindex="0" :aria-label="`${title}全文`">{{ body }}</pre>
+        <button type="button" class="btn btn--primary btn--block" @click="onCopy">複製文字</button>
+        <div class="share__grid">
+          <button type="button" class="btn" @click="onShare">分享</button>
+          <button type="button" class="btn" @click="onDownload">下載文字檔</button>
+          <button v-if="printable" type="button" class="btn" @click="onPrint">列印／另存 PDF</button>
+        </div>
+        <button type="button" class="btn btn--text" @click="closePreview">返回設定</button>
       </div>
-      <button type="button" class="btn btn--text" @click="closePreview">返回設定</button>
-    </template>
+    </Expand>
     <p class="status-text note" role="status" aria-live="polite">{{ status }}</p>
     <textarea v-if="showRaw" class="share__raw" readonly :value="body" aria-label="可選取的文字內容" rows="8"></textarea>
   </section>
