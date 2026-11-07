@@ -21,18 +21,20 @@ export const BROWSE_CATEGORIES = [
 export function browseCategory(item: Subsidy): string {
   return BROWSE_CATEGORIES.find(c => c.pattern.test(item.classification.category))?.id ?? 'other';
 }
-export type BrowseStatus = 'available' | 'uncertain' | 'hidden';
+/** closed：已截止或暫停受理；upcoming：尚未開放。兩者預設不列出，但資料保留可查。 */
+export type BrowseStatus = 'available' | 'uncertain' | 'closed' | 'upcoming';
 export function browseStatus(item: Subsidy, today: string): BrowseStatus {
   const d = item.application.deadline;
-  if (d.start && /^\d{4}-\d{2}-\d{2}$/.test(d.start) && d.start > today) return 'hidden';
-  if (availability(item, today) === 'closed') return 'hidden';
+  if (d.start && /^\d{4}-\d{2}-\d{2}$/.test(d.start) && d.start > today) return 'upcoming';
+  if (availability(item, today) === 'closed') return 'closed';
   const status = String(item.source_meta.application_status ?? '').trim();
   // 混合梯次、不同學校的狀態不能以「已截止」三字一律排除或視為開放。
   if (/已截止|已結束|停止受理|額滿|用罄|期限已過/.test(status)) {
     if (/受理中|申請中|其他類別|認養組|學校|各校|大學/.test(status)) return 'uncertain';
-    return 'hidden';
+    return 'closed';
   }
-  if (/尚未開放|未開放|暫停受理/.test(status)) return 'hidden';
+  if (/暫停受理/.test(status)) return 'closed';
+  if (/尚未開放|未開放/.test(status)) return 'upcoming';
   if (/待確認|待公告|未公告|未查得|需洽|須再確認/.test(status)) return 'uncertain';
   // 固定受理期缺少可比較的日期，不能只憑舊公告認定仍在受理。
   if (d.type === 'fixed' && !d.end) return 'uncertain';
@@ -42,11 +44,26 @@ export function browseStatus(item: Subsidy, today: string): BrowseStatus {
   return 'uncertain';
 }
 
-export function browseCatalog(items: Subsidy[], options: { today: string; category?: string | null; query?: string; includeUncertain?: boolean }): Subsidy[] {
+export function browseCatalog(items: Subsidy[], options: { today: string; category?: string | null; query?: string; includeUncertain?: boolean; includeClosed?: boolean }): Subsidy[] {
   const query = (options.query ?? '').normalize('NFKC').trim();
   return items.map((item, index) => ({ item, index, status: browseStatus(item, options.today), score: searchScore(item, query) }))
-    .filter(x => x.status !== 'hidden' && (x.status === 'available' || options.includeUncertain)
+    .filter(x => (x.status === 'available' || x.status === 'uncertain' && options.includeUncertain || isInactive(x.status) && options.includeClosed)
       && (!options.category || browseCategory(x.item) === options.category) && x.score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
+    // 已截止與尚未開放的排在可申請項目之後，避免蓋過目前能辦的。
+    .sort((a, b) => Number(isInactive(a.status)) - Number(isInactive(b.status)) || b.score - a.score || a.index - b.index)
     .map(x => x.item);
+}
+
+export function isInactive(status: BrowseStatus): boolean {
+  return status === 'closed' || status === 'upcoming';
+}
+
+/** 列表上的時效標示。 */
+export function browseStatusLabel(item: Subsidy, today: string): string {
+  const status = browseStatus(item, today);
+  const d = item.application.deadline;
+  if (status === 'closed') return /^\d{4}-\d{2}-\d{2}$/.test(d.end ?? '') ? `已截止（${d.end}）` : '已截止';
+  if (status === 'upcoming') return /^\d{4}-\d{2}-\d{2}$/.test(d.start ?? '') ? `尚未開放（${d.start} 起）` : '尚未開放';
+  if (status === 'uncertain') return '受理時間待確認';
+  return d.type === 'rolling' ? '依個案期限申請' : '受理期間內・資格另審';
 }

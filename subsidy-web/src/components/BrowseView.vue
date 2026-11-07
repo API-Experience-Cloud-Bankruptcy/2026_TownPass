@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
-import { BROWSE_CATEGORIES, browseCatalog, browseCategory, browseStatus } from '../domain/browse';
+import { BROWSE_CATEGORIES, browseCatalog, browseCategory, browseStatus, browseStatusLabel, isInactive } from '../domain/browse';
 import { state, openDetail } from '../store';
 
 const category = ref<string | null>(null);
 const query = ref('');
 const includeUncertain = ref(false);
+const includeClosed = ref(false);
 const today = ref('');
 function updateDate() { today.value = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }); }
 updateDate();
@@ -13,12 +14,12 @@ let timer: ReturnType<typeof setInterval>;
 onMounted(() => { timer = setInterval(updateDate, 60_000); });
 onUnmounted(() => clearInterval(timer));
 const heading = ref<HTMLElement | null>(null);
-const available = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, includeUncertain: includeUncertain.value }));
+const available = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, includeUncertain: includeUncertain.value, includeClosed: includeClosed.value }));
 const categories = computed(() => BROWSE_CATEGORIES.map(c => ({ ...c, count: available.value.filter(i => browseCategory(i) === c.id).length })));
 const selected = computed(() => BROWSE_CATEGORIES.find(c => c.id === category.value));
 const searching = computed(() => !!query.value.trim());
 const showingItems = computed(() => !!category.value || searching.value);
-const items = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, category: category.value, query: query.value, includeUncertain: includeUncertain.value }));
+const items = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, category: category.value, query: query.value, includeUncertain: includeUncertain.value, includeClosed: includeClosed.value }));
 async function chooseCategory(id: string | null) {
   category.value = id;
   await nextTick();
@@ -44,8 +45,12 @@ function reset() { query.value = ''; chooseCategory(null); }
         <input v-model="includeUncertain" type="checkbox" />
         <span>也查看受理時間待確認的項目</span>
       </label>
+      <label class="check">
+        <input v-model="includeClosed" type="checkbox" />
+        <span>也查看已截止或尚未開放的項目</span>
+      </label>
     </div>
-    <p class="muted browse-note">依目前收錄資料隱藏已截止與尚未開放的項目。受理名額、經費與個人資格仍須向承辦機關確認。</p>
+    <p class="muted browse-note">{{ includeClosed ? '已截止與尚未開放的項目排在後面，之後可能再開放，請看官方公告。' : '依目前收錄資料隱藏已截止與尚未開放的項目，可勾選上方查看。' }}受理名額、經費與個人資格仍須向承辦機關確認。</p>
 
     <p v-if="state.loading" role="status">正在載入補助資料…</p>
     <section v-else-if="!showingItems" aria-labelledby="browse-heading" class="browse-section">
@@ -77,7 +82,7 @@ function reset() { query.value = ''; chooseCategory(null); }
               <span class="row__sub">{{ item.classification.category }}</span>
               <span class="row__title">{{ item.name }}</span>
               <span class="row__sub">{{ item.provider.name }}</span>
-              <span class="browse-status">{{ browseStatus(item, today) === 'uncertain' ? '受理時間待確認' : item.application.deadline.type === 'rolling' ? '依個案期限申請' : '受理期間內・資格另審' }}</span>
+              <span class="browse-status" :class="{ 'browse-status--inactive': isInactive(browseStatus(item, today)) }">{{ browseStatusLabel(item, today) }}</span>
             </span>
             <span class="row__chev" aria-hidden="true">›</span>
           </button>
@@ -85,7 +90,7 @@ function reset() { query.value = ''; chooseCategory(null); }
       </ul>
       <div v-else class="browse-empty" role="status">
         <p>目前沒有符合的補助</p>
-        <p class="muted">試試較短的關鍵字、返回其他分類，或查看受理時間待確認的項目。</p>
+        <p class="muted">試試較短的關鍵字、返回其他分類，或勾選查看待確認、已截止的項目。</p>
       </div>
     </section>
   </div>
@@ -107,6 +112,7 @@ function reset() { query.value = ''; chooseCategory(null); }
 .browse-category__title { font-size: var(--fs-section); font-weight: 600; }
 .browse-category__hint { color: var(--muted); }
 .browse-status { color: var(--accent); font-size: var(--fs-small); }
+.browse-status--inactive { color: var(--text-2); }
 .browse-results { padding: 0; list-style: none; }
 .browse-empty { display: grid; gap: var(--space-2); padding: var(--space-6) var(--space-4); background: var(--raised); border-radius: var(--radius); }
 @media (max-width: 359px) { .browse-grid { grid-template-columns: minmax(0, 1fr); } }

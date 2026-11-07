@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BROWSE_CATEGORIES, browseCatalog, browseCategory, browseStatus } from '../browse';
+import { BROWSE_CATEGORIES, browseCatalog, browseCategory, browseStatus, browseStatusLabel } from '../browse';
 import { loadSnapshot } from '../catalog';
 import { makeSubsidy } from './fixtures';
 
@@ -9,13 +9,14 @@ const dated = (start: string | null, end: string | null) => makeSubsidy({ applic
 describe('補助總覽的時效與完整分類', () => {
   it('臺北日期含截止當日，未到開始日與已截止均隱藏', () => {
     expect(browseStatus(dated(null, today), today)).toBe('available');
-    expect(browseStatus(dated(null, '2026-11-07'), today)).toBe('hidden');
-    expect(browseStatus(dated('2026-11-09', '2026-12-01'), today)).toBe('hidden');
+    expect(browseStatus(dated(null, '2026-11-07'), today)).toBe('closed');
+    expect(browseStatus(dated('2026-11-09', '2026-12-01'), today)).toBe('upcoming');
   });
   it('複合年度截止公告也隱藏；混合學校與梯次保留待確認', () => {
-    for (const status of ['115年度已截止；後續年度待公告', '115第二階段已截止且額滿；追蹤下年度', '115額度已用罄', '116常態第一期尚未開放']) {
-      expect(browseStatus(makeSubsidy({ source_meta: { application_status: status } }), today)).toBe('hidden');
+    for (const status of ['115年度已截止；後續年度待公告', '115第二階段已截止且額滿；追蹤下年度', '115額度已用罄']) {
+      expect(browseStatus(makeSubsidy({ source_meta: { application_status: status } }), today)).toBe('closed');
     }
+    expect(browseStatus(makeSubsidy({ source_meta: { application_status: '116常態第一期尚未開放' } }), today)).toBe('upcoming');
     expect(browseStatus(makeSubsidy({ source_meta: { application_status: '116國際交流第1期受理中；常態第1期已截止' } }), today)).toBe('uncertain');
   });
   it('期限不明預設不列出，勾選可看；仍不列已截止項目', () => {
@@ -23,6 +24,15 @@ describe('補助總覽的時效與完整分類', () => {
     const expired = dated(null, '2026-11-07');
     expect(browseCatalog([unknown, expired], { today })).toEqual([]);
     expect(browseCatalog([unknown, expired], { today, includeUncertain: true })).toEqual([unknown]);
+  });
+  it('勾選後可查已截止與尚未開放的項目，排在可申請項目之後', () => {
+    const open = makeSubsidy({ id: 'open', application: { deadline: { type: 'ongoing', end: null } } });
+    const expired = { ...dated(null, '2026-11-07'), id: 'expired' };
+    const later = { ...dated('2026-11-09', '2026-12-01'), id: 'later' };
+    expect(browseCatalog([expired, later, open], { today }).map(i => i.id)).toEqual(['open']);
+    expect(browseCatalog([expired, later, open], { today, includeClosed: true }).map(i => i.id)).toEqual(['open', 'expired', 'later']);
+    expect(browseStatusLabel(expired, today)).toBe('已截止（2026-11-07）');
+    expect(browseStatusLabel(later, today)).toBe('尚未開放（2026-11-09 起）');
   });
   it('217 筆均恰有一個分類，分類聯集等於整份可瀏覽資料，不遺漏其他福利', async () => {
     const { items } = await loadSnapshot();
