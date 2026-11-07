@@ -1,5 +1,5 @@
 //! Typed view of `data/subsidies.json` (schema: `data/subsidies.schema.json`).
-//! Fields the API filters on are typed; everything else is passed through as JSON.
+//! Typed fields are an internal index only. Entry.original is the lossless API record.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -149,12 +149,14 @@ pub struct SourceMeta {
 /// A record plus precomputed lowercase text used for keyword search.
 pub struct Entry {
     pub subsidy: Subsidy,
+    pub original: Value,
     pub blob: String,
     pub name_lc: String,
 }
 
 impl Entry {
-    pub fn new(s: Subsidy) -> Self {
+    pub fn from_value(original: Value) -> Result<Self, serde_json::Error> {
+        let s: Subsidy = serde_json::from_value(original.clone())?;
         let mut blob = String::new();
         let mut push = |t: &str| {
             blob.push_str(&t.to_lowercase());
@@ -180,6 +182,11 @@ impl Entry {
             push(n);
         }
         let name_lc = s.name.to_lowercase();
-        Entry { subsidy: s, blob, name_lc }
+        Ok(Entry {
+            subsidy: s,
+            original,
+            blob,
+            name_lc,
+        })
     }
 }

@@ -21,6 +21,8 @@ Question = {id:string, field:string, kind:'single'|'boolean'|'number', title:str
 
 匹配對外維持 fit: likely|possible|ineligible, reasons:string[], warnings:string[], blocked_by:string[]；新增欄位可選。未知、原文關鍵條件、partial/unverified、無法解讀的例外不能產生確定符合。scope 不是完整戶籍規則，不能只因區域不同就一律排除可能以就學／就業地適用的資源。年齡只有明確 applicant/year 無例外且可判斷時才排除；兒童／配偶／月齡條件不套到申請人。不把個人所得與家戶所得比較成已符合。保守結果可全部 possible，解釋已知與待查事項比虛假 likely 重要。
 
+目前資料尚無完整可執行資格運算式，因此兩端保留 likely 型別但不產生此結果。硬排除僅限單一年齡規則：主體為申請人、單位為 year、原文完整符合已支援的年齡句型，且其他資格欄位、備註與擴充資料沒有未解析條件。不能以關鍵字黑名單推定不存在例外；戶籍差異僅提示待確認。前後端必須採相同判斷界線。
+
 ## 前端交付
 
 以 TownPass 風格的清楚、溫暖、簡潔繁中介面實作：三入口、本人／他人、情境分類與文字搜尋、動態固定題庫、結果與詳情、辦理路線、行動單、求助文字。包含大字／高對比、鍵盤焦點與 48px 按鈕；375px 無橫向溢出。

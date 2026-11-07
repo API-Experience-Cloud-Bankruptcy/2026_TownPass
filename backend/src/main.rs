@@ -1,8 +1,12 @@
 mod matcher;
 mod models;
+mod questions;
 
 use axum::{
-    extract::{Path, Query, State},
+    extract::{
+        rejection::{JsonRejection, QueryRejection},
+        Path, Query, State,
+    },
     http::StatusCode,
     routing::{get, post},
     Json, Router,
@@ -20,6 +24,8 @@ const MAX_LIMIT: usize = 200;
 pub struct AppState {
     entries: Vec<Entry>,
     by_id: HashMap<String, usize>,
+    version: String,
+    questions: Vec<questions::Question>,
 }
 
 type Shared = Arc<AppState>;
@@ -30,15 +36,38 @@ fn load_state() -> Result<AppState, String> {
         Ok(path) => std::fs::read_to_string(&path).map_err(|e| format!("read {path}: {e}"))?,
         Err(_) => EMBEDDED_DATA.to_string(),
     };
-    let records: Vec<Subsidy> = serde_json::from_str(&raw).map_err(|e| format!("parse subsidies: {e}"))?;
-    let entries: Vec<Entry> = records.into_iter().map(Entry::new).collect();
+    state_from_str(&raw)
+}
+
+fn state_from_str(raw: &str) -> Result<AppState, String> {
+    let records: Vec<Value> =
+        serde_json::from_str(raw).map_err(|e| format!("parse subsidies: {e}"))?;
+    let entries: Vec<Entry> = records
+        .into_iter()
+        .map(Entry::from_value)
+        .collect::<Result<_, _>>()
+        .map_err(|e| format!("index subsidies: {e}"))?;
     let mut by_id = HashMap::new();
     for (i, e) in entries.iter().enumerate() {
+        if e.subsidy.id.trim().is_empty() {
+            return Err("empty resource id".into());
+        }
         if by_id.insert(e.subsidy.id.clone(), i).is_some() {
             return Err(format!("duplicate id {}", e.subsidy.id));
         }
     }
-    Ok(AppState { entries, by_id })
+    // Stable content fingerprint, not a cryptographic integrity claim.
+    let hash = raw.bytes().fold(0xcbf29ce484222325_u64, |h, b| {
+        (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
+    });
+    let version = format!("catalog-v1-{hash:016x}");
+    let questions = questions::build_questions(&entries);
+    Ok(AppState {
+        entries,
+        by_id,
+        version,
+        questions,
+    })
 }
 
 fn summary(s: &Subsidy) -> Value {
@@ -57,33 +86,72 @@ fn summary(s: &Subsidy) -> Value {
     })
 }
 
-fn render(s: &Subsidy, view: &Option<String>) -> Value {
+fn render(e: &Entry, view: &Option<String>) -> Value {
     if view.as_deref() == Some("full") {
-        serde_json::to_value(s).unwrap_or(Value::Null)
+        e.original.clone()
     } else {
-        summary(s)
+        summary(&e.subsidy)
     }
 }
 
 fn page(limit: Option<usize>, offset: Option<usize>) -> (usize, usize) {
-    (limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT), offset.unwrap_or(0))
+    (
+        limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT),
+        offset.unwrap_or(0),
+    )
 }
 
 async fn health(State(st): State<Shared>) -> Json<Value> {
     Json(json!({ "status": "ok", "records": st.entries.len() }))
 }
 
-async fn list(State(st): State<Shared>, Query(q): Query<ListQuery>) -> Json<Value> {
-    let hits = filter_list(&st.entries, &q);
-    let (limit, offset) = page(q.limit, q.offset);
-    let items: Vec<Value> = hits.iter().skip(offset).take(limit).map(|e| render(&e.subsidy, &q.view)).collect();
-    Json(json!({ "total": hits.len(), "limit": limit, "offset": offset, "items": items }))
+type ApiError = (StatusCode, Json<Value>);
+fn bad_input(message: &str) -> ApiError {
+    (
+        StatusCode::BAD_REQUEST,
+        Json(json!({"error":"invalid_input", "message":message})),
+    )
 }
 
-async fn get_one(State(st): State<Shared>, Path(id): Path<String>) -> Result<Json<Subsidy>, (StatusCode, Json<Value>)> {
+async fn catalog(State(st): State<Shared>) -> Json<Value> {
+    Json(
+        json!({"version": st.version, "items": st.entries.iter().map(|e| &e.original).collect::<Vec<_>>()}),
+    )
+}
+
+async fn question_bank(State(st): State<Shared>) -> Json<Value> {
+    Json(json!({"version": format!("questions-v1/{}", st.version), "questions": st.questions}))
+}
+
+async fn list(
+    State(st): State<Shared>,
+    query: Result<Query<ListQuery>, QueryRejection>,
+) -> Result<Json<Value>, ApiError> {
+    let Query(q) = query.map_err(|_| bad_input("查詢參數格式或欄位無效"))?;
+    q.validate().map_err(|message| bad_input(&message))?;
+    let hits = filter_list(&st.entries, &q);
+    let (limit, offset) = page(q.limit, q.offset);
+    let items: Vec<Value> = hits
+        .iter()
+        .skip(offset)
+        .take(limit)
+        .map(|e| render(e, &q.view))
+        .collect();
+    Ok(Json(
+        json!({ "total": hits.len(), "limit": limit, "offset": offset, "items": items }),
+    ))
+}
+
+async fn get_one(
+    State(st): State<Shared>,
+    Path(id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
     match st.by_id.get(&id) {
-        Some(&i) => Ok(Json(st.entries[i].subsidy.clone())),
-        None => Err((StatusCode::NOT_FOUND, Json(json!({ "error": "not_found", "id": id })))),
+        Some(&i) => Ok(Json(st.entries[i].original.clone())),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "not_found", "id": id })),
+        )),
     }
 }
 
@@ -111,7 +179,9 @@ async fn facets(State(st): State<Shared>) -> Json<Value> {
         for a in &s.search.facets.applicant_types {
             *applicant.entry(a.clone()).or_default() += 1;
         }
-        *status.entry(s.source_meta.verification_status.clone()).or_default() += 1;
+        *status
+            .entry(s.source_meta.verification_status.clone())
+            .or_default() += 1;
         for m in &s.application.methods {
             *method.entry(m.clone()).or_default() += 1;
         }
@@ -128,7 +198,18 @@ async fn facets(State(st): State<Shared>) -> Json<Value> {
     }))
 }
 
-async fn match_profile(State(st): State<Shared>, Json(p): Json<Profile>) -> Json<Value> {
+async fn match_profile(
+    State(st): State<Shared>,
+    body: Result<Json<Value>, JsonRejection>,
+) -> Result<Json<Value>, ApiError> {
+    // Reject without echoing the submitted personal values or logging the body.
+    let Json(value) =
+        body.map_err(|_| bad_input("JSON 格式、型別或欄位無效；請使用 application/json"))?;
+    if !value.is_object() {
+        return Err(bad_input("match 輸入必須是 JSON 物件"));
+    }
+    let p: Profile = serde_json::from_value(value).map_err(|_| bad_input("JSON 型別或欄位無效"))?;
+    p.validate().map_err(|message| bad_input(&message))?;
     let hits = run_match(&st.entries, &p);
     let (limit, offset) = page(p.limit, p.offset);
     let items: Vec<Value> = hits
@@ -136,12 +217,14 @@ async fn match_profile(State(st): State<Shared>, Json(p): Json<Profile>) -> Json
         .skip(offset)
         .take(limit)
         .map(|(e, r)| {
-            let mut v = render(&e.subsidy, &p.view);
+            let mut v = render(e, &p.view);
             v["match"] = serde_json::to_value(r).unwrap_or(Value::Null);
             v
         })
         .collect();
-    Json(json!({ "total": hits.len(), "limit": limit, "offset": offset, "items": items }))
+    Ok(Json(
+        json!({ "total": hits.len(), "limit": limit, "offset": offset, "items": items }),
+    ))
 }
 
 pub fn app(state: AppState) -> Router {
@@ -150,6 +233,8 @@ pub fn app(state: AppState) -> Router {
         .route("/api/subsidies", get(list))
         .route("/api/subsidies/{id}", get(get_one))
         .route("/api/facets", get(facets))
+        .route("/api/catalog", get(catalog))
+        .route("/api/questions", get(question_bank))
         .route("/api/match", post(match_profile))
         .layer(CorsLayer::permissive())
         .with_state(Arc::new(state))
@@ -167,65 +252,20 @@ async fn main() {
         eprintln!("bad HOST/PORT: {e}");
         std::process::exit(1);
     });
-    println!("loaded {} records, listening on http://{addr}", state.entries.len());
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap_or_else(|e| {
-        eprintln!("bind {addr}: {e}");
-        std::process::exit(1);
-    });
+    println!(
+        "loaded {} records, listening on http://{addr}",
+        state.entries.len()
+    );
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("bind {addr}: {e}");
+            std::process::exit(1);
+        });
     if let Err(e) = axum::serve(listener, app(state)).await {
         eprintln!("server error: {e}");
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn state() -> AppState {
-        load_state().expect("embedded data loads")
-    }
-
-    #[test]
-    fn loads_all_records() {
-        let st = state();
-        assert_eq!(st.entries.len(), 217);
-        assert_eq!(st.by_id.len(), 217);
-    }
-
-    #[test]
-    fn keyword_search_finds_by_name() {
-        let st = state();
-        let q = ListQuery { q: Some("敬老卡".into()), ..Default::default() };
-        let hits = filter_list(&st.entries, &q);
-        assert!(!hits.is_empty());
-        assert!(hits.iter().any(|e| e.subsidy.name.contains("敬老卡")));
-    }
-
-    #[test]
-    fn age_filter_excludes_out_of_range() {
-        let st = state();
-        let all = filter_list(&st.entries, &ListQuery::default()).len();
-        let young = filter_list(&st.entries, &ListQuery { age: Some(10.0), ..Default::default() });
-        assert!(young.len() < all, "age=10 should drop adult-only programmes");
-    }
-
-    #[test]
-    fn region_blocks_taipei_only_programmes() {
-        let st = state();
-        let p = Profile { region: Some("高雄市".into()), include_ineligible: true, ..Default::default() };
-        let res = run_match(&st.entries, &p);
-        let blocked = res.iter().filter(|(_, r)| r.fit == matcher::Fit::Ineligible).count();
-        assert!(blocked > 0);
-        let visible = run_match(&st.entries, &Profile { region: Some("高雄市".into()), ..Default::default() });
-        assert!(visible.iter().all(|(e, _)| e.subsidy.scope.regions.iter().any(|r| r == "全國")));
-    }
-
-    #[test]
-    fn exclusive_max_age() {
-        let a = models::Age { subject: Some("申請人".into()), min: None, max: Some(2.0), unit: Some("year".into()), raw: Some("未滿2歲".into()) };
-        assert!(matcher::age_ok(&a, 1.9));
-        assert!(!matcher::age_ok(&a, 2.0));
-        let inclusive = models::Age { raw: Some("65歲以下".into()), max: Some(65.0), ..a };
-        assert!(matcher::age_ok(&inclusive, 65.0));
-    }
-}
+mod tests;
