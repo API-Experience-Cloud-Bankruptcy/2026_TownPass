@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Btn, Dots, Screen, T } from '@/components/ui-kit';
@@ -7,15 +7,30 @@ import { QUESTIONS } from '@/data';
 import type { Identity, Profile } from '@/data/welfare-schema';
 import { useApp, type Answers } from '@/lib/app-state';
 import { questionsFor, type Question } from '@/lib/questions-types';
+import { getUserInfo, profileFromAccount, type KnownProfile } from '@/lib/townpass';
 
 const ROC_OFFSET = 1911;
 
 export default function Quiz() {
-  const { categories, answers, setAnswers } = useApp();
+  const { categories, answers, setAnswers, colors } = useApp();
   const questions = useMemo(() => questionsFor(QUESTIONS, categories), [categories]);
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState<Answers>(answers);
+  const [known, setKnown] = useState<KnownProfile | null>(null);
   const q = questions[index];
+
+  useEffect(() => {
+    let live = true;
+    getUserInfo().then((account) => {
+      if (!live || !account) return;
+      const k = profileFromAccount(account);
+      setKnown(k);
+      setDraft((d) => prefill(d, k));
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   function next(updated: Answers) {
     setDraft(updated);
@@ -41,6 +56,11 @@ export default function Quiz() {
       <T size="title" heading={1}>
         {q.title}
       </T>
+      {known && fromTownPass(q, draft, known) ? (
+        <T size="small" weight="600" color={colors.accent}>
+          已帶入台北通資料
+        </T>
+      ) : null}
       <QuestionBody key={q.id} q={q} draft={draft} onDone={next} />
       <View style={s.navRow}>
         {index > 0 ? (
@@ -50,6 +70,33 @@ export default function Quiz() {
       </View>
     </Screen>
   );
+}
+
+/** Fills only what is still unanswered, so the person's own answers win. */
+function prefill(a: Answers, k: KnownProfile): Answers {
+  const profile: Profile = { ...a.profile };
+  if (k.birthYear !== undefined && profile.birthYear === undefined) profile.birthYear = k.birthYear;
+  if (k.residentMonths !== undefined && profile.residentMonths === undefined) profile.residentMonths = k.residentMonths;
+  const identitiesUntouched = profile.identities.length === 0 && a.unknownIdentities.length === 0;
+  if (identitiesUntouched && k.identities.length) profile.identities = [...k.identities];
+  return { ...a, profile };
+}
+
+/** The current answer to `q` still equals what Town Pass supplied. */
+function fromTownPass(q: Question, a: Answers, k: KnownProfile): boolean {
+  const p = a.profile;
+  switch (q.kind) {
+    case 'birthYear':
+      return k.birthYear !== undefined && p.birthYear === k.birthYear;
+    case 'single':
+      return q.field === 'residentMonths' && k.residentMonths !== undefined && p.residentMonths === k.residentMonths;
+    case 'identities':
+      return q.options.some((o) => k.identities.includes(o.identity) && p.identities.includes(o.identity));
+    case 'identityYesNo':
+      return k.identities.includes(q.identity) && p.identities.includes(q.identity);
+    default:
+      return false;
+  }
 }
 
 function clearAnswer(q: Question, a: Answers): Answers {

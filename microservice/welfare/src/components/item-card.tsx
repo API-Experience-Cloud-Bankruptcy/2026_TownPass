@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import { Linking, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Btn, Card, T } from '@/components/ui-kit';
 import type { WelfareItem } from '@/data/welfare-schema';
 import { useApp } from '@/lib/app-state';
 import type { MatchResult } from '@/lib/match';
-import { phoneLabel, telHref } from '@/lib/phone';
+import { dialNumber, phoneLabel } from '@/lib/phone';
+import { call, openLink } from '@/lib/townpass';
 
 export function Bullets({ items, mark, color }: { items: string[]; mark: string; color?: string }) {
   return (
@@ -27,14 +28,14 @@ export function ApplyButtons({ item }: { item: WelfareItem }) {
   return (
     <View style={s.apply}>
       {apply.online ? (
-        <Btn label="線上申請" role="link" icon="↗" onPress={() => Linking.openURL(apply.online!)} style={s.applyBtn} />
+        <Btn label="線上申請" role="link" icon="↗" onPress={() => openLink(apply.online!)} style={s.applyBtn} />
       ) : null}
       {apply.phone ? (
         <Btn
           label={`打電話 ${phoneLabel(apply.phone)}`}
           role="link"
           icon="☎"
-          onPress={() => Linking.openURL(telHref(apply.phone!))}
+          onPress={() => call(dialNumber(apply.phone!))}
           style={s.applyBtn}
         />
       ) : null}
