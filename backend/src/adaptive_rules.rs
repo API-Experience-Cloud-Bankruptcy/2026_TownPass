@@ -83,9 +83,10 @@ pub fn bound(row: &AdaptiveRecord, value: &Value) -> bool {
             preference.field == "household_type"
                 && !preference.reason.trim().is_empty()
                 && !preference.values.is_empty()
-                && preference.values.iter().all(|value| {
-                    questions::valid_facet_value(&preference.field, value)
-                })
+                && preference
+                    .values
+                    .iter()
+                    .all(|value| questions::valid_facet_value(&preference.field, value))
                 && !preference.evidence.is_empty()
                 && preference.evidence.iter().all(|e| {
                     !e.value.trim().is_empty()

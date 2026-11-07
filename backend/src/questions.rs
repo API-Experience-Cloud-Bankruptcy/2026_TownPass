@@ -137,7 +137,10 @@ pub fn build_questions(entries: &[Entry]) -> Vec<Question> {
                         || entry.adaptive.is_some_and(|row| {
                             matches!(field, "need_area" | "explore_context" | "expense_priority")
                                 || row.facets.iter().any(|facet| facet.field == field)
-                                || row.ranking_preferences.iter().any(|preference| preference.field == field)
+                                || row
+                                    .ranking_preferences
+                                    .iter()
+                                    .any(|preference| preference.field == field)
                         })
                 })
                 .map(|entry| entry.subsidy.id.clone())
