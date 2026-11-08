@@ -1,6 +1,6 @@
 import { REVIEW_VERSION } from '../reviewed-rules';
 import { describe, expect, it, vi } from 'vitest';
-import { loadAppData, migrateSession } from '../bootstrap';
+import { ENGINE_VERSION, loadAppData, migrateSession } from '../bootstrap';
 import { emptySession } from '../session';
 import type { LoadedCatalog } from '../types';
 import { makeSubsidy } from './fixtures';
@@ -13,12 +13,12 @@ const catalog = (version: string, ids: string[]): LoadedCatalog => ({
 });
 
 describe('版本遷移', () => {
-  const old = { ...emptySession('self'), catalogVersion: 'old', rulesVersion: REVIEW_VERSION, planIds: ['A', 'GONE'], stepDone: { A: [0] }, docChecks: { k: true } };
+  const old = { ...emptySession('self'), catalogVersion: 'old', rulesVersion: REVIEW_VERSION, engineVersion:ENGINE_VERSION, planIds: ['A', 'GONE'], stepDone: { A: [0] }, docChecks: { k: true } };
 
   it('版本變更時重設進度、移除不存在的資源，且不修改輸入', () => {
     const patch = migrateSession(old, catalog('new', ['A']));
     expect(patch).toMatchObject({ planIds: ['A'], stepDone: {}, docChecks: {}, catalogVersion: 'new' });
-    expect(patch.notice).toContain('準備進度已重設');
+    expect(patch.notice).toContain('問答進度已重設');
     expect(old.stepDone).toEqual({ A: [0] });
   });
 

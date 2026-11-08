@@ -59,7 +59,13 @@ export interface Eligibility {
   [key: string]: unknown;
 }
 
+export type DocumentRegionBasis = 'registered' | 'residence' | 'application' | 'unknown';
+
 export interface RequiredDocument {
+  /** 地方文件範圍及比對依據；不從戶籍推定居住／受理地。 */
+  regions?: string[];
+  region_basis?: DocumentRegionBasis;
+  region_evidence?: string;
   name: string;
   condition: string | null;
   notes: string | null;
@@ -157,6 +163,10 @@ export interface Question {
   min?: number;
   max?: number;
   resource_ids: string[];
+  purpose?: 'qualification' | 'discovery';
+  burden?: number;
+  situations?: string[];
+  depends_on?: Record<string, (string | boolean)[]>;
 }
 
 export interface QuestionBank {
@@ -175,7 +185,7 @@ export interface Answers {
   region?: RegionAnswer;
   is_student?: boolean;
   household_type?: HouseholdType;
-  /** 後端新增、前端尚未用於判斷的欄位，只保存不評估 */
+  /** 經固定題庫驗證的本機探索與新增必要條件欄位 */
   extra?: Record<string, string | number | boolean>;
 }
 

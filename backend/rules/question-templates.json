@@ -1,0 +1,842 @@
+{
+  "version": "adaptive-questions-v2",
+  "questions": [
+    {
+      "id": "q-need-area",
+      "field": "need_area",
+      "kind": "single",
+      "title": "目前最想先處理哪一類事情？",
+      "description": "先挑一個想了解的方向，或跳過繼續看看。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "生活費與急難",
+          "value": "living"
+        },
+        {
+          "label": "長者與照顧",
+          "value": "elder"
+        },
+        {
+          "label": "就學與學費",
+          "value": "study"
+        },
+        {
+          "label": "育兒與家庭",
+          "value": "family"
+        },
+        {
+          "label": "醫療與健康",
+          "value": "health"
+        },
+        {
+          "label": "身心障礙",
+          "value": "disability"
+        },
+        {
+          "label": "住宅與租屋",
+          "value": "housing"
+        },
+        {
+          "label": "工作與失業",
+          "value": "work"
+        },
+        {
+          "label": "文化與社區",
+          "value": "community"
+        }
+      ]
+    },
+    {
+      "id": "q-age",
+      "field": "age",
+      "kind": "number",
+      "title": "目前幾歲（實歲）？",
+      "description": "填目前已滿的歲數，不知道可以先跳過。",
+      "burden": 2,
+      "min": 0,
+      "max": 130
+    },
+    {
+      "id": "q-region",
+      "field": "region",
+      "kind": "single",
+      "title": "戶籍設在哪裡？",
+      "description": "有些資源會看戶籍，和現在住的地方不一定相同。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "臺北市",
+          "value": "臺北市"
+        },
+        {
+          "label": "臺北市以外",
+          "value": "其他縣市"
+        }
+      ]
+    },
+    {
+      "id": "q-is-student",
+      "field": "is_student",
+      "kind": "boolean",
+      "title": "目前是在學學生嗎？",
+      "description": "請依這次查詢對象目前的在學情況回答。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "是",
+          "value": true
+        },
+        {
+          "label": "否",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "q-household-type",
+      "field": "household_type",
+      "kind": "single",
+      "title": "是否已取得低收入戶或中低收入戶資格？",
+      "description": "依目前有效的政府核定證明回答；不確定可以先跳過。",
+      "burden": 2,
+      "options": [
+        {
+          "label": "低收入戶",
+          "value": "low_income"
+        },
+        {
+          "label": "中低收入戶",
+          "value": "mid_low_income"
+        },
+        {
+          "label": "一般（未核定）",
+          "value": "general"
+        }
+      ]
+    },
+    {
+      "id": "q-has-farmer-insurance",
+      "field": "has_farmer_insurance",
+      "kind": "boolean",
+      "title": "本人是否曾參加農保、具有農保投保年資？",
+      "description": "老農津貼會核對農保年資與持續加保情況；這題只確認有無年資，不代表已符合。若不確定可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "有農保投保年資",
+          "value": true
+        },
+        {
+          "label": "沒有農保投保年資",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "q-veteran-status",
+      "field": "veteran_status",
+      "kind": "boolean",
+      "title": "本人是否具有輔導條例第2條規定的退除役官兵身分？",
+      "description": "這是榮民就養給付的必要身分，和一般曾服兵役不同；不確定身分類別可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "具有上述退除役官兵身分",
+          "value": true
+        },
+        {
+          "label": "沒有上述身分",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "q-education-level",
+      "field": "education_level",
+      "kind": "single",
+      "title": "想申請補助的學期或學年，是哪個教育階段？",
+      "description": "請依這次想申請補助的學期或學年回答。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "學齡前",
+          "value": "preschool"
+        },
+        {
+          "label": "國小",
+          "value": "primary"
+        },
+        {
+          "label": "國中、高中職或五專前3年",
+          "value": "secondary"
+        },
+        {
+          "label": "五專後2年、二專或大學",
+          "value": "college"
+        },
+        {
+          "label": "研究所",
+          "value": "graduate"
+        }
+      ],
+      "situations": [
+        "study"
+      ],
+      "depends_on": {
+        "is_student": [
+          true
+        ]
+      }
+    },
+    {
+      "id": "q-education-support",
+      "field": "education_support",
+      "kind": "single",
+      "title": "目前就學最需要哪種協助？",
+      "description": "先選最想處理的就學支出，其他方向還是看得到。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "學雜費減免或補助",
+          "value": "tuition"
+        },
+        {
+          "label": "獎學金與獎勵",
+          "value": "scholarship"
+        },
+        {
+          "label": "住宿",
+          "value": "accommodation"
+        },
+        {
+          "label": "生活或急難助學",
+          "value": "emergency"
+        },
+        {
+          "label": "就學貸款",
+          "value": "loan"
+        },
+        {
+          "label": "學習與課程",
+          "value": "learning"
+        }
+      ],
+      "situations": [
+        "study"
+      ]
+    },
+    {
+      "id": "q-employment-status",
+      "field": "employment_status",
+      "kind": "single",
+      "title": "目前的工作情況比較接近哪一項？",
+      "description": "請依目前的工作情況回答。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "在職",
+          "value": "employed"
+        },
+        {
+          "label": "待業或失業",
+          "value": "unemployed"
+        },
+        {
+          "label": "自營或創業",
+          "value": "self_employed"
+        },
+        {
+          "label": "退休",
+          "value": "retired"
+        },
+        {
+          "label": "參加職訓",
+          "value": "training"
+        }
+      ],
+      "situations": [
+        "work",
+        "elder"
+      ]
+    },
+    {
+      "id": "q-work-support",
+      "field": "work_support",
+      "kind": "single",
+      "title": "目前工作方面想先處理什麼？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "找工作或重返職場",
+          "value": "job_search"
+        },
+        {
+          "label": "職業訓練",
+          "value": "training"
+        },
+        {
+          "label": "創業",
+          "value": "entrepreneurship"
+        },
+        {
+          "label": "職災與職業病",
+          "value": "injury"
+        },
+        {
+          "label": "勞保、退休或津貼",
+          "value": "insurance"
+        },
+        {
+          "label": "就業獎勵",
+          "value": "employment_award"
+        },
+        {
+          "label": "積欠工資或資遣費墊償",
+          "value": "wage_claim"
+        },
+        {
+          "label": "失業後子女就學費",
+          "value": "family_education"
+        },
+        {
+          "label": "育嬰留停或生育給付",
+          "value": "family_leave"
+        }
+      ],
+      "situations": [
+        "work"
+      ]
+    },
+    {
+      "id": "q-housing-status",
+      "field": "housing_status",
+      "kind": "single",
+      "title": "目前的居住情況比較接近哪一項？",
+      "description": "依目前居住安排回答，不確定可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "租屋",
+          "value": "renting"
+        },
+        {
+          "label": "自有住宅",
+          "value": "owning"
+        },
+        {
+          "label": "準備購屋",
+          "value": "buying"
+        },
+        {
+          "label": "暫無穩定住所",
+          "value": "unhoused"
+        }
+      ],
+      "situations": [
+        "housing"
+      ]
+    },
+    {
+      "id": "q-housing-support",
+      "field": "housing_support",
+      "kind": "single",
+      "title": "住宅方面想先處理什麼？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "租金與租屋",
+          "value": "rent"
+        },
+        {
+          "label": "社會住宅",
+          "value": "social_housing"
+        },
+        {
+          "label": "購屋貸款",
+          "value": "purchase"
+        },
+        {
+          "label": "住宅修繕",
+          "value": "repair"
+        },
+        {
+          "label": "搬遷與安置",
+          "value": "moving"
+        }
+      ],
+      "situations": [
+        "housing"
+      ]
+    },
+    {
+      "id": "q-care-context",
+      "field": "care_context",
+      "kind": "single",
+      "title": "目前需要哪一類照顧安排？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "日常協助，暫時不需長照",
+          "value": "independent"
+        },
+        {
+          "label": "在家接受照顧",
+          "value": "home_care"
+        },
+        {
+          "label": "住宿機構",
+          "value": "institution"
+        },
+        {
+          "label": "照顧家人的支持",
+          "value": "caregiver"
+        }
+      ],
+      "situations": [
+        "elder",
+        "disability"
+      ]
+    },
+    {
+      "id": "q-family-stage",
+      "field": "family_stage",
+      "kind": "single",
+      "title": "家中目前需要哪方面的協助？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "懷孕與生育",
+          "value": "pregnancy"
+        },
+        {
+          "label": "未滿2歲嬰幼兒",
+          "value": "infant"
+        },
+        {
+          "label": "學齡前幼兒",
+          "value": "preschool"
+        },
+        {
+          "label": "學齡兒少",
+          "value": "school_child"
+        },
+        {
+          "label": "單親或特殊境遇",
+          "value": "single_parent"
+        },
+        {
+          "label": "家庭急難與保護",
+          "value": "family_crisis"
+        }
+      ],
+      "situations": [
+        "family"
+      ]
+    },
+    {
+      "id": "q-health-support",
+      "field": "health_support",
+      "kind": "single",
+      "title": "健康方面最需要哪一種協助？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "醫療費用",
+          "value": "treatment"
+        },
+        {
+          "label": "健康檢查或篩檢",
+          "value": "screening"
+        },
+        {
+          "label": "健保與保費",
+          "value": "insurance"
+        },
+        {
+          "label": "復健或輔具",
+          "value": "rehabilitation"
+        }
+      ],
+      "situations": [
+        "health"
+      ]
+    },
+    {
+      "id": "q-living-support",
+      "field": "living_support",
+      "kind": "single",
+      "title": "生活方面想先處理哪件事？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "日常生活費",
+          "value": "daily"
+        },
+        {
+          "label": "急難救助",
+          "value": "emergency"
+        },
+        {
+          "label": "喪葬費用",
+          "value": "funeral"
+        },
+        {
+          "label": "餐食與物資",
+          "value": "food"
+        },
+        {
+          "label": "稅負減免",
+          "value": "tax"
+        }
+      ],
+      "situations": [
+        "living"
+      ]
+    },
+    {
+      "id": "q-disability-certificate",
+      "field": "disability_certificate",
+      "kind": "boolean",
+      "title": "目前有有效的身心障礙證明嗎？",
+      "description": "依目前有效證明回答；還在申請或不確定可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "有",
+          "value": true
+        },
+        {
+          "label": "沒有",
+          "value": false
+        }
+      ],
+      "situations": [
+        "disability"
+      ]
+    },
+    {
+      "id": "q-disability-support",
+      "field": "disability_support",
+      "kind": "single",
+      "title": "身心障礙方面想先了解什麼？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "生活津貼",
+          "value": "allowance"
+        },
+        {
+          "label": "輔具",
+          "value": "aids"
+        },
+        {
+          "label": "照顧與住宿",
+          "value": "care"
+        },
+        {
+          "label": "就業協助",
+          "value": "employment"
+        },
+        {
+          "label": "交通",
+          "value": "transport"
+        },
+        {
+          "label": "教育協助",
+          "value": "education"
+        }
+      ],
+      "situations": [
+        "disability"
+      ]
+    },
+    {
+      "id": "q-community-support",
+      "field": "community_support",
+      "kind": "single",
+      "title": "文化與社區資源想先了解哪個方向？",
+      "description": "先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。",
+      "burden": 1,
+      "options": [
+        {
+          "label": "文化藝術",
+          "value": "culture"
+        },
+        {
+          "label": "體育",
+          "value": "sports"
+        },
+        {
+          "label": "社區與公益",
+          "value": "civic"
+        },
+        {
+          "label": "環境",
+          "value": "environment"
+        },
+        {
+          "label": "獎項與競賽",
+          "value": "competition"
+        }
+      ],
+      "situations": [
+        "community"
+      ]
+    },
+    {
+      "id": "q-is-unemployed",
+      "field": "is_unemployed",
+      "kind": "boolean",
+      "title": "這次想申請補助的期間，有待業或失業嗎？",
+      "description": "請依這次想申請補助的期間回答，不只看今天有沒有工作。不確定可以跳過。",
+      "options": [
+        {
+          "label": "是",
+          "value": true
+        },
+        {
+          "label": "否",
+          "value": false
+        }
+      ],
+      "burden": 1,
+      "situations": [
+        "work"
+      ]
+    },
+    {
+      "id": "q-is-renting",
+      "field": "is_renting",
+      "kind": "boolean",
+      "title": "這次想申請補助的房子，是本人或申請家庭租的嗎？",
+      "description": "請依這次想申請補助的住宅與期間回答，不確定可以跳過。",
+      "options": [
+        {
+          "label": "是",
+          "value": true
+        },
+        {
+          "label": "否",
+          "value": false
+        }
+      ],
+      "burden": 1,
+      "situations": [
+        "housing"
+      ]
+    },
+    {
+      "id": "q-owns-home",
+      "field": "owns_home",
+      "kind": "boolean",
+      "title": "本人名下有住宅嗎？",
+      "description": "這題問本人是否有住宅所有權，和目前住哪裡不同。",
+      "options": [
+        {
+          "label": "是",
+          "value": true
+        },
+        {
+          "label": "否",
+          "value": false
+        }
+      ],
+      "burden": 1,
+      "situations": [
+        "housing"
+      ]
+    },
+    {
+      "id": "q-explore-context",
+      "field": "explore_context",
+      "kind": "single",
+      "title": "查詢對象目前的生活情況比較接近哪一項？",
+      "description": "不需要知道補助名稱，先從生活狀況找方向；不確定也可以選或跳過。",
+      "options": [
+        {
+          "label": "在學，想減輕就學負擔",
+          "value": "student"
+        },
+        {
+          "label": "工作中",
+          "value": "working"
+        },
+        {
+          "label": "正在找工作或考慮職訓",
+          "value": "jobseeker"
+        },
+        {
+          "label": "退休或以長者日常生活為主",
+          "value": "retired"
+        },
+        {
+          "label": "正在育兒或照顧兒少",
+          "value": "care_child"
+        },
+        {
+          "label": "照顧長者或需要長照的家人",
+          "value": "care_adult"
+        },
+        {
+          "label": "這些都不確定，先看看",
+          "value": "uncertain"
+        }
+      ],
+      "burden": 1
+    },
+    {
+      "id": "q-expense-priority",
+      "field": "expense_priority",
+      "kind": "single",
+      "title": "最近最想減輕哪一筆生活負擔？",
+      "description": "先從最困擾的支出找方向，不需要知道補助名稱。",
+      "options": [
+        {
+          "label": "房租或住宅費用",
+          "value": "rent"
+        },
+        {
+          "label": "醫療或保險費",
+          "value": "treatment"
+        },
+        {
+          "label": "生活費、急難或餐食",
+          "value": "daily"
+        },
+        {
+          "label": "學費與學習支出",
+          "value": "tuition"
+        },
+        {
+          "label": "長照或照顧費用",
+          "value": "care"
+        },
+        {
+          "label": "育兒與托育費用",
+          "value": "child"
+        },
+        {
+          "label": "尚無特定支出，繼續看看",
+          "value": "uncertain"
+        }
+      ],
+      "burden": 1
+    },
+    {
+      "id": "q-benefit-style",
+      "field": "benefit_style",
+      "kind": "single",
+      "title": "想先了解哪種協助方式？",
+      "description": "先選想了解的協助方式，其他資源還是看得到。",
+      "options": [
+        {
+          "label": "現金補助或津貼",
+          "value": "payment"
+        },
+        {
+          "label": "費用減免",
+          "value": "fee_reduction"
+        },
+        {
+          "label": "貸款",
+          "value": "loan"
+        },
+        {
+          "label": "實物或服務",
+          "value": "service"
+        },
+        {
+          "label": "獎金或獎勵",
+          "value": "award"
+        }
+      ],
+      "burden": 2
+    },
+    {
+      "id": "q-elder-support",
+      "field": "elder_support",
+      "kind": "single",
+      "title": "長者生活目前最需要哪一種協助？",
+      "description": "生活津貼、交通、在家照顧和機構住宿的資源不同，先選最想處理的一件事。",
+      "options": [
+        {
+          "label": "日常生活津貼或年金",
+          "value": "allowance"
+        },
+        {
+          "label": "交通與乘車",
+          "value": "transport"
+        },
+        {
+          "label": "在家照顧與長照服務",
+          "value": "family_home_care"
+        },
+        {
+          "label": "機構日間照顧或住宿",
+          "value": "institution"
+        },
+        {
+          "label": "照顧家人的津貼或喘息",
+          "value": "caregiver"
+        },
+        {
+          "label": "醫療、健保或健康照護",
+          "value": "health"
+        },
+        {
+          "label": "換居、修繕或無障礙改善",
+          "value": "housing"
+        },
+        {
+          "label": "退休後重返職場",
+          "value": "employment"
+        },
+        {
+          "label": "活動與學習",
+          "value": "community"
+        }
+      ],
+      "burden": 1,
+      "situations": [
+        "elder"
+      ]
+    },
+    {
+      "id": "q-work-applicant",
+      "field": "work_applicant",
+      "kind": "single",
+      "title": "這次想替哪一種身分找工作相關資源？",
+      "description": "有些補助給勞工，有些由雇主、事業或家屬申請，請先選要找哪一類。",
+      "options": [
+        {
+          "label": "勞工、求職者或受訓者本人",
+          "value": "person"
+        },
+        {
+          "label": "創業者、事業或雇主",
+          "value": "business"
+        },
+        {
+          "label": "失業家庭成員或職災遺屬",
+          "value": "relative"
+        },
+        {
+          "label": "舉辦職涯或創業活動的團體",
+          "value": "organization"
+        }
+      ],
+      "burden": 1,
+      "situations": [
+        "work"
+      ]
+    }
+  ]
+}

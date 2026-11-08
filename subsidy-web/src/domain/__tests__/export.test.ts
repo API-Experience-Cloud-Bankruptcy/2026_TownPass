@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHelpText, buildPlanText, DISCLAIMER, shareText } from '../export';
+import { buildPlanText, DISCLAIMER, shareText } from '../export';
 import { evaluateAll } from '../match';
 import { ageRule, makeSubsidy } from './fixtures';
 
@@ -48,14 +48,6 @@ describe('紙本交接完整性', () => {
     expect(t).not.toContain('見官方說明');
     expect(t).toContain('資料備註：資格細節依公告');
     expect(t).toContain('查核說明：官方頁已讀取');
-  });
-});
-
-describe('求助文字', () => {
-  it('有資源時產生詢問文字與聲明', () => {
-    const t = buildHelpText({ meta, target: 'self', reason: 'visit', item: makeSubsidy(), conditions: [] });
-    expect(t).toContain('可以這樣詢問');
-    expect(t).toContain(DISCLAIMER);
   });
 });
 

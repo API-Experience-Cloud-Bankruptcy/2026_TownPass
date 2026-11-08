@@ -1,6 +1,7 @@
 import { realItem } from './real-data';
 import { describe, expect, it } from 'vitest';
-import { buildLocalQuestions, parseNumberAnswer, questionsFor, sanitizeQuestions, setAnswer, titleFor } from '../questions';
+import { buildLocalQuestions, descriptionFor, parseNumberAnswer, questionsFor, sanitizeQuestions, setAnswer, titleFor } from '../questions';
+import { questionTemplates } from '../adaptive';
 import { makeSubsidy } from './fixtures';
 
 const items = [realItem('WEL-0055'), realItem('WEL-0089'), realItem('WEL-0110'),
@@ -20,7 +21,8 @@ describe('本機固定題庫', () => {
     expect(region.options?.map((o) => o.value)).toEqual(['臺北市', '其他縣市']);
   });
   it('依候選資源篩題', () => {
-    expect(questionsFor(bank, ['WEL-0055']).map((q) => q.field)).toEqual(['age']);
+    expect(questionsFor(bank, ['WEL-0055']).some(q=>q.field==='age')).toBe(true);
+    expect(questionsFor(bank,['WEL-0055']).some(q=>q.field==='need_area')).toBe(true);
     expect(questionsFor(bank, ['D'])).toEqual([]);
   });
   it('本人與他人問句不同', () => {
@@ -28,6 +30,28 @@ describe('本機固定題庫', () => {
     expect(titleFor(age, 'self')).toContain('你');
     expect(titleFor(age, 'other')).toContain('對方');
   });
+  it('所有對象條件與探索題在幫別人模式都明確指向對方，保留法定條件', () => {
+    const fields = ['age', 'region', 'is_student', 'household_type', 'has_farmer_insurance', 'veteran_status', 'owns_home', 'is_renting', 'is_unemployed', 'disability_certificate', 'explore_context', 'employment_status', 'housing_status', 'expense_priority'];
+    for (const field of fields) {
+      const question = questionTemplates.find(q => q.field === field)!;
+      expect(titleFor(question, 'other'), field).toContain('對方');
+      expect(titleFor(question, 'other'), field).not.toMatch(/你|本人/);
+      expect(descriptionFor(question, 'other'), field).not.toMatch(/你|本人/);
+      expect(titleFor(question, 'self'), field).toContain('你');
+    }
+    expect(titleFor(questionTemplates.find(q => q.field === 'veteran_status')!, 'other')).toContain('輔導條例第2條');
+    expect(titleFor(questionTemplates.find(q => q.field === 'owns_home')!, 'other')).toContain('住宅');
+    expect(descriptionFor(questionTemplates.find(q => q.field === 'household_type')!, 'other')).toContain('政府核定');
+  });
+  it('API 與本機題庫共用呈現，不改動原始題目或未知欄位', () => {
+    const source = { id: 'api-age', field: 'age', kind: 'number' as const, title: '原本的年齡題目', description: '原始提示', resource_ids: ['A'] };
+    const [api] = sanitizeQuestions({ questions: [source] });
+    expect(titleFor(api!, 'other')).toBe('對方目前幾歲（實歲）？');
+    expect(descriptionFor(api!, 'other')).toContain('對方目前已滿的歲數');
+    expect(api!.title).toBe(source.title);
+    expect(titleFor({ ...source, field: 'future_field' }, 'other')).toBe(source.title);
+  });
+
 });
 
 describe('答案', () => {

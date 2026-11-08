@@ -43,7 +43,10 @@ export function subsidyProblem(value: unknown): string | null {
   if (!isStrOrNull(app.process_text) || !isStrOrNull(app.channel_text) || !isStrOrNull(app.agency)) return 'application.text';
   if (!isStrArr(app.methods)) return 'application.methods';
   if (!isObj(app.deadline) || !isStrOrNull(app.deadline.raw)) return 'application.deadline';
-  if (!isArrOf(app.required_documents, (d) => isObj(d) && isStr(d.name) && isStrOrNull(d.condition) && isStrOrNull(d.notes)))
+  if (!isArrOf(app.required_documents, (d) => isObj(d) && isStr(d.name) && isStrOrNull(d.condition) && isStrOrNull(d.notes)
+    && (d.regions === undefined || (isStrArr(d.regions) && d.regions.length > 0 && d.regions.every(r => r.trim())
+      && ['registered', 'residence', 'application', 'unknown'].includes(String(d.region_basis)) && isStr(d.region_evidence) && !!d.region_evidence.trim()))
+    && (d.region_basis === undefined || d.regions !== undefined) && (d.region_evidence === undefined || d.regions !== undefined)))
     return 'application.required_documents';
   if (!isObj(app.urls) || !isStrOrNull(app.urls.program) || !isStrOrNull(app.urls.apply) || !isStrOrNull(app.urls.form))
     return 'application.urls';
@@ -140,20 +143,20 @@ export async function loadCatalog(options: LoadOptions = {}): Promise<LoadedCata
       signal: controller?.signal,
     });
     if (!response.ok) {
-      reason = `API 回應 ${response.status}`;
+      reason = `暫時無法取得線上資料（回應代碼 ${response.status}），先使用隨附資料。`;
     } else {
       const checked = validateCatalog(await response.json());
       if (checked.ok) {
         return {
           ...checked.catalog,
           origin: 'api',
-          sourceLabel: `後端 API（/api/catalog），版本 ${checked.catalog.version}`,
+          sourceLabel: '從服務取得的福利資料（原始來源見各項詳情）',
         };
       }
-      reason = `API 資料格式不符：${checked.error}`;
+      reason = '線上資料格式不完整，先使用隨附資料。';
     }
   } catch (error) {
-    reason = (error as Error)?.name === 'AbortError' ? 'API 逾時' : 'API 無法連線';
+    reason = (error as Error)?.name === 'AbortError' ? '取得線上資料逾時，先使用隨附資料。' : '目前無法連上資料服務，先使用隨附資料。';
   } finally {
     if (timer) clearTimeout(timer);
   }
@@ -162,7 +165,7 @@ export async function loadCatalog(options: LoadOptions = {}): Promise<LoadedCata
   return {
     ...fallback,
     origin: 'snapshot',
-    sourceLabel: `建置快照（backend/data/subsidies.json 原始檔），版本 ${fallback.version}`,
+    sourceLabel: '此版本隨附的福利資料（原始來源見各項詳情）',
     fallbackReason: reason,
   };
 }

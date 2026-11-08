@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Shared, source-bound review decisions. No runtime parsing of Chinese AND/OR.
+import { EXTRA_QUALIFICATION_FIELDS, validExtraRuleValues, validExtraValue } from './answer-fields';
 import manifest from '../../../backend/rules/eligibility-reviewed.json';
 import { fnv1a64 } from './catalog';
 import type { Answers, Subsidy } from './types';
 
-export type ReviewedField = 'age' | 'region' | 'is_student' | 'household_type';
+export type ReviewedField = 'age' | 'region' | 'is_student' | 'household_type' | 'education_level' | 'employment_status' | 'housing_status' | 'care_context' | 'disability_certificate' | 'is_unemployed' | 'is_renting' | 'owns_home' | 'has_farmer_insurance' | 'veteran_status';
 export interface Requirement {
   field: ReviewedField;
   label: string;
@@ -40,7 +41,17 @@ export function canonical(value: unknown): string {
   }
   return JSON.stringify(value) ?? 'null';
 }
-export const sourceFingerprint = (item: unknown): string => fnv1a64(canonical(item));
+// application.form_fields 是衍生的表單版面資訊（PDF 欄位座標），不影響資格判斷，
+// 不納入指紋，否則新增／更新欄位會讓已審核的資格規則失效。與後端 source_fingerprint 一致。
+const withoutFormFields = (item: unknown): unknown => {
+  const app = (item as { application?: Record<string, unknown> } | null)?.application;
+  if (app && typeof app === 'object' && 'form_fields' in app) {
+    const { form_fields: _omit, ...rest } = app;
+    return { ...(item as object), application: rest };
+  }
+  return item;
+};
+export const sourceFingerprint = (item: unknown): string => fnv1a64(canonical(withoutFormFields(item)));
 export const REVIEW_VERSION = `${manifest.version}-${sourceFingerprint(manifest)}`;
 export const reviewedRecords = manifest.records as ReviewedRecord[];
 const reviews = new Map(reviewedRecords.map(r => [r.id, r]));
@@ -83,6 +94,14 @@ export function requirementVerdict(rule: Requirement, answers: Answers, today: s
     const region = answers.region?.trim().replace(/台/g, '臺');
     if (region === '其他縣市') return rule.values?.length === 1 && rule.values[0] === '臺北市' ? false : null;
     return !region || !COUNTIES.has(region) ? null : !!rule.values?.includes(region);
+  }
+  if (rule.field !== 'age') {
+    if(!EXTRA_QUALIFICATION_FIELDS.has(rule.field)) return null;
+    const value = answers.extra?.[rule.field];
+    if(!validExtraValue(rule.field,value)) return null;
+    if (value === undefined) return null;
+    if (rule.required_boolean !== undefined) return typeof value === 'boolean' ? value === rule.required_boolean : null;
+    return typeof value === 'string' && rule.values && validExtraRuleValues(rule.field,rule.values) ? rule.values.includes(value) : null;
   }
   const age = answers.age;
   if (age === undefined || !Number.isFinite(age) || age < 0 || age > 130) return null;

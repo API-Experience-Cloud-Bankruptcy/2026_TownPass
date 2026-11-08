@@ -4,6 +4,7 @@
 use crate::models::Entry;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -40,6 +41,8 @@ pub struct Profile {
     /// "low_income" | "mid_low_income" | "general"
     pub household_type: Option<String>,
     pub applicant_types: Vec<String>,
+    /// Additional shared-template scalar answers; discovery answers never exclude.
+    pub extra: BTreeMap<String, Value>,
     pub q: Option<String>,
     pub include_ineligible: bool,
     pub view: Option<String>,
@@ -199,61 +202,6 @@ pub struct MatchResult {
     pub warnings: Vec<String>,
     pub blocked_by: Vec<String>,
     pub personal: Vec<PersonalNote>,
-    /// `application.deadline.end` when it is before the query date and the deadline is a
-    /// single fixed window; such items are hidden unless `include_ineligible` is set.
-    pub closed_on: Option<String>,
-}
-
-/// Identity groups a programme may be limited to; any member of a group satisfies it.
-const IDENTITIES: [(&[&str], &[&str]); 5] = [
-    (&["農保"], &["農保被保險人"]),
-    (&["榮民", "退除役"], &["榮民／退除役官兵"]),
-    (&["原住民"], &["原住民"]),
-    (&["身心障礙"], &["身心障礙者"]),
-    (&["低收入"], &["低收入戶", "中低收入戶"]),
-];
-
-/// Identity limits stated in the name, summary or structured employment/disability
-/// conditions that the profile does not declare.
-fn missing_identities(e: &Entry, p: &Profile) -> Vec<String> {
-    let s = &e.subsidy;
-    let el = &e.original["eligibility"];
-    let mut text = format!(
-        "{} {}",
-        s.name,
-        el["raw_summary"].as_str().unwrap_or_default()
-    );
-    for job in el["employment"].as_array().into_iter().flatten() {
-        for key in ["statuses", "insurance_types"] {
-            for v in job[key].as_array().into_iter().flatten() {
-                text.push(' ');
-                text.push_str(v.as_str().unwrap_or_default());
-            }
-        }
-    }
-    if !s.eligibility.disability.is_empty() {
-        text.push_str(" 身心障礙");
-    }
-    let mut declared = p.applicant_types.clone();
-    match p.household_type.as_deref() {
-        Some("low_income") => declared.push("低收入戶".into()),
-        Some("mid_low_income") => declared.push("中低收入戶".into()),
-        _ => {}
-    }
-    IDENTITIES
-        .iter()
-        .filter(|(keys, _)| keys.iter().any(|k| text.contains(k)))
-        .filter(|(_, labels)| !labels.iter().any(|l| declared.iter().any(|d| d == l)))
-        .map(|(_, labels)| labels.join("或"))
-        .collect()
-}
-
-/// Recorded deadline end if it has passed on `today` (both `YYYY-MM-DD`).
-fn passed_end(e: &Entry, today: &str) -> Option<String> {
-    let end = e.subsidy.application.deadline.get("end")?.as_str()?;
-    crate::reviewed_rules::date_parts(end)?;
-    crate::reviewed_rules::date_parts(today)?;
-    (end < today).then(|| end.to_string())
 }
 
 #[derive(Debug, Serialize)]
@@ -275,12 +223,10 @@ pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
         "僅初篩來源支持的必要條件；其他原文資格、例外、期間及證明仍待機關確認，非核准或送件證明"
             .into(),
     );
-    if s.source_meta.verification_status != "verified" {
-        warnings.push(format!(
-            "資料原有查核狀態為 {}，本次未重新查核",
-            s.source_meta.verification_status
-        ));
-    }
+    warnings.push(format!(
+        "資料原有查核狀態為 {}，僅為來源標示，本次未重新查核最新政策",
+        s.source_meta.verification_status
+    ));
     if let Some(review) = e.reviewed {
         for rule in &review.requirements {
             let verdict = crate::reviewed_rules::verdict(rule, p, today);
@@ -332,24 +278,6 @@ pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
                 .into(),
         );
     }
-    let missing = missing_identities(e, p);
-    if !missing.is_empty() {
-        warnings.push(format!(
-            "可能限定身分，自述未提供：{}；請備妥身分證明向機關確認",
-            missing.join("、")
-        ));
-    }
-    // Only a single fixed window closes the whole programme; other types may keep
-    // later periods or other applicant groups open. `partial` means some period,
-    // channel or group has already closed even when the recorded `end` is ahead.
-    let passed = passed_end(e, today);
-    let kind = &e.subsidy.application.deadline["type"];
-    let closed = passed.clone().filter(|_| kind == "fixed");
-    if let Some(end) = &closed {
-        warnings.push(format!("已截止：申請期限 {end}，請留意下一期公告"));
-    } else if passed.is_some() || kind == "partial" {
-        warnings.push("部分申請期間已截止，請確認仍開放的管道".into());
-    }
     for income in &s.eligibility.income {
         warnings.push(format!(
             "所得條件未評估（主體：{}；年度、期間及家戶口徑待核對）：{}",
@@ -391,20 +319,11 @@ pub fn evaluate_at(e: &Entry, p: &Profile, today: &str) -> MatchResult {
         warnings,
         blocked_by: blocked,
         personal,
-        closed_on: closed,
     }
 }
 
 pub fn run_match<'a>(entries: &'a [Entry], p: &Profile) -> Vec<(&'a Entry, MatchResult)> {
-    run_match_at(entries, p, &crate::reviewed_rules::taipei_today())
-}
-
-pub fn run_match_at<'a>(
-    entries: &'a [Entry],
-    p: &Profile,
-    today: &str,
-) -> Vec<(&'a Entry, MatchResult)> {
-    let mut out: Vec<(u32, &Entry, MatchResult, bool)> = entries
+    let mut out: Vec<(u32, &Entry, MatchResult)> = entries
         .iter()
         .filter_map(|e| {
             let score = keyword_score(e, &p.q)?;
@@ -417,12 +336,11 @@ pub fn run_match_at<'a>(
                     return None;
                 }
             }
-            let r = evaluate_at(e, p, today);
-            if (r.fit == Fit::Ineligible || r.closed_on.is_some()) && !p.include_ineligible {
+            let r = evaluate(e, p);
+            if r.fit == Fit::Ineligible && !p.include_ineligible {
                 return None;
             }
-            let limited = !missing_identities(e, p).is_empty();
-            Some((score, e, r, limited))
+            Some((score, e, r))
         })
         .collect();
     let rank = |f: Fit| match f {
@@ -431,12 +349,12 @@ pub fn run_match_at<'a>(
         Fit::Ineligible => 2,
     };
     out.sort_by(|a, b| {
-        (a.2.closed_on.is_some(), rank(a.2.fit), a.3)
-            .cmp(&(b.2.closed_on.is_some(), rank(b.2.fit), b.3))
+        rank(a.2.fit)
+            .cmp(&rank(b.2.fit))
             .then(b.0.cmp(&a.0))
             .then_with(|| a.1.subsidy.id.cmp(&b.1.subsidy.id))
     });
-    out.into_iter().map(|(_, e, r, _)| (e, r)).collect()
+    out.into_iter().map(|(_, e, r)| (e, r)).collect()
 }
 
 fn validate_age(age: Option<f64>) -> Result<(), String> {
@@ -482,6 +400,15 @@ impl Profile {
     pub fn validate(&self) -> Result<(), String> {
         validate_age(self.age)?;
         validate_view(&self.view)?;
+        if self.extra.len() > 32
+            || serde_json::to_vec(&self.extra).map_or(true, |bytes| bytes.len() > 4096)
+            || self
+                .extra
+                .iter()
+                .any(|(field, value)| !crate::questions::valid_extra_value(field, value))
+        {
+            return Err("extra 僅接受題庫支援的有限選項；未知請略過".into());
+        }
         if self
             .household_type
             .as_deref()

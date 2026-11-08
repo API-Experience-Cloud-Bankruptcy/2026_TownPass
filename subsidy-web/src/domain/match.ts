@@ -3,6 +3,7 @@
 // 只有明確可判斷的條件才排除；寧可全部 possible，也不給虛假 likely。
 // 原文欄位皆可能為 null，一律經 text() 安全處理。
 
+import { adaptiveReviewFor, questionTemplates } from './adaptive';
 import { isApplicantAgeRule, isTaipeiRegion } from './questions';
 import { reviewedChecks, reviewFor, taipeiToday } from './reviewed-rules';
 import type { AgeRule, Answers, MatchResult, PersonalNote, Subsidy } from './types';
@@ -79,19 +80,22 @@ export function evaluate(item: Subsidy, answers: Answers, today = taipeiToday())
   if (summary) pending.push(`適用對象原文：${quote(summary)}`);
 
   const review = reviewFor(item);
-  if (!review) warnings.push('資料已變更或沒有適用的來源綁定規則，原審閱規則已停用；請重新核對。');
+  if (!review) warnings.push('資料已變更，或目前無法依資料比對資格，請向承辦窗口核對。');
   for (const { rule, verdict } of reviewedChecks(item, answers, today, review)) {
     const evidence = rule.evidence.map(e => quote(e.value)).join('、');
     if (verdict === null) {
-      pending.push(`必要條件待確認（缺答、參考日期或出生年邊界）：${rule.label}；${evidence}`);
+      pending.push(`必要條件還要確認（可能缺少回答、適用日期或確切生日）：${rule.label}；${evidence}`);
     } else {
-      const value = rule.field === 'age' ? `目前實歲 ${answers.age}` : rule.field === 'is_student'
-        ? (answers.is_student ? '自述目前在學' : '自述目前未在學') : rule.field === 'region'
-        ? `自述戶籍 ${answers.region}` : `自述身分 ${answers.household_type}`;
-      note(verdict ? 'reasons' : 'blocked_by', `${value}，${verdict ? '與必要條件單項相符' : '不符必要條件'}：${rule.label}；${evidence}（其他條件仍待機關核驗）`, rule.field, null);
+      const answer = rule.field === 'household_type' ? answers.household_type : answers.extra?.[rule.field];
+      const template = questionTemplates.find(q => q.field === rule.field);
+      const label = template?.options?.find(option => option.value === answer)?.label ?? '已回答';
+      const value = rule.field === 'age' ? `填答年齡 ${answers.age} 歲` : rule.field === 'is_student'
+        ? (answers.is_student ? '填答目前在學' : '填答目前未在學') : rule.field === 'region'
+        ? `填答戶籍 ${answers.region}` : `填答：${label}`;
+      note(verdict ? 'reasons' : 'blocked_by', `${value}，${verdict ? '符合這一項必要條件' : '不符合這項必要條件'}：${rule.label}；${evidence}（其他條件仍須機關確認）`, rule.field, null);
     }
   }
-  if (review?.age_review === 'deferred') pending.push(`年齡主體／途徑待確認：${review.review_note}`);
+  if (review?.age_review === 'deferred') pending.push(`年齡條件適用於誰、如何申請仍須確認：${review.review_note}`);
   for (const r of arr(el.age)) pending.push(`年齡原文（${text(r.subject) || '主體未註明'}）：${quote(r.raw)}`);
 
   // 戶籍：scope 不是完整戶籍規則，與後端相同不以戶籍排除；只提示並列出原文。
@@ -109,12 +113,12 @@ export function evaluate(item: Subsidy, answers: Answers, today = taipeiToday())
   }
 
   // A type tag or a student array is not a required positive applicant status.
-  for (const h of arr(el.household)) pending.push(`家庭條件（未編碼部分仍待確認）：${quote(h.raw)}`);
-  for (const s of arr(el.student)) pending.push(`就學／未就學條件（請核對主體及學制）：${quote(s.raw)}`);
+  for (const h of arr(el.household)) pending.push(`家庭條件（仍須向窗口確認）：${quote(h.raw)}`);
+  for (const s of arr(el.student)) pending.push(`就學／未就學條件（請確認指的是誰及哪種學制）：${quote(s.raw)}`);
   if (arr(el.student).length && !review?.requirements.some(r => r.field === 'is_student')) {
-    warnings.push('在學欄位尚未建立本人必要條件；可能指子女、特定學制或未就學，不以回答在學自動加相符理由。');
+    warnings.push('這裡的就學條件可能指子女、特定學制或未就學者，無法只依「目前在學」的回答判定符合。');
   }
-  warnings.push('僅初篩已審閱必要條件；其他原文資格、例外、證明及受理時效仍須機關確認。');
+  warnings.push('目前只比對部分必要條件。完整資格、例外、證明及是否仍受理，都須向機關確認。');
 
   // 不比較個人所得與家戶所得；以下原文條件一律待確認。
   const income = arr(el.income);
@@ -132,9 +136,17 @@ export function evaluate(item: Subsidy, answers: Answers, today = taipeiToday())
   }
   for (const ex of arr(el.exclusions)) pending.push(`排除或例外：${quote(ex)}`);
 
+  const audit=adaptiveReviewFor(item);
+  if(audit) {
+    pending.push(`資料整理說明：${audit.review_note}`);
+    pending.push(`其他申請方式與適用對象：${audit.alternatives_note}`);
+    for(const condition of audit.manual_conditions) {
+      if(condition.path.startsWith('/application/required_documents')) pending.push(`文件要求待確認：${condition.value}（${condition.reason}）`);
+    }
+  }
   const status = item.source_meta?.verification_status;
-  if (status === 'partial') warnings.push('資料原有狀態為「部分查核」，請以官方公告為準。');
-  else if (status !== 'verified') warnings.push('資料原有狀態為「未查核」，請以官方公告為準。');
+  if (status === 'partial') warnings.push('資料標示為「部分查核」，請以官方公告為準。');
+  else if (status !== 'verified') warnings.push('資料標示為「未查核」，請以官方公告為準。');
 
   const passed = deadlinePassed(item, today);
   if (passed) warnings.push(`原文期限 ${passed} 可能已過，請查官方最新公告。`);

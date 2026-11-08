@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRoute, splitProcess, stuckAdvice } from '../route';
+import { buildRoute, splitProcess, applicationInquiry } from '../route';
 import { safeUrl } from '../url';
 import { makeSubsidy } from './fixtures';
 
@@ -42,19 +42,9 @@ describe('辦理路線', () => {
   });
 });
 
-describe('這一步做不到', () => {
-  it('透過學校／機構不算不需到場的替代方式', () => {
-    const item = makeSubsidy({ application: { methods: ['school', 'institution'] } } as any);
-    const advice = stuckAdvice(item, 'visit');
-    expect(advice.found.some((f) => f.includes('學校'))).toBe(false);
-    expect(advice.notFound).toContain('原文未列出不需到場的辦理方式。');
-  });
-  it('原文列出郵寄時提供', () => {
-    const item = makeSubsidy({ application: { methods: ['in_person', 'mail'] } } as any);
-    expect(stuckAdvice(item, 'visit').found.some((f) => f.includes('郵寄'))).toBe(true);
-  });
-  it('沒有委託來源時不推定可代辦', () => {
-    const item = makeSubsidy({ application: { methods: ['in_person'] } } as any);
-    expect(stuckAdvice(item, 'helper').notFound.some((n) => n.includes('未說明可委託'))).toBe(true);
+describe('申請準備 PDF 窗口詢問', () => {
+  it('依查詢對象產生問句', () => {
+    expect(applicationInquiry(makeSubsidy(), 'other')).toContain('對方是否符合申請資格');
+    expect(applicationInquiry(makeSubsidy(), 'self')).toContain('我是否符合申請資格');
   });
 });

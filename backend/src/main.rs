@@ -1,3 +1,5 @@
+mod action_plan;
+mod adaptive_rules;
 mod matcher;
 mod models;
 mod questions;
@@ -8,7 +10,8 @@ use axum::{
         rejection::{JsonRejection, QueryRejection},
         Path, Query, State,
     },
-    http::StatusCode,
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
@@ -17,6 +20,7 @@ use models::{Entry, Subsidy};
 use serde_json::{json, Value};
 use std::{collections::BTreeMap, collections::HashMap, net::SocketAddr, sync::Arc};
 use tower_http::cors::CorsLayer;
+use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 
 const EMBEDDED_DATA: &str = include_str!("../data/subsidies.json");
 const DEFAULT_LIMIT: usize = 20;
@@ -27,9 +31,27 @@ pub struct AppState {
     by_id: HashMap<String, usize>,
     version: String,
     questions: Vec<questions::Question>,
+    forms_dir: std::path::PathBuf,
+    demo: Option<Arc<action_plan::DemoStore>>,
 }
 
 type Shared = Arc<AppState>;
+
+/// Form PDFs produced by `tools/form_fields/build.py`: `<sha256 prefix, 12 hex>.pdf`.
+/// `FORMS_DIR` overrides the default (the repository copy next to `Cargo.toml`).
+fn default_forms_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("data/forms")
+}
+
+/// Exact-shape check only: no separators, no dots other than the extension, lowercase hex.
+fn is_form_file_name(name: &str) -> bool {
+    let b = name.as_bytes();
+    b.len() == 16
+        && &b[12..] == b".pdf"
+        && b[..12]
+            .iter()
+            .all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
+}
 
 fn load_state() -> Result<AppState, String> {
     // SUBSIDY_DATA overrides the embedded snapshot so data can be refreshed without a rebuild.
@@ -37,7 +59,19 @@ fn load_state() -> Result<AppState, String> {
         Ok(path) => std::fs::read_to_string(&path).map_err(|e| format!("read {path}: {e}"))?,
         Err(_) => EMBEDDED_DATA.to_string(),
     };
-    state_from_str(&raw)
+    let mut state = state_from_str(&raw)?;
+    if let Some(dir) = std::env::var_os("FORMS_DIR") {
+        state.forms_dir = std::path::PathBuf::from(dir);
+    }
+    if std::env::var("DEMO_MODE").as_deref() == Ok("1") {
+        let path = std::env::var_os("PLAN_DB_PATH")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| {
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("var/welfare.sqlite3")
+            });
+        state.demo = Some(Arc::new(action_plan::DemoStore::open(&path)?));
+    }
+    Ok(state)
 }
 
 fn state_from_str(raw: &str) -> Result<AppState, String> {
@@ -68,6 +102,8 @@ fn state_from_str(raw: &str) -> Result<AppState, String> {
         by_id,
         version,
         questions,
+        forms_dir: default_forms_dir(),
+        demo: None,
     })
 }
 
@@ -122,7 +158,7 @@ async fn catalog(State(st): State<Shared>) -> Json<Value> {
 
 async fn question_bank(State(st): State<Shared>) -> Json<Value> {
     Json(
-        json!({"version": format!("questions-v2/{}/{}", st.version, reviewed_rules::version()), "questions": st.questions}),
+        json!({"version": format!("questions-v3/{}/{}/{}/{}", st.version, reviewed_rules::version(), adaptive_rules::version(), questions::version()), "questions": st.questions}),
     )
 }
 
@@ -155,6 +191,32 @@ async fn get_one(
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "not_found", "id": id })),
         )),
+    }
+}
+
+async fn form_file(State(st): State<Shared>, Path(file): Path<String>) -> Response {
+    if !is_form_file_name(&file) {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "not_found", "id": file })),
+        )
+            .into_response();
+    }
+    match tokio::fs::read(st.forms_dir.join(&file)).await {
+        Ok(bytes) => (
+            [
+                (header::CONTENT_TYPE, "application/pdf"),
+                (header::CACHE_CONTROL, "public, max-age=86400"),
+                (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+            ],
+            bytes,
+        )
+            .into_response(),
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "not_found", "id": file })),
+        )
+            .into_response(),
     }
 }
 
@@ -239,8 +301,24 @@ pub fn app(state: AppState) -> Router {
         .route("/api/catalog", get(catalog))
         .route("/api/questions", get(question_bank))
         .route("/api/match", post(match_profile))
+        .route("/api/forms/{file}", get(form_file))
         .layer(CorsLayer::permissive())
+        .merge(action_plan::routes())
         .with_state(Arc::new(state))
+}
+
+/// Only an explicitly configured built web directory is served, never the repository.
+fn with_web(app: Router, root: &std::path::Path) -> Result<Router, String> {
+    if !root.join("index.html").is_file() {
+        return Err("WEB_ROOT must contain the built index.html".into());
+    }
+    let web = Router::new().fallback_service(ServeDir::new(root)).layer(
+        SetResponseHeaderLayer::overriding(
+            axum::http::header::CACHE_CONTROL,
+            axum::http::HeaderValue::from_static("no-cache"),
+        ),
+    );
+    Ok(app.fallback_service(web))
 }
 
 #[tokio::main]
@@ -265,7 +343,14 @@ async fn main() {
             eprintln!("bind {addr}: {e}");
             std::process::exit(1);
         });
-    if let Err(e) = axum::serve(listener, app(state)).await {
+    let mut router = app(state);
+    if let Some(root) = std::env::var_os("WEB_ROOT") {
+        router = with_web(router, std::path::Path::new(&root)).unwrap_or_else(|e| {
+            eprintln!("invalid web configuration: {e}");
+            std::process::exit(1);
+        });
+    }
+    if let Err(e) = axum::serve(listener, router).await {
         eprintln!("server error: {e}");
     }
 }

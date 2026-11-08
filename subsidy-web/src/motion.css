@@ -1,0 +1,92 @@
+/*
+ * 共用動態：Vue <Transition>／<TransitionGroup> 的 class 與小動畫。
+ * 時間與曲線一律用 tokens.css 的 --dur-*、--ease-*；元件自己的動畫寫在 style.css 該元件段落。
+ * 減少動態效果（prefers-reduced-motion）時全部關閉，Vue 偵測到 0 秒會立即完成轉場。
+ *
+ * 可用名稱：
+ *   fade        淡入淡出（狀態列、提示）
+ *   rise        淡入＋由下往上 8px（卡片、區塊出現）
+ *   pop         淡入＋縮放 0.96→1（對話框內容、徽章、小卡）
+ *   list        <TransitionGroup name="list">：新增淡入、移除收合、重新排序滑動
+ *   page-*      App.vue 換頁用（next/prev 左右滑、push/pop 進出、fade、reset 開新對話）
+ * 展開收合高度請用 components/motion/Expand.vue；<details> 由 chat/smooth-details.ts 全域處理。
+ */
+
+/* fade */
+.fade-enter-active { transition: opacity var(--dur-slow) var(--ease); }
+.fade-leave-active { transition: opacity var(--dur-page-exit) var(--ease-exit); }
+.fade-enter-from,
+.fade-leave-to { opacity: 0; }
+
+/* rise */
+.rise-enter-active { transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease); }
+.rise-leave-active { transition: opacity var(--dur-page-exit) var(--ease-exit), transform var(--dur-page-exit) var(--ease-exit); }
+.rise-enter-from { opacity: 0; transform: translateY(8px); }
+.rise-leave-to { opacity: 0; transform: translateY(-4px); }
+
+/* pop */
+.pop-enter-active { transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease-spring); }
+.pop-leave-active { transition: opacity var(--dur-page-exit) var(--ease-exit), transform var(--dur-page-exit) var(--ease-exit); }
+.pop-enter-from,
+.pop-leave-to { opacity: 0; transform: scale(0.96); }
+
+/* list：離場的項目脫離排版，其餘項目以 .list-move 滑到新位置 */
+.list-move { transition: transform var(--dur-expand) var(--ease); }
+.list-enter-active { transition: opacity var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease); }
+.list-leave-active {
+  transition: opacity var(--dur-page-exit) var(--ease-exit), transform var(--dur-page-exit) var(--ease-exit);
+  position: absolute;
+  inset-inline: 0;
+  pointer-events: none;
+}
+.list-enter-from { opacity: 0; transform: translateY(8px); }
+.list-leave-to { opacity: 0; transform: scale(0.97); }
+
+/* 換頁（App.vue）：同層分頁左右滑，往深一層 push、返回 pop */
+.page-next-enter-active, .page-prev-enter-active,
+.page-push-enter-active, .page-pop-enter-active,
+.page-fade-enter-active {
+  transition: opacity var(--dur-page) var(--ease), transform var(--dur-page) var(--ease);
+}
+.page-next-leave-active, .page-prev-leave-active,
+.page-push-leave-active, .page-pop-leave-active,
+.page-fade-leave-active {
+  transition: opacity var(--dur-page-exit) var(--ease-exit), transform var(--dur-page-exit) var(--ease-exit);
+}
+.page-next-enter-from { opacity: 0; transform: translateX(var(--page-shift)); }
+.page-next-leave-to { opacity: 0; transform: translateX(calc(var(--page-shift) * -0.5)); }
+.page-prev-enter-from { opacity: 0; transform: translateX(calc(var(--page-shift) * -1)); }
+.page-prev-leave-to { opacity: 0; transform: translateX(calc(var(--page-shift) * 0.5)); }
+.page-push-enter-from { opacity: 0; transform: translateX(var(--page-shift)); }
+.page-push-leave-to { opacity: 0; transform: translateX(calc(var(--page-shift) * -0.35)); }
+.page-pop-enter-from { opacity: 0; transform: translateX(calc(var(--page-shift) * -0.35)); }
+.page-pop-leave-to { opacity: 0; transform: translateX(var(--page-shift)); }
+.page-fade-enter-from,
+.page-fade-leave-to { opacity: 0; }
+/* 開新對話／換人：舊對話資料已清空，不留著淡出（會看到內容塌陷），直接收起後淡入新對話 */
+.page-reset-enter-active { transition: opacity var(--dur-page) var(--ease); }
+.page-reset-enter-from { opacity: 0; }
+
+/* 數字變動時輕輕彈一下（加 class 或以 :key 重建元素觸發） */
+@keyframes bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.bump { animation: bump var(--dur-slow) var(--ease-spring); }
+
+/* 完成打勾：放大後回定位 */
+@keyframes check-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*='-enter-active'],
+  [class*='-leave-active'],
+  .list-move {
+    transition: none !important;
+  }
+  .bump { animation: none; }
+}

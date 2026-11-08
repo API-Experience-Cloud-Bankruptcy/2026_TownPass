@@ -1,0 +1,9 @@
+# Installed successfully on GPUtw RTX 5090; runtime checks recorded separately.
+# Base image supplies torch 2.11.0+cu128. Do not install this stack on the Mac.
+transformers==5.20.2
+peft==0.21.2
+datasets==5.1.0
+accelerate==1.15.0
+bitsandbytes==0.50.2
+huggingface-hub==2.4.0
+sentencepiece==0.2.3

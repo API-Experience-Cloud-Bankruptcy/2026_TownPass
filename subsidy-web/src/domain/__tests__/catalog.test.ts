@@ -34,7 +34,7 @@ describe('資料載入與備援', () => {
     const hang = (_: string, init?: RequestInit) =>
       new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(Object.assign(new Error('a'), { name: 'AbortError' }))));
     const c = await loadCatalog({ fetchImpl: hang, snapshot, base: '', timeoutMs: 10 });
-    expect(c.fallbackReason).toBe('API 逾時');
+    expect(c.fallbackReason).toBe('取得線上資料逾時，先使用隨附資料。');
   });
   it('題庫 API 逾時改用本機模板', async () => {
     const hang = (_: string, init?: RequestInit) =>

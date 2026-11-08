@@ -1,110 +1,164 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-//! Fixed templates, emitted only when the loaded data supports the field.
+//! Shared, bounded question templates with source-bound resource support.
 use crate::models::Entry;
-use serde::Serialize;
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::collections::BTreeMap;
+use std::sync::LazyLock;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Question {
-    pub id: &'static str,
-    pub field: &'static str,
-    pub kind: &'static str,
-    pub title: &'static str,
-    pub description: &'static str,
+    pub id: String,
+    pub field: String,
+    pub kind: String,
+    pub title: String,
+    pub description: String,
+    #[serde(default = "default_burden")]
+    pub burden: u8,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<Vec<Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max: Option<u16>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub situations: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub depends_on: Option<BTreeMap<String, Vec<Value>>>,
+    #[serde(default)]
     pub resource_ids: Vec<String>,
+    #[serde(default)]
+    pub purpose: String,
+}
+fn default_burden() -> u8 {
+    1
+}
+#[derive(Deserialize)]
+struct Templates {
+    version: String,
+    questions: Vec<Question>,
+}
+const RAW: &str = include_str!("../rules/question-templates.json");
+static TEMPLATES: LazyLock<Templates> =
+    LazyLock::new(|| serde_json::from_str(RAW).expect("question templates JSON"));
+
+pub fn templates() -> &'static [Question] {
+    &TEMPLATES.questions
+}
+pub fn version() -> String {
+    let value: Value = serde_json::from_str(RAW).expect("question templates JSON");
+    format!(
+        "{}-{}",
+        TEMPLATES.version,
+        crate::reviewed_rules::source_fingerprint(&value)
+    )
+}
+pub fn legacy_field(field: &str) -> bool {
+    matches!(field, "age" | "region" | "is_student" | "household_type")
+}
+pub fn qualification_field(field: &str) -> bool {
+    legacy_field(field)
+        || matches!(
+            field,
+            "education_level"
+                | "is_unemployed"
+                | "is_renting"
+                | "owns_home"
+                | "disability_certificate"
+                | "has_farmer_insurance"
+                | "veteran_status"
+        )
+}
+/// No free text or unbounded custom data is admitted into the personal profile.
+pub fn valid_extra_value(field: &str, value: &Value) -> bool {
+    !legacy_field(field) && valid_template_value(field, value)
+}
+/// Discovery sidecars use string labels, including "true"/"false" for booleans.
+pub fn valid_facet_value(field: &str, value: &Value) -> bool {
+    let Some(value) = value.as_str() else {
+        return false;
+    };
+    templates()
+        .iter()
+        .find(|q| q.field == field)
+        .and_then(|q| q.options.as_ref())
+        .is_some_and(|options| {
+            options.iter().any(|option| {
+                option.get("value").is_some_and(|v| match v {
+                    Value::String(s) => s == value,
+                    Value::Bool(b) => b.to_string() == value,
+                    Value::Number(n) => n.to_string() == value,
+                    _ => false,
+                })
+            })
+        })
+}
+pub fn valid_template_value(field: &str, value: &Value) -> bool {
+    let Some(template) = templates().iter().find(|q| q.field == field) else {
+        return false;
+    };
+    match template.kind.as_str() {
+        "single" | "boolean" => {
+            (if template.kind == "boolean" {
+                value.is_boolean()
+            } else {
+                value.is_string()
+            }) && template.options.as_ref().is_some_and(|options| {
+                options
+                    .iter()
+                    .any(|option| option.get("value") == Some(value))
+            })
+        }
+        "number" => value.as_f64().is_some_and(|n| {
+            n.is_finite()
+                && template.min.is_some_and(|min| n >= f64::from(min))
+                && template.max.is_some_and(|max| n <= f64::from(max))
+        }),
+        _ => false,
+    }
 }
 
 pub fn build_questions(entries: &[Entry]) -> Vec<Question> {
-    let templates = [
-        (
-            "age",
-            "number",
-            "受助者目前幾歲？",
-            "填目前年齡（歲）；不是出生年。兒童、配偶、月齡及特定日期條件仍需另外確認。",
-        ),
-        (
-            "region",
-            "single",
-            "受助者的戶籍地在哪個縣市？",
-            "請選戶籍地，不是目前居住地。就學、就業、實際居住及設籍期間可能有不同規定。",
-        ),
-        (
-            "is_student",
-            "boolean",
-            "受助者目前是否在學？",
-            "用於本人在學或未就學的必要條件；學制、成績及其他要求仍待確認。",
-        ),
-        (
-            "household_type",
-            "single",
-            "受助者目前有哪一種福利身分？",
-            "依有效證明選擇。生活困難不等於具有低收入戶身分；不知道可略過。",
-        ),
-    ];
-    let mut questions = Vec::new();
-    for (field, kind, title, description) in templates {
-        let mut resource_ids: Vec<String> = entries
-            .iter()
-            .filter(|e| {
-                e.reviewed
-                    .is_some_and(|row| row.requirements.iter().any(|r| r.field == field))
-            })
-            .map(|e| e.subsidy.id.clone())
-            .collect();
-        resource_ids.sort();
-        resource_ids.dedup();
-        if resource_ids.is_empty() {
-            continue;
-        }
-        let options = match field {
-            "region" => {
-                let mut regions: Vec<String> = entries
-                    .iter()
-                    .filter_map(|e| e.reviewed)
-                    .flat_map(|row| &row.requirements)
-                    .filter(|r| r.field == "region")
-                    .filter_map(|r| r.values.as_ref())
-                    .flatten()
-                    .cloned()
-                    .collect();
-                regions.sort();
-                regions.dedup();
-                regions.push("其他縣市".into());
-                Some(
-                    regions
-                        .iter()
-                        .map(|r| json!({"label":if r == "其他縣市" { "臺北市以外" } else { r.as_str() },"value":r}))
-                        .collect(),
-                )
+    templates()
+        .iter()
+        .filter_map(|template| {
+            let field = template.field.as_str();
+            let has_gate = entries.iter().any(|entry| {
+                entry
+                    .reviewed
+                    .is_some_and(|row| row.requirements.iter().any(|rule| rule.field == field))
+            });
+            let mut resource_ids: Vec<String> = entries
+                .iter()
+                .filter(|entry| {
+                    entry
+                        .reviewed
+                        .is_some_and(|row| row.requirements.iter().any(|rule| rule.field == field))
+                        || entry.adaptive.is_some_and(|row| {
+                            matches!(field, "need_area" | "explore_context" | "expense_priority")
+                                || row.facets.iter().any(|facet| facet.field == field)
+                                || row
+                                    .ranking_preferences
+                                    .iter()
+                                    .any(|preference| preference.field == field)
+                        })
+                })
+                .map(|entry| entry.subsidy.id.clone())
+                .collect();
+            resource_ids.sort();
+            resource_ids.dedup();
+            if resource_ids.is_empty() {
+                return None;
             }
-            "is_student" => Some(vec![
-                json!({"label":"是","value":true}),
-                json!({"label":"否","value":false}),
-            ]),
-            "household_type" => Some(vec![
-                json!({"label":"低收入戶","value":"low_income"}),
-                json!({"label":"中低收入戶","value":"mid_low_income"}),
-                json!({"label":"一般戶","value":"general"}),
-            ]),
-            _ => None,
-        };
-        questions.push(Question {
-            id: field,
-            field,
-            kind,
-            title,
-            description,
-            options,
-            min: (field == "age").then_some(0),
-            max: (field == "age").then_some(130),
-            resource_ids,
-        });
-    }
-    questions
+            let mut question = template.clone();
+            question.resource_ids = resource_ids;
+            question.purpose = if has_gate {
+                "qualification"
+            } else {
+                "discovery"
+            }
+            .into();
+            Some(question)
+        })
+        .collect()
 }

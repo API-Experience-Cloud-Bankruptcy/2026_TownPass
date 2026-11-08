@@ -1,12 +1,13 @@
-// ActionPlanExporter：行動單與求助文字。畫面、純文字、列印共用同一份內容。
+// ActionPlanExporter：行動單文字。畫面、純文字、列印共用同一份內容。
 // 預設不含任何個人條件；使用者可在預覽中選擇加入或移除。
 
-import { mergeDocuments } from './documents';
+import { plainLanguageFor } from './plain-language';
+import { mergeDocuments, OTHER_REGION_TITLE, regionText } from './documents';
 import { FIT_LABEL, text } from './match';
-import { buildRoute, SOURCE_KIND_LABEL, STATUS_LABEL, stuckAdvice, STUCK_OPTIONS, type StuckReason } from './route';
+import { buildRoute, SOURCE_KIND_LABEL, STATUS_LABEL } from './route';
 import type { MatchResult, Subsidy, Target } from './types';
 
-export const DISCLAIMER = '申辦準備摘要，非核准或送件證明。資格以主管機關審核為準。';
+export const DISCLAIMER = '這份摘要供申請前準備，不代表已送件或核准。資格由主管機關審核。';
 
 export interface ExportMeta {
   catalogVersion: string;
@@ -43,6 +44,9 @@ export interface PlanInput {
   conditions: ConditionEntry[];
   docChecks: Record<string, boolean>;
   stepDone: Record<string, number[]>;
+  /** 查詢對象回答的戶籍，只用於篩選文件，不輸出；未回答時其他縣市文件另列 */
+  region?: string;
+  documentAnswers?: import('./types').Answers;
 }
 
 function formatDate(d: Date): string {
@@ -60,7 +64,7 @@ export function buildPlanText(input: PlanInput): string {
   lines.push(`對象：${input.target === 'self' ? '本人' : '家人或其他人'}`);
   const fields = new Set(input.conditions.map((c) => c.field));
   if (input.conditions.length) {
-    lines.push('已填條件（使用者自行填寫，未經查證）：');
+    lines.push('已加入的回答（自行填寫，尚未查證）：');
     for (const c of input.conditions) lines.push(`- ${c.line}`);
   } else {
     lines.push('已填條件：未加入（本摘要不含個人填答）');
@@ -68,9 +72,18 @@ export function buildPlanText(input: PlanInput): string {
   lines.push('');
 
   items.forEach((item, i) => {
-    const route = buildRoute(item);
+    const route = buildRoute(item, input.documentAnswers ?? { region: input.region });
     const result = results.get(item.id);
     lines.push(`【${i + 1}】${item.name}`);
+    const guide = plainLanguageFor(item);
+    if (guide) {
+      lines.push('白話導讀（協助閱讀，完整條件請看下方原文）：');
+      lines.push(`適合誰先了解：${guide.audience}`);
+      lines.push(`可以獲得什麼：${guide.support}`);
+      lines.push(`第一步：${guide.firstStep}`);
+      for (const caution of guide.cautions) lines.push(`提醒：${caution}`);
+      lines.push('');
+    }
     if (result) {
       lines.push(`初篩：${FIT_LABEL[result.fit]}`);
       const blocked = disclosedLines(result, 'blocked_by', fields);
@@ -80,20 +93,37 @@ export function buildPlanText(input: PlanInput): string {
       }
       const reasons = disclosedLines(result, 'reasons', fields);
       if (reasons.length) {
-        lines.push('已知相符的單項：');
+        lines.push('已符合的個別條件：');
         for (const r of reasons) lines.push(`  - ${r}`);
       }
       const warnings = disclosedLines(result, 'warnings', fields);
       if (warnings.length) {
-        lines.push('提醒（含資料時效）：');
+        lines.push('提醒（包含資料是否仍適用）：');
         for (const w of warnings) lines.push(`  - ${w}`);
       }
     }
     if (text(item.benefit?.raw)) lines.push(`內容：${text(item.benefit?.raw)}`);
+    // 導讀不能取代資格原文；即使尚無初篩結果，也完整保留來源列出的條件。
+    const originals = new Set<string>();
+    const collectOriginal = (value: unknown): void => {
+      if (typeof value === 'string') { if (value.trim()) originals.add(value); }
+      else if (Array.isArray(value)) value.forEach(collectOriginal);
+      else if (value && typeof value === 'object') {
+        const rule = value as Record<string, unknown>;
+        for (const key of ['raw', 'notes', 'description', 'condition']) collectOriginal(rule[key]);
+      }
+    };
+    for (const value of Object.values(item.eligibility ?? {})) collectOriginal(value);
+    for (const extension of item.extensions ?? []) if (extension.namespace === 'eligibility') collectOriginal(extension.raw);
+    if (originals.size) {
+      lines.push('資格條件（原文）：');
+      for (const original of originals) lines.push(`  - ${original}`);
+    }
     if (route.agency) lines.push(`主管／承辦：${route.agency}`);
     if (route.channel) lines.push(`受理窗口（原文）：${route.channel}`);
     if (route.methods.length) lines.push(`辦理方式：${route.methods.join('、')}`);
-    if (route.deadline) lines.push(`期限：${route.deadline}`);
+    lines.push(`期限：${route.deadlineSummary}`);
+    if (route.deadline && route.deadline !== route.deadlineSummary) lines.push(`完整期限說明：${route.deadline}`);
     if (route.steps.length) {
       lines.push(route.splitFromArrow ? '步驟：' : '流程（原文）：');
       const done = new Set(input.stepDone[item.id] ?? []);
@@ -113,62 +143,28 @@ export function buildPlanText(input: PlanInput): string {
     lines.push('');
   });
 
-  const merged = mergeDocuments(items);
-  lines.push('文件準備清單（勾選僅代表自己準備，不代表已送件）：');
+  const merged = mergeDocuments(items, input.documentAnswers ?? { region: input.region });
+  lines.push('文件準備清單（勾選代表已準備，不代表已送件）：');
   for (const d of merged.documents) {
     const mark = input.docChecks[d.key] ? '[已準備]' : '[ ]';
-    const detail = [d.condition && `條件：${d.condition}`, d.notes && `備註：${d.notes}`].filter(Boolean).join('；');
+    const detail = [d.required === false && '非必備（依個案需要）', d.condition && `條件：${d.condition}`, d.notes && `備註：${d.notes}`].filter(Boolean).join('；');
     lines.push(`${mark} ${d.name}${detail ? `（${detail}）` : ''}`);
     lines.push(`    用於：${d.usedBy.map((u) => u.name).join('、')}`);
   }
   for (const m of merged.incomplete) lines.push(`注意：「${m.name}」文件清單尚未補齊，不代表免附文件。`);
+  if (merged.otherRegion.length) {
+    lines.push('');
+    lines.push(`${OTHER_REGION_TITLE}：`);
+    for (const d of merged.otherRegion) {
+      const mark = input.docChecks[d.key] ? '[已準備]' : '[ ]';
+      const detail = [regionText(d.regions), d.required === false && '非必備（依個案需要）', d.condition && `條件：${d.condition}`, d.notes && `備註：${d.notes}`].filter(Boolean).join('；');
+      lines.push(`${mark} ${d.name}（${detail}）`);
+      lines.push(`    用於：${d.usedBy.map((u) => u.name).join('、')}`);
+    }
+  }
   lines.push('');
   lines.push(DISCLAIMER);
   lines.push(`資料版本：${meta.catalogVersion}`);
-  return lines.join('\n');
-}
-
-export interface HelpInput {
-  meta: ExportMeta;
-  target: Target;
-  reason: StuckReason;
-  item: Subsidy | null;
-  stepText?: string;
-  conditions: ConditionEntry[];
-}
-
-export function buildHelpText(input: HelpInput): string {
-  const label = STUCK_OPTIONS.find((o) => o.id === input.reason)?.label ?? '';
-  const lines: string[] = [];
-  lines.push(input.target === 'self' ? '我需要協助' : '我正在替家人或其他人詢問');
-  lines.push(`遇到的問題：${label}`);
-  if (input.item) {
-    const advice = stuckAdvice(input.item, input.reason, input.stepText);
-    lines.push(`想申請：${input.item.name}`);
-    if (input.stepText) lines.push(`卡住的步驟：${input.stepText}`);
-    lines.push('');
-    lines.push('可以這樣詢問：');
-    lines.push(advice.askText);
-    if (advice.found.length) {
-      lines.push('');
-      lines.push('資料列出的資訊：');
-      for (const f of advice.found) lines.push(`- ${f}`);
-    }
-    for (const n of advice.notFound) lines.push(`- ${n}`);
-    const route = buildRoute(input.item);
-    for (const l of route.links.filter((x) => x.kind === 'program')) lines.push(`${l.label}（${SOURCE_KIND_LABEL[l.sourceKind]}）：${l.url}`);
-  } else {
-    lines.push('');
-    lines.push('可以這樣詢問：');
-    lines.push(`您好，我在申請福利時遇到困難（${label}），請問可以協助我了解下一步嗎？`);
-  }
-  if (input.conditions.length) {
-    lines.push('');
-    lines.push('補充條件（自行填寫，未經查證）：');
-    for (const c of input.conditions) lines.push(`- ${c.line}`);
-  }
-  lines.push('');
-  lines.push(`${DISCLAIMER}（${formatDate(input.meta.generatedAt)}，資料版本 ${input.meta.catalogVersion}）`);
   return lines.join('\n');
 }
 

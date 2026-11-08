@@ -1,7 +1,9 @@
 // 題庫：固定模板，題目是否出現由資料中存在的條件決定；不使用 AI 生成。
 // 後端 /api/questions 可用時採用其題目，前端依選定候選資源的 resource_ids 篩題。
 
+import { validExtraValue } from './answer-fields';
 import { apiBase, type FetchLike } from './catalog';
+import { adaptiveReviewFor, ADAPTIVE_VERSION, questionTemplates, TEMPLATE_VERSION } from './adaptive';
 import { reviewFor, REVIEW_VERSION } from './reviewed-rules';
 import type { Answers, Question, QuestionBank, QuestionOption, Subsidy, Target } from './types';
 
@@ -27,56 +29,17 @@ function regionOptions(regions: string[]): QuestionOption[] {
 
 /** 本機固定模板題庫，與契約穩定欄位一致：age、region、is_student、household_type。 */
 export function buildLocalQuestions(items: Subsidy[]): Question[] {
-  // Hash each record once per bank build, not once per field.
   const reviewed = new Map(items.map(item => [item.id, reviewFor(item)]));
-  const ids = (field: string) => items.filter(item => reviewed.get(item.id)?.requirements.some(r => r.field === field)).map(item => item.id).sort();
-  const all: Question[] = [
-    {
-      id: 'q-region',
-      field: 'region',
-      kind: 'single',
-      title: '戶籍設在哪裡？',
-      description: '請選戶籍地，不是目前居住地。依就學、就業或居住地適用的條件，結果會另外標示待確認。',
-      options: regionOptions([...reviewed.values()].flatMap(row => row?.requirements.filter(r => r.field === 'region').flatMap(r => r.values ?? []) ?? [])),
-      resource_ids: ids('region'),
-    },
-    {
-      id: 'q-age',
-      field: 'age',
-      kind: 'number',
-      title: '目前幾歲（實歲）？',
-      description: '填目前已滿的實歲，不是今年將滿或虛歲。年度出生年與日期邊界不確定時保留待確認。',
-      min: 0,
-      max: MAX_AGE,
-      resource_ids: ids('age'),
-    },
-    {
-      id: 'q-student',
-      field: 'is_student',
-      kind: 'boolean',
-      title: '目前是在學學生嗎？',
-      options: [
-        { label: '是', value: true },
-        { label: '否', value: false },
-      ],
-      resource_ids: ids('is_student'),
-    },
-    {
-      id: 'q-household',
-      field: 'household_type',
-      kind: 'single',
-      title: '是否已取得低收入戶或中低收入戶資格？',
-      description: '依目前有效的政府核定證明回答。生活困難不等於已核定；不確定可略過。',
-      options: [
-        { label: '低收入戶', value: 'low_income' },
-        { label: '中低收入戶', value: 'mid_low_income' },
-        { label: '一般（未核定）', value: 'general' },
-      ],
-      resource_ids: ids('household_type'),
-    },
-  ];
-  const order = ['age', 'region', 'is_student', 'household_type'];
-  return all.filter(q => q.resource_ids.length > 0).sort((a,b) => order.indexOf(a.field)-order.indexOf(b.field));
+  const adaptive = new Map(items.map(item => [item.id, adaptiveReviewFor(item)]));
+  return questionTemplates.map(template => {
+    const field = template.field;
+    const gateIds = items.filter(item => reviewed.get(item.id)?.requirements.some(r=>r.field===field)).map(i=>i.id);
+    const ids = items.filter(item => ['need_area','explore_context','expense_priority'].includes(field) ? !!adaptive.get(item.id) : adaptive.get(item.id)?.facets.some(f=>f.field===field) || adaptive.get(item.id)?.ranking_preferences?.some(p=>p.field===field)).map(i=>i.id);
+    const purpose = gateIds.length ? 'qualification' as const : 'discovery' as const;
+    let options = template.options;
+    if(field === 'region') options = regionOptions([...reviewed.values()].flatMap(row=>row?.requirements.filter(r=>r.field==='region').flatMap(r=>r.values??[])??[]));
+    return {...template, purpose, options, resource_ids:[...new Set([...gateIds,...ids])].sort()};
+  }).filter(q=>q.resource_ids.length>0);
 }
 
 const KINDS = new Set(['single', 'boolean', 'number']);
@@ -105,6 +68,13 @@ export function sanitizeQuestions(value: unknown): Question[] {
       );
     }
     if ((q.kind === 'single' || q.kind === 'boolean') && (!options || options.length === 0)) continue;
+    let depends:Question['depends_on'];
+    if(q.depends_on!==undefined) {
+      if(!q.depends_on||typeof q.depends_on!=='object'||Array.isArray(q.depends_on)) continue;
+      const entries=Object.entries(q.depends_on);
+      if(entries.some(([,values])=>!Array.isArray(values)||!values.length||values.some(v=>typeof v!=='string'&&typeof v!=='boolean'))) continue;
+      depends=Object.fromEntries(entries) as Question['depends_on'];
+    }
     out.push({
       id: q.id,
       field: q.field,
@@ -115,6 +85,10 @@ export function sanitizeQuestions(value: unknown): Question[] {
       min: typeof q.min === 'number' ? q.min : undefined,
       max: typeof q.max === 'number' ? q.max : undefined,
       resource_ids: q.resource_ids as string[],
+      purpose: q.purpose === 'qualification' ? 'qualification' : 'discovery',
+      burden: typeof q.burden === 'number' ? q.burden : 1,
+      situations: Array.isArray(q.situations) && q.situations.every(v=>typeof v==='string') ? q.situations : undefined,
+      depends_on: depends,
     });
   }
   return out;
@@ -138,7 +112,7 @@ export async function loadQuestions(
       const questions = sanitizeQuestions(body);
       const expected = buildLocalQuestions(items);
       const supports = (qs: Question[]) => qs.map(q => `${q.field}:${[...q.resource_ids].sort().join(',')}`).sort().join('|');
-      if (questions.length > 0 && typeof body.version === 'string' && body.version.includes(REVIEW_VERSION) && supports(questions) === supports(expected)) {
+      if (questions.length > 0 && typeof body.version === 'string' && body.version.includes(REVIEW_VERSION) && body.version.includes(ADAPTIVE_VERSION) && body.version.includes(TEMPLATE_VERSION) && supports(questions) === supports(expected)) {
         return { version: typeof body.version === 'string' ? body.version : 'api', questions, origin: 'api' };
       }
     }
@@ -147,7 +121,7 @@ export async function loadQuestions(
   } finally {
     if (timer) clearTimeout(timer);
   }
-  return { version: `local-template-2/${REVIEW_VERSION}`, questions: buildLocalQuestions(items), origin: 'local' };
+  return { version: `local-template-3/${REVIEW_VERSION}/${ADAPTIVE_VERSION}/${TEMPLATE_VERSION}`, questions: buildLocalQuestions(items), origin: 'local' };
 }
 
 /** 依候選資源篩題：只問會影響目前候選的問題。 */
@@ -156,24 +130,69 @@ export function questionsFor(bank: Question[], candidateIds: string[]): Question
   return bank.filter((q) => q.resource_ids.some((id) => set.has(id)));
 }
 
-const SELF_TITLES: Record<string, string> = {
-  region: '你的戶籍設在哪裡？',
-  age: '你目前幾歲（實歲）？',
-  is_student: '你目前是在學學生嗎？',
-  household_type: '你是否已取得低收入戶或中低收入戶資格？',
-};
-
-const OTHER_TITLES: Record<string, string> = {
-  region: '對方的戶籍設在哪裡？',
-  age: '對方目前幾歲（實歲）？',
-  is_student: '對方目前是在學學生嗎？',
-  household_type: '對方是否已取得低收入戶或中低收入戶資格？',
-};
-
-/** 依查詢對象調整問句；未知欄位沿用原題目。 */
+/** 固定文案只改人稱與說法；欄位、選項及資格判斷仍沿用題庫。 */
 export function titleFor(question: Question, target: Target): string {
-  const titles = target === 'other' ? OTHER_TITLES : SELF_TITLES;
+  const who = target === 'other' ? '對方' : '你';
+  const titles: Record<string, string> = {
+    need_area: `${who}想先處理哪一類事情？`,
+    community_support: `${who}想先了解哪一類文化或社區資源？`,
+    benefit_style: `${who}想先了解哪種協助方式？`,
+    elder_support: `${who}在長者生活方面，最需要哪種協助？`,
+    region: `${who}的戶籍在哪裡？`,
+    age: `${who}目前幾歲（實歲）？`,
+    is_student: `${who}目前還在學嗎？`,
+    household_type: `${who}已取得低收入戶或中低收入戶資格嗎？`,
+    has_farmer_insurance: `${who}曾參加農保，有農保投保年資嗎？`,
+    veteran_status: `${who}有輔導條例第2條規定的退除役官兵身分嗎？`,
+    education_level: '想申請補助的學期或學年，是哪個教育階段？',
+    education_support: `${who}就學方面最需要哪種協助？`,
+    employment_status: `${who}目前的工作情況比較接近哪一項？`,
+    work_support: `${who}工作方面想先處理什麼？`,
+    housing_status: `${who}目前的居住情況比較接近哪一項？`,
+    housing_support: `${who}住屋方面想先處理什麼？`,
+    care_context: `${who}目前需要哪種照顧安排？`,
+    family_stage: `${who}家中目前需要哪方面的協助？`,
+    health_support: `${who}健康方面最需要哪種協助？`,
+    living_support: `${who}生活方面想先處理哪件事？`,
+    disability_certificate: `${who}目前有有效的身心障礙證明嗎？`,
+    disability_support: `${who}身心障礙方面想先了解什麼？`,
+    is_unemployed: `這次想申請補助的期間，${who}有待業或失業嗎？`,
+    is_renting: `這次想申請補助的房子，是${who}或申請家庭租的嗎？`,
+    owns_home: `${who}名下有住宅嗎？`,
+    explore_context: `${who}目前的生活情況比較接近哪一項？`,
+    expense_priority: `${who}最近最想減輕哪一筆生活開銷？`,
+    work_applicant: '這次想找哪一類對象的工作相關資源？',
+  };
   return titles[question.field] ?? question.title;
+}
+
+/** 提示與問句使用同一查詢對象；API 題庫與本機題庫都套用。 */
+export function descriptionFor(question: Question, target: Target): string {
+  const who = target === 'other' ? '對方' : '你';
+  const descriptions: Record<string, string> = {
+    need_area: '先選一個想了解的方向，不確定可以跳過。',
+    education_level: '請依這次想申請補助的學期或學年回答。',
+    education_support: '先選最想處理的就學支出，其他方向還是看得到。',
+    employment_status: `請依${who}目前的工作情況回答。`,
+    housing_status: `請依${who}目前的居住情況回答，不確定可以跳過。`,
+    disability_certificate: '請依目前有效的證明回答；還在申請或不確定可以跳過。',
+    is_unemployed: '請依這次想申請補助的期間回答，不只看今天有沒有工作。不確定可以跳過。',
+    is_renting: '請依這次想申請補助的住宅與期間回答，不確定可以跳過。',
+    benefit_style: '先選想了解的協助方式，其他資源還是看得到。',
+    elder_support: '先選最想處理的事情，例如生活費、交通或照顧。',
+    age: `請填${who}目前已滿的歲數，不清楚可以先跳過。`,
+    region: '這裡問的是戶籍，不一定和現在住的地方相同。',
+    is_student: `請依${who}目前的在學情況回答。`,
+    household_type: '請依目前有效的政府核定證明回答；生活困難不代表已有資格。不確定可以先跳過。',
+    has_farmer_insurance: '老農津貼還會核對農保年資與是否持續加保。有投保年資不代表符合資格，不清楚可以先跳過。',
+    veteran_status: '這是榮民就養給付需要的身分，和一般服過兵役不同。不確定身分類別可以先跳過。',
+    owns_home: `這裡問的是${who}有沒有住宅所有權，和目前住哪裡不同。`,
+    explore_context: '不用先知道補助名稱，先從生活情況找。不確定可以選「這些都不確定，先看看」或跳過。',
+    expense_priority: '先從最困擾的支出找，不用先知道補助名稱。',
+    work_applicant: '有些補助給勞工，有些由雇主、事業或家屬申請，先選要找哪一類。',
+  };
+  if (descriptions[question.field]) return descriptions[question.field]!;
+  return question.description?.replace('先選最需要協助的方向，其他資源仍可在結果查看；不知道可以先跳過。', '先選最需要的協助，其他資源還是看得到。不清楚可以先跳過。') ?? '';
 }
 
 /** 題目目前的答案；未回答或不知道回傳 undefined。 */
@@ -210,8 +229,10 @@ export function setAnswer(answers: Answers, question: Question, value: string | 
     else delete next.household_type;
   } else if (clear) {
     delete next.extra![field];
+  } else if(validExtraValue(field,value)) {
+    next.extra![field] = value;
   } else {
-    next.extra![field] = value as string | number | boolean;
+    delete next.extra![field];
   }
   if (next.extra && Object.keys(next.extra).length === 0) delete next.extra;
   return next;
@@ -237,7 +258,7 @@ export function parseNumberAnswer(
   return { ok: true, value: n };
 }
 
-/** 答案的可讀文字，用於摘要與求助預覽。 */
+/** 答案的可讀文字，用於摘要與輸出預覽。 */
 export function describeAnswer(question: Question, value: string | number | boolean | undefined): string {
   if (value === undefined) return '不知道／略過';
   if (question.kind === 'number') return `${value}${question.field === 'age' ? ' 歲' : ''}`;

@@ -26,6 +26,7 @@ export interface Account {
   memberType: string;
   verifyLevel: string;
   addresses: Address[];
+  /** 戶籍地址；addresses 為通訊地址清單。 */
   residentAddress: string;
   /** 是否為臺北市民 */
   citizen: boolean;

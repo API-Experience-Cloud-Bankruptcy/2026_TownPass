@@ -4,11 +4,9 @@ import 'package:town_pass/gen/assets.gen.dart';
 abstract final class TrendingServiceModel {
   /// 「補助專區」微服務網址（subsidy-web/）。建置時指定：
   /// 開發：flutter run --dart-define=SUBSIDY_URL=http://<電腦區網 IP>:5173
-  /// 未指定時使用正式網址。
-  static const String subsidyUrl = String.fromEnvironment(
-    'SUBSIDY_URL',
-    defaultValue: 'https://2026-town-pass.vercel.app/',
-  );
+  /// 正式：flutter run --dart-define=SUBSIDY_URL=https://<專案>.web.app/
+  /// 未指定時入口不開啟任何頁面。
+  static const String subsidyUrl = String.fromEnvironment('SUBSIDY_URL');
 
   static List<TrendingService> get serviceList {
     return [

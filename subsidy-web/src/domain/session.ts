@@ -1,11 +1,13 @@
-// 本機保存：答案與進度預設只存在本分頁的 sessionStorage（本次工作階段），不送後端；可隨時清除。
-// 不提供長期保存。顯示偏好（大字、高對比）不含個資，另存於 localStorage。
+// 本分頁的答案與對話狀態保存在 sessionStorage；行動單項目與進度另由 action-plan.ts 存後端。
+// 資格答案不送後端。顯示偏好（字體大小）不含個資，另存於 localStorage。
 // 不讀取 TownPass userinfo（mock 帳號）作為任何人的資格條件。
 
+import { validExtraValue } from './answer-fields';
 import { MAX_AGE } from './questions';
 import type { Answers, Target } from './types';
 
 export const SESSION_KEY = 'welfare-tong:session:v1';
+export const PERSONAL_PLAN_KEY = 'welfare-tong:personal-plan:v1';
 export const PREFS_KEY = 'welfare-tong:prefs:v1';
 
 export interface SessionState {
@@ -21,12 +23,22 @@ export interface SessionState {
   stepDone: Record<string, number[]>;
   catalogVersion: string | null;
   rulesVersion?: string | null;
+  engineVersion?: string | null;
   savedAt: string | null;
 }
 
 export interface Prefs {
-  largeText: boolean;
-  highContrast: boolean;
+  /** 字體大小，百分比（100 = 標準 16px）。 */
+  fontScale: number;
+}
+
+export const FONT_SCALE = { min: 90, max: 150, step: 10, default: 100 } as const;
+
+/** 夾在可調範圍內並對齊刻度；非數字回到標準。 */
+export function clampFontScale(value: unknown): number {
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : FONT_SCALE.default;
+  const snapped = Math.round(n / FONT_SCALE.step) * FONT_SCALE.step;
+  return Math.min(FONT_SCALE.max, Math.max(FONT_SCALE.min, snapped));
 }
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -44,6 +56,7 @@ export function emptySession(target: Target | null = null): SessionState {
     stepDone: {},
     catalogVersion: null,
     rulesVersion: null,
+    engineVersion: null,
     savedAt: null,
   };
 }
@@ -90,17 +103,17 @@ function sanitizeAnswers(v: unknown): Answers {
   if (a.extra && typeof a.extra === 'object') {
     const extra: Record<string, string | number | boolean> = {};
     for (const [k, val] of Object.entries(a.extra as Record<string, unknown>)) {
-      if (['string', 'number', 'boolean'].includes(typeof val)) extra[k] = val as string | number | boolean;
+      if (Object.keys(extra).length < 32 && validExtraValue(k,val)) extra[k] = val;
     }
     if (Object.keys(extra).length) out.extra = extra;
   }
   return out;
 }
 
-export function loadSession(storage: StorageLike | null = defaultStorage()): SessionState {
+export function loadSession(storage: StorageLike | null = defaultStorage(), key = SESSION_KEY): SessionState {
   if (!storage) return emptySession();
   try {
-    const raw = storage.getItem(SESSION_KEY);
+    const raw = storage.getItem(key);
     if (!raw) return emptySession();
     const s = JSON.parse(raw) as Partial<SessionState>;
     if (s.v !== 1) return emptySession();
@@ -122,6 +135,7 @@ export function loadSession(storage: StorageLike | null = defaultStorage()): Ses
       stepDone,
       catalogVersion: typeof s.catalogVersion === 'string' ? s.catalogVersion : null,
       rulesVersion: typeof s.rulesVersion === 'string' ? s.rulesVersion : null,
+      engineVersion: typeof s.engineVersion === 'string' ? s.engineVersion : null,
       savedAt: typeof s.savedAt === 'string' ? s.savedAt : null,
     };
   } catch {
@@ -129,14 +143,23 @@ export function loadSession(storage: StorageLike | null = defaultStorage()): Ses
   }
 }
 
-export function saveSession(state: SessionState, storage: StorageLike | null = defaultStorage()): boolean {
+export function saveSession(state: SessionState, storage: StorageLike | null = defaultStorage(), key = SESSION_KEY): boolean {
   if (!storage) return false;
   try {
-    storage.setItem(SESSION_KEY, JSON.stringify({ ...state, savedAt: new Date().toISOString() }));
+    storage.setItem(key, JSON.stringify({ ...state, savedAt: new Date().toISOString() }));
     return true;
   } catch {
     return false;
   }
+}
+
+/** 本人行動單與這次查詢分開；舊版他人檢核表不當成本人行動單。 */
+export function loadPersonalPlan(storage: StorageLike | null = defaultStorage()): SessionState {
+  let hasPersonal = false;
+  try { hasPersonal = !!storage?.getItem(PERSONAL_PLAN_KEY); } catch { /* 儲存空間不可用 */ }
+  const saved = loadSession(storage, hasPersonal ? PERSONAL_PLAN_KEY : SESSION_KEY);
+  if (saved.target === 'other') return emptySession('self');
+  return { ...saved, target: 'self', situation: null, query: '', seenQuestions: [] };
 }
 
 export function clearSession(
@@ -170,10 +193,12 @@ export function hasPersonalData(state: SessionState): boolean {
 export function loadPrefs(storage: StorageLike | null = prefsStorage()): Prefs {
   try {
     const raw = storage?.getItem(PREFS_KEY);
-    const p = raw ? (JSON.parse(raw) as Partial<Prefs>) : {};
-    return { largeText: p.largeText === true, highContrast: p.highContrast === true };
+    const p = raw ? (JSON.parse(raw) as Partial<Prefs> & { largeText?: unknown }) : {};
+    // 舊版只有「放大字體」開關（125%），沿用為對應的字級。
+    if (typeof p.fontScale !== 'number' && p.largeText === true) return { fontScale: 130 };
+    return { fontScale: clampFontScale(p.fontScale) };
   } catch {
-    return { largeText: false, highContrast: false };
+    return { fontScale: FONT_SCALE.default };
   }
 }
 

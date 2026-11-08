@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { adaptiveReviewFor } from '../adaptive';
 import { ageVerdict, evaluate, evaluateAll } from '../match';
 import { buildLocalQuestions, loadQuestions, setAnswer, titleFor } from '../questions';
 import { reviewedRecords, reviewFor, REVIEW_VERSION, taipeiToday, requirementVerdict } from '../reviewed-rules';
@@ -110,9 +111,9 @@ describe('問答有用途且不混同主體或否定',()=>{
     for(const id of ['CT-0132','CT-0144','CT-0145']) expect(evaluate(realItem(id),{household_type:'general'},today).fit,id).toBe('possible');
   });
   it('題庫只包含有效review必要條件、年齡先問；排除舊後端無用途題庫',async()=>{
-    const bank=buildLocalQuestions(realItems);expect(bank[0].field).toBe('age');
-    for(const q of bank) for(const id of q.resource_ids) expect(reviewFor(realItem(id))!.requirements.some(r=>r.field===q.field)).toBe(true);
-    expect(titleFor(bank[0],'self')).toContain('目前');expect(titleFor(bank[0],'self')).not.toContain('今年');
+    const bank=buildLocalQuestions(realItems);expect(bank.length).toBeGreaterThan(15);
+    for(const q of bank) for(const id of q.resource_ids) expect(['need_area','explore_context','expense_priority'].includes(q.field)||reviewFor(realItem(id))!.requirements.some(r=>r.field===q.field)||adaptiveReviewFor(realItem(id))!.facets.some(f=>f.field===q.field)||adaptiveReviewFor(realItem(id))!.ranking_preferences?.some(p=>p.field===q.field)).toBe(true);
+    const age=bank.find(q=>q.field==='age')!;expect(titleFor(age,'self')).toContain('目前');expect(titleFor(age,'self')).not.toContain('今年');
     const result=await loadQuestions(realItems,{fetchImpl:async()=>new Response(JSON.stringify({version:'questions-v1/old',questions:bank}))});
     expect(result.origin).toBe('local');expect(result.version).toContain(REVIEW_VERSION);
   });
@@ -123,9 +124,9 @@ it('新規則的個資理由預設匯出不洩漏年齡、在學或家戶自述�
   const results=evaluateAll(items,{age:99,is_student:true,household_type:'general'},today);
   const input={meta:{catalogVersion:'test',sourceLabel:'test',generatedAt:new Date('2026-11-07T00:00:00Z')},target:'self' as const,items,results,docChecks:{},stepDone:{}};
   const hidden=buildPlanText({...input,conditions:[]});
-  for(const forbidden of ['目前實歲 99','自述目前在學','自述身分 general']) expect(hidden).not.toContain(forbidden);
+  for(const forbidden of ['填答年齡 99 歲','填答目前在學','填答：一般（未核定）']) expect(hidden).not.toContain(forbidden);
   const disclosed=buildPlanText({...input,conditions:[{field:'age',line:'年齡99歲'},{field:'is_student',line:'在學'},{field:'household_type',line:'一般'}]});
-  for(const value of ['目前實歲 99','自述目前在學','自述身分 general']) expect(disclosed).toContain(value);
+  for(const value of ['填答年齡 99 歲','填答目前在學','填答：一般（未核定）']) expect(disclosed).toContain(value);
 });
 
 it('工作需求不以青年泛詞納入文化藝術；全庫搜尋仍能取得',()=>{
