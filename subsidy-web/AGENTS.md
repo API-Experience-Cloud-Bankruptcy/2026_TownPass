@@ -243,6 +243,8 @@ class GreetingMessageHandler extends TPWebMessageHandler {
 
 目前架構：網頁透過帶 requestId 的 `llm_status`／`llm_prepare`／`llm_interpret` → 原生 `LlmMessageHandler` → 手機 LiteRT-LM → 回覆候選語意。僅允許 `SUBSIDY_URL` 同源主框架。首次進入會詢問是否下載模型，使用者同意後才下載；已有模型則每次進入自動載入，自然語句不會自動開始大型下載。模型推論在手機完成，資格依既有規則與使用者確認；完整網頁離線仍須另驗收。
 
+自然輸入先處理完整當前選項與明確名稱搜尋，模糊需求才追問方向。原生 Gemma 僅選擇合法需求 ID／當前問卷動作，不生成個人欄位值與證據；原文條件候選由純 Dart 契約整理並逐項確認。換人採用整批確認交易，不沿用前人的資格條件。核心規則仍由版本化資料處理，本機重現與驗證界線見 [裝置端模型說明](../docs/device-llm-runtime.md)。
+
 | Flutter 套件 | 支援 | 授權 |
 |---|---|---|
 | `flutter_edge_ai`（原 flutter_gemma） | Gemma 4 E2B/E4B、Gemma 3n、Phi-4 Mini；`.litertlm`、`.task`、`.onnx` | MIT |

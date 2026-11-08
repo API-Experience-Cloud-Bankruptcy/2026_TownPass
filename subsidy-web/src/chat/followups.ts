@@ -56,15 +56,18 @@ export function planFollowups(input: FollowupInput, answers: Readonly<Record<str
 
   // 1. 查詢對象：一輪只查一位，先確定是誰才知道哪些條件能用。
   let target = input.target;
-  if (!target) {
-    const subjects = new Set(facts.map(f => f.subject).filter(s => s === 'self' || s === 'other'));
+  const subjects = new Set(facts.map(f => f.subject).filter(s => s === 'self' || s === 'other'));
+  const hasDifferentTarget = target !== null && [...subjects].some(subject => subject !== target);
+  if (!target || hasDifferentTarget) {
     const only = subjects.size === 1 ? [...subjects][0] as Target : null;
     const otherLabel = only === 'other' ? facts.find(f => f.subject === 'other')?.subjectLabel : '';
-    const step: FollowupStep = only === 'self'
-      ? { id: 'target', prompt: '這次是幫自己找嗎？', choices: [{ id: 'target:self', label: '對，幫自己找' }, { id: 'target:other', label: '不是，幫家人或別人找' }], yes: 'target:self' }
-      : only === 'other'
-        ? { id: 'target', prompt: `這次是幫${otherLabel || '家人或別人'}找嗎？`, choices: [{ id: 'target:other', label: '對，幫家人或別人找' }, { id: 'target:self', label: '不是，幫自己找' }], yes: 'target:other' }
-        : { id: 'target', prompt: '這次要幫誰找？', choices: [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }] };
+    const step: FollowupStep = hasDifferentTarget
+      ? { id: 'target', prompt: '你提到了不同人的情況，這次要幫誰找？', note: '換人會先確認並清除前一位的查詢答案，自己的行動單會保留。', choices: [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }] }
+      : only === 'self'
+        ? { id: 'target', prompt: '這次是幫自己找嗎？', choices: [{ id: 'target:self', label: '對，幫自己找' }, { id: 'target:other', label: '不是，幫家人或別人找' }], yes: 'target:self' }
+        : only === 'other'
+          ? { id: 'target', prompt: `這次是幫${otherLabel || '家人或別人'}找嗎？`, choices: [{ id: 'target:other', label: '對，幫家人或別人找' }, { id: 'target:self', label: '不是，幫自己找' }], yes: 'target:other' }
+          : { id: 'target', prompt: '這次要幫誰找？', choices: [{ id: 'target:self', label: '幫自己找' }, { id: 'target:other', label: '幫家人或別人找' }] };
     const answer = ask(step);
     if (!answer) return stop();
     target = answer === 'target:other' ? 'other' : 'self';
@@ -88,7 +91,9 @@ export function planFollowups(input: FollowupInput, answers: Readonly<Record<str
   }
 
   // 3. 同一句提到好幾位（例如「媽媽」「爸爸」）：這一輪先查一位。
-  const labels = [...new Set(people.map(f => f.subjectLabel))];
+  // applicant 已明確屬於這次所選的人，不能把「對方」另列成一個人。
+  // self 的原文稱呼（例如「我」「本人」）也都指同一位說話者。
+  const labels = target === 'self' ? [] : [...new Set(people.filter(f => f.subject !== 'applicant').map(f => f.subjectLabel))];
   let person = labels[0];
   if (labels.length > 1) {
     const answer = ask({ id: 'person', prompt: '你提到了好幾位，這次先幫哪一位找？', note: '其他人可以之後再查。', choices: labels.map((label, i) => ({ id: `person:${i}`, label })) });
@@ -96,7 +101,7 @@ export function planFollowups(input: FollowupInput, answers: Readonly<Record<str
     person = labels[Number(answer.slice(7))];
     for (const label of labels) if (label !== person) skipped.push(`${label}的情況這輪先不查`);
   }
-  const mine = people.filter(f => f.subjectLabel === person);
+  const mine = people.filter(f => target === 'self' || f.subject === 'applicant' || f.subjectLabel === person);
 
   // 4. 每個欄位一題；同一欄位有不同說法時讓本人選。
   const chosen: CandidateFact[] = [];
@@ -116,8 +121,10 @@ export function planFollowups(input: FollowupInput, answers: Readonly<Record<str
 
   // 5. 想找的方向：已經在找的方向不重問。
   let situation: string | null = null;
-  const ids = input.result.situationIds.filter(id => id !== input.currentSituation);
-  const keep = input.currentSituation ? '先維持目前方向' : '先不要，之後再選';
+  // 換人後原方向不再代表這一位已確認的需求，由上層先清除舊答案再套用。
+  const currentSituation = target === input.target ? input.currentSituation : null;
+  const ids = input.result.situationIds.filter(id => id !== currentSituation);
+  const keep = currentSituation ? '先維持目前方向' : '先不要，之後再選';
   if (ids.length === 1) {
     const answer = ask({ id: 'situation', prompt: `要先從「${input.situationLabel(ids[0]!)}」這方面幫${target === 'self' ? '你' : '對方'}找嗎？`, ...yesNo('對，先找這方面', keep) });
     if (!answer) return stop();

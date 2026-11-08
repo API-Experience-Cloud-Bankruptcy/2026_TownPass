@@ -33,7 +33,21 @@ export function matchesSituation(item: Subsidy, situation: Situation): boolean {
 }
 
 export function normalize(text: string): string {
-  return text.toLowerCase().replace(/[臺]/g, '台').replace(/\s+/g, '');
+  return text.normalize('NFKC').toLowerCase().replace(/[臺]/g, '台').replace(/\s+/g, '');
+}
+
+// 僅擴展完整查詢詞組，依目錄實際名稱／keywords 的同一用途用語整理；
+// 不將租屋補助擴成整個住宅分類，也不將育兒津貼與托育補助視為相同制度。
+const SEARCH_SYNONYMS: readonly (readonly string[])[] = [
+  ['租屋補助', '租屋補貼', '租金補助', '租金補貼', '房租補助', '房租補貼'],
+  ['學費補助', '學雜費補助', '學雜費減免', '就學費用減免', '就學費用補助', '免學費'],
+  ['失業補助', '失業給付'],
+  ['職訓生活津貼', '職業訓練生活津貼'],
+  ['身障生活補助', '身心障礙者生活補助'],
+];
+
+export function searchSynonyms(term: string): readonly string[] {
+  return SEARCH_SYNONYMS.find(group => group.includes(term)) ?? [term];
 }
 
 /** 文字搜尋分數：名稱 > 關鍵字 > 分類/對象 > 內文；0 表示不符。 */
@@ -52,10 +66,12 @@ export function searchScore(item: Subsidy, query: string): number {
   let score = 0;
   for (const term of terms) {
     let s = 0;
-    if (name.includes(term)) s = 8;
-    else if (keywords.some((k) => k.includes(term))) s = 5;
-    else if (meta.includes(term)) s = 3;
-    else if (body.includes(term)) s = 1;
+    for (const alternative of searchSynonyms(term)) {
+      if (name.includes(alternative)) s = Math.max(s, 8);
+      else if (keywords.some((k) => k.includes(alternative))) s = Math.max(s, 5);
+      else if (meta.includes(alternative)) s = Math.max(s, 3);
+      else if (body.includes(alternative)) s = Math.max(s, 1);
+    }
     if (s === 0) return 0; // 每個詞都需出現
     score += s;
   }

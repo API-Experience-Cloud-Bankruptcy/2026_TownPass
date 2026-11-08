@@ -128,8 +128,12 @@ export const candidates = computed(() => {
   return filterCatalog(catalogItems.value, state.session.situation, state.session.query).filter(item => !isClosed(item, today));
 });
 
+const DIRECTION_FIELDS = new Set(['need_area', 'explore_context', 'expense_priority', 'benefit_style']);
+function scopedQuestions(bank: Question[]): Question[] {
+  return state.session.query ? bank.filter(q => !DIRECTION_FIELDS.has(q.field)) : bank;
+}
 const candidateQuestions = computed<Question[]>(() =>
-  state.bank ? questionsFor(state.bank.questions, candidates.value.map(c => c.id)) : [],
+  state.bank ? scopedQuestions(questionsFor(state.bank.questions, candidates.value.map(c => c.id))) : [],
 );
 // Keep visited identities stable. Only answerAndAdvance rebuilds the future tail.
 export const questions = computed<Question[]>(() => state.questionPool === null ? candidateQuestions.value : state.questionRoute);
@@ -163,7 +167,7 @@ export const otherCandidates = computed(()=> {
   const first=new Set(recommendedCandidates.value.map(i=>i.id));
   return sortedCandidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible'&&!first.has(i.id));
 });
-export const canRefine = computed(()=>rankQuestions(state.bank?.questions??[],candidates.value,state.session.answers,state.session.situation,new Set(state.session.seenQuestions)).length>0);
+export const canRefine = computed(()=>rankQuestions(scopedQuestions(state.bank?.questions??[]),candidates.value,state.session.answers,state.session.situation,new Set(state.session.seenQuestions)).length>0);
 export const questionInsight = computed(()=> {
   const current=questions.value[state.qIndex];
   const nonIneligibleCount=candidates.value.filter(i=>results.value.get(i.id)?.fit!=='ineligible').length;
@@ -281,8 +285,69 @@ export function needsSwitchConfirm(target: Target): boolean {
 export const pendingSwitch = ref<Target | 'clear' | null>(null);
 const pendingDestination = ref<View>('home');
 
+export interface ConfirmedConversationProposal {
+  target: Target;
+  facts: CandidateFact[];
+  situation: string | null;
+  newPerson?: boolean;
+}
+let pendingConversation: ConfirmedConversationProposal | null = null;
+
+function discardPendingConversation(): void {
+  if (!pendingConversation) return;
+  pendingConversation = null;
+  pendingSwitch.value = null;
+  pendingDestination.value = 'home';
+}
+
+// Dialog cancellation and any intervening query/navigation change invalidate its
+// confirmed payload. Ordinary target-switch dialogs retain their existing behavior.
+watch(pendingSwitch, () => { pendingConversation = null; }, { flush: 'sync' });
+watch(() => [state.session, JSON.stringify(state.session),
+  state.bank, state.bank?.version, state.catalog, state.catalog?.version, state.loading, state.view, state.qIndex],
+discardPendingConversation, { flush: 'sync' });
+
+function validConfirmedConversation(proposal: ConfirmedConversationProposal): boolean {
+  return !!proposal && typeof proposal === 'object' && !Array.isArray(proposal)
+    && Object.keys(proposal).every(key => ['target', 'facts', 'situation', 'newPerson'].includes(key))
+    && ['self', 'other'].includes(proposal.target)
+    && (proposal.newPerson === undefined || typeof proposal.newPerson === 'boolean')
+    && (proposal.situation === null || SITUATIONS.some(s => s.id === proposal.situation))
+    && !!state.catalog && !state.loading && !!confirmedFactPatches(proposal.facts, proposal.target);
+}
+
+/** Only already-confirmed facts enter here; the complete proposal is checked before mutation. */
+export function requestConfirmedConversation(proposal: ConfirmedConversationProposal): 'applied' | 'pending' | 'invalid' {
+  if (!validConfirmedConversation(proposal)) return 'invalid';
+  const confirmed: ConfirmedConversationProposal = { ...proposal, facts: proposal.facts.map(fact => ({ ...fact })) };
+  discardPendingConversation();
+  pendingSwitch.value = null;
+  pendingDestination.value = 'home';
+  const changesPerson = state.session.target !== confirmed.target || confirmed.newPerson === true;
+  if (changesPerson && hasPersonalData(state.session)) {
+    pendingDestination.value = 'needs';
+    pendingSwitch.value = confirmed.target;
+    // Assign after the synchronous cancellation watcher has observed the dialog.
+    pendingConversation = confirmed;
+    return 'pending';
+  }
+  applyConfirmedConversation(confirmed);
+  return 'applied';
+}
+
+function applyConfirmedConversation(proposal: ConfirmedConversationProposal): void {
+  const changesPerson = state.session.target !== proposal.target || proposal.newPerson === true;
+  if (changesPerson) resetPerson(proposal.target, state.session.target === null && state.view === 'home' && !proposal.newPerson);
+  const patches = confirmedFactPatches(proposal.facts, proposal.target)!;
+  if (patches.length) applyConfirmedFactPatches(patches);
+  if (proposal.situation) selectNeed(proposal.situation);
+  else if (patches.length) resumeAfterConfirmedFacts();
+  else if (changesPerson) go('needs');
+}
+
 /** 選擇查詢對象；已有資料且對象不同時，先要求確認。 */
 export function requestTarget(target: Target): void {
+  discardPendingConversation();
   if (needsSwitchConfirm(target)) {
     pendingDestination.value = 'needs';
     pendingSwitch.value = target;
@@ -295,6 +360,7 @@ export function requestTarget(target: Target): void {
 
 /** 「換人」：保留同一對象類型但清除資料，也需確認。 */
 export function requestNewPerson(): void {
+  discardPendingConversation();
   pendingDestination.value = 'home';
   if (hasPersonalData(state.session)) pendingSwitch.value = state.session.target ?? 'clear';
   else resetPerson(state.session.target);
@@ -303,8 +369,18 @@ export function requestNewPerson(): void {
 export function confirmPending(): void {
   const pending = pendingSwitch.value;
   const destination = pendingDestination.value;
+  // Capture before setting the ref: cancellation watchers deliberately forget it.
+  const proposal = pendingConversation;
   pendingSwitch.value = null;
   pendingDestination.value = 'home';
+  if (proposal) {
+    if (pending === proposal.target && validConfirmedConversation(proposal)) {
+      // newPerson also handles two distinct people both represented by 'other'.
+      applyConfirmedConversation({ ...proposal, newPerson: true });
+      state.notice = '已換人並清除前一位的查詢答案；自己的行動單已保留。';
+    }
+    return;
+  }
   if (pending === 'clear') clearAllData();
   else if (pending) {
     resetPerson(pending, destination !== 'home' && state.view === 'home');
@@ -318,6 +394,7 @@ export function confirmPending(): void {
  * keepGreeting：在招呼那一步直接選對象時，沿用同一段對話（不重新掛載、招呼語不重播），只清掉之後的訊息。
  */
 export function resetPerson(target: Target | null, keepGreeting = false): void {
+  discardPendingConversation();
   if (state.session.target === 'self' && Object.keys(state.session.answers).length) state.personalPlan.answers = JSON.parse(JSON.stringify(state.session.answers));
   pendingResume.value = false;
   lastChatView = 'home';
@@ -419,18 +496,38 @@ export function searchResources(query: string): void {
   startNeedQuestions();
 }
 
-/** 僅接收使用者逐項確認、已選定主體的穩定欄位；整批驗證後才原子套用。 */
-export function applyConfirmedFacts(facts: CandidateFact[]): boolean {
-  if (!state.session.target || !state.bank || state.loading || !facts.length) return false;
+type ConfirmedFactPatch = { question: Question; fact: CandidateFact };
+function confirmedFactPatches(facts: CandidateFact[], target: Target): ConfirmedFactPatch[] | null {
+  if (!state.bank || state.loading || !Array.isArray(facts) || facts.length > 8) return null;
   const fields = new Set<string>();
-  const patches: { question: Question; fact: CandidateFact }[] = [];
+  const patches: ConfirmedFactPatch[] = [];
   for (const fact of facts) {
-    if (!['age', 'region', 'is_student', 'household_type'].includes(fact.field) || fields.has(fact.field)
-      || !(fact.subject === 'applicant' || fact.subject === state.session.target)) return false;
+    if (!fact || typeof fact !== 'object' || Array.isArray(fact)
+      || Object.keys(fact).length !== 5 || Object.keys(fact).some(key => !['field', 'value', 'subject', 'subjectLabel', 'evidence'].includes(key))
+      || !['age', 'region', 'is_student', 'household_type'].includes(fact.field) || fields.has(fact.field)
+      || !(fact.subject === 'applicant' || fact.subject === target)
+      || typeof fact.subjectLabel !== 'string' || !fact.subjectLabel.trim() || fact.subjectLabel.length > 40
+      || typeof fact.evidence !== 'string' || !fact.evidence.trim() || fact.evidence.length > 200) return null;
     const question = state.bank.questions.find(q => q.field === fact.field);
-    if (!question || !validFactValue({ field: fact.field, min: question.min, max: question.max, options: question.options }, fact.value)) return false;
+    if (!question || !validFactValue({ field: fact.field, min: question.min, max: question.max, options: question.options }, fact.value)) return null;
     fields.add(fact.field); patches.push({ question, fact });
   }
+  return patches;
+}
+
+/** 僅接收使用者逐項確認、已選定主體的穩定欄位；整批驗證後才原子套用。 */
+export function applyConfirmedFacts(facts: CandidateFact[]): boolean {
+  if (!state.session.target || !facts.length) return false;
+  const patches = confirmedFactPatches(facts, state.session.target);
+  if (!patches) return false;
+  discardPendingConversation();
+  applyConfirmedFactPatches(patches);
+  resumeAfterConfirmedFacts();
+  return true;
+}
+
+function applyConfirmedFactPatches(patches: ConfirmedFactPatch[]): void {
+  const bank = state.bank!;
   let answers: Answers = { ...state.session.answers, extra: { ...state.session.answers.extra } };
   // 只撤銷實際變更前提的相依答案；補年齡不會刪掉已確認的住宅需求。
   const changed = new Set(patches.filter(({ question, fact }) => answerOf(answers, question.field) !== fact.value).map(({ question }) => question.field));
@@ -438,23 +535,25 @@ export function applyConfirmedFacts(facts: CandidateFact[]): boolean {
   let found = true;
   while (found) {
     found = false;
-    for (const q of state.bank.questions) if (!invalidated.has(q.field) && q.depends_on && Object.keys(q.depends_on).some(field => changed.has(field) || invalidated.has(field))) {
+    for (const q of bank.questions) if (!invalidated.has(q.field) && q.depends_on && Object.keys(q.depends_on).some(field => changed.has(field) || invalidated.has(field))) {
       invalidated.add(q.field); found = true;
     }
   }
-  for (const q of state.bank.questions) if (invalidated.has(q.field)) answers = setAnswer(answers, q, undefined);
+  for (const q of bank.questions) if (invalidated.has(q.field)) answers = setAnswer(answers, q, undefined);
   for (const { question, fact } of patches) answers = setAnswer(answers, question, fact.value);
   state.session.answers = answers;
   state.session.seenQuestions = state.session.seenQuestions.filter(id => {
-    const q = state.bank!.questions.find(q => q.id === id);
+    const q = bank.questions.find(q => q.id === id);
     return !!q && !invalidated.has(q.field);
   });
   for (const { question } of patches) if (!state.session.seenQuestions.includes(question.id)) state.session.seenQuestions.push(question.id);
+}
+
+function resumeAfterConfirmedFacts(): void {
   // 年齡或身分本身不是需求。沒有方向時先問生活情境，不直接倒出結果。
   if (!state.session.situation && !state.session.query && !state.session.answers.extra?.need_area
     && !state.session.answers.extra?.expense_priority && !state.session.answers.extra?.explore_context) discoverWithKnownAnswers();
   else continueQuestions();
-  return true;
 }
 
 let lastAnswerAt = -Infinity;

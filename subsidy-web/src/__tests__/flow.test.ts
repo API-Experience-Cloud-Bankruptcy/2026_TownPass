@@ -2,6 +2,7 @@ import { isClosed } from '../domain/browse';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { emptySession } from '../domain/session';
 import { makeSubsidy } from '../domain/__tests__/fixtures';
+import type { CandidateFact } from '../chat/interpretation';
 import {
   answerAndAdvance, applyConfirmedFacts, back, confirmPending, go, pendingSwitch, questions,
   requestNewPerson, requestTarget, resetPerson, searchResources, selectNeed,
@@ -9,6 +10,7 @@ import {
   pendingResume, continueConversation, newConversation, conversationEpoch,
   openDetail, togglePlan, toggleStep, planResults, detailAnswers, clearAllData,
   openPlanItem, openStepHelp, removeFromPlan, resetSteps,
+  requestConfirmedConversation, type ConfirmedConversationProposal,
 } from '../store';
 
 beforeEach(() => {
@@ -360,6 +362,142 @@ describe('使用者確認的語意候選條件', () => {
   });
 });
 
+describe('已確認對話的換人交易', () => {
+  const age = (value = 72, subject: CandidateFact['subject'] = 'other'): CandidateFact => ({ field: 'age', value, subject, subjectLabel: subject === 'self' ? '我' : '媽媽', evidence: `年齡${value}` });
+  const proposal = (overrides: Partial<ConfirmedConversationProposal> = {}): ConfirmedConversationProposal => ({ target: 'other', facts: [age()], situation: 'housing', ...overrides });
+  const previousAnswers = { age: 40, region: '臺北市' as const, household_type: 'low_income' as const };
+  const snapshot = () => JSON.stringify({ session: state.session, plan: state.personalPlan, view: state.view, route: state.questionRoute, index: state.qIndex, pending: pendingSwitch.value });
+
+  it('本人改媽媽先確認；清除舊條件後套年齡與需求，保留本人行動單', () => {
+    requestTarget('self'); state.session.answers = { ...previousAnswers };
+    state.personalPlan.planIds = ['housing']; state.personalPlan.docChecks = { document: true }; state.personalPlan.stepDone = { housing: [0] };
+    const before = JSON.stringify(state.session);
+    expect(requestConfirmedConversation(proposal())).toBe('pending');
+    expect(pendingSwitch.value).toBe('other');
+    expect(JSON.stringify(state.session)).toBe(before);
+    confirmPending();
+    expect(pendingSwitch.value).toBeNull();
+    expect(state.session.target).toBe('other');
+    expect(state.session.answers.age).toBe(72);
+    expect(state.session.answers.region).toBeUndefined();
+    expect(state.session.answers.household_type).toBeUndefined();
+    expect(state.session.situation).toBe('housing');
+    expect(state.view).toBe('questions');
+    expect(questions.value.map(q => q.field)).toEqual(['region']);
+    expect(state.personalPlan.answers).toEqual(previousAnswers);
+    expect(state.personalPlan.planIds).toEqual(['housing']);
+    expect(state.personalPlan.docChecks).toEqual({ document: true });
+    expect(state.personalPlan.stepDone).toEqual({ housing: [0] });
+  });
+
+  it('媽媽改爸爸雖同為 other，也先清掉前人的戶籍與家戶身分', () => {
+    requestTarget('other'); state.session.answers = { ...previousAnswers };
+    state.personalPlan.planIds = ['study']; state.personalPlan.answers = { age: 20 };
+    expect(requestConfirmedConversation(proposal({ facts: [{ ...age(76), subjectLabel: '爸爸', evidence: '爸爸76歲' }], newPerson: true }))).toBe('pending');
+    expect(state.session.answers).toEqual(previousAnswers);
+    confirmPending();
+    expect(state.session.target).toBe('other');
+    expect(state.session.answers.age).toBe(76);
+    expect(state.session.answers.region).toBeUndefined(); expect(state.session.answers.household_type).toBeUndefined();
+    expect(state.session.situation).toBe('housing');
+    expect(state.personalPlan.planIds).toEqual(['study']); expect(state.personalPlan.answers).toEqual({ age: 20 });
+  });
+
+  it('取消對話框後，不得把舊提案套到下一次普通換人', () => {
+    requestTarget('self'); state.session.answers = { ...previousAnswers };
+    expect(requestConfirmedConversation(proposal())).toBe('pending');
+    pendingSwitch.value = null;
+    confirmPending();
+    expect(state.session.answers).toEqual(previousAnswers);
+    requestTarget('other'); confirmPending();
+    expect(state.session.answers).toEqual({}); expect(state.session.situation).toBeNull();
+    expect(state.view).toBe('needs');
+  });
+
+  it('無效內容整批拒絕，連合法前綴、對象、需求、待確認與畫面都不變', () => {
+    requestTarget('self'); state.session.answers = { ...previousAnswers };
+    const cases: ConfirmedConversationProposal[] = [
+      proposal({ situation: 'invented' }),
+      proposal({ facts: [age(), age(73)] }),
+      proposal({ facts: [age(), { ...age(), field: 'region', value: '任意地址' }] }),
+      proposal({ facts: [age(999)] }),
+      proposal({ facts: [age(72, 'self')] }),
+      proposal({ facts: [age(72, 'unclear')] }),
+      proposal({ facts: [{ ...age(), evidence: '' }] }),
+      proposal({ facts: [{ ...age(), subjectLabel: '' }] }),
+      proposal({ facts: [{ ...age(), field: 'household_type', value: 'low_income' }] }), // 題庫未提供此欄位
+      { ...proposal(), newPerson: 'yes' } as unknown as ConfirmedConversationProposal,
+      { ...proposal(), facts: null } as unknown as ConfirmedConversationProposal,
+      { ...proposal(), target: 'someone' } as unknown as ConfirmedConversationProposal,
+    ];
+    const before = snapshot();
+    for (const invalid of cases) {
+      expect(requestConfirmedConversation(invalid)).toBe('invalid');
+      expect(snapshot()).toBe(before);
+    }
+    state.loading = true;
+    const loading = snapshot();
+    expect(requestConfirmedConversation(proposal())).toBe('invalid'); expect(snapshot()).toBe(loading);
+  });
+
+  it('保留提案的值副本，確認前再驗證當時題庫', () => {
+    requestTarget('self'); state.session.answers = { ...previousAnswers };
+    const confirmed = proposal();
+    expect(requestConfirmedConversation(confirmed)).toBe('pending');
+    confirmed.facts[0]!.value = 99; confirmed.situation = 'study';
+    confirmPending();
+    expect(state.session.answers.age).toBe(72); expect(state.session.situation).toBe('housing');
+    requestTarget('self'); confirmPending(); state.session.answers = { ...previousAnswers };
+    expect(requestConfirmedConversation(proposal())).toBe('pending');
+    state.bank!.questions.find(q => q.field === 'age')!.max = 60;
+    const before = JSON.stringify(state.session);
+    confirmPending();
+    expect(JSON.stringify(state.session)).toBe(before); expect(pendingSwitch.value).toBeNull();
+  });
+
+  it.each(['navigate', 'answer', 'version', 'reset', 'clear', 'new-target', 'new-person'] as const)('等待中有 %s 新操作，提案不殘留', operation => {
+    requestTarget('self'); state.session.answers = { ...previousAnswers };
+    expect(requestConfirmedConversation(proposal())).toBe('pending');
+    if (operation === 'navigate') tab('browse');
+    else if (operation === 'answer') state.session.answers.age = 41;
+    else if (operation === 'version') state.session.catalogVersion = 'new';
+    else if (operation === 'reset') resetPerson('self');
+    else if (operation === 'clear') clearAllData();
+    else if (operation === 'new-target') requestTarget('self');
+    else requestNewPerson();
+    confirmPending();
+    expect(state.session.answers.age).not.toBe(72);
+    expect(state.session.situation).toBeNull();
+    expect(pendingSwitch.value).toBeNull();
+  });
+
+  it('同人交易只沿用該人的穩定答案，套完條件才建立新需求題路', () => {
+    requestTarget('self'); state.session.answers = { age: 40, region: '臺北市' };
+    expect(requestConfirmedConversation(proposal({ target: 'self', facts: [age(20, 'self')], situation: 'study' }))).toBe('applied');
+    expect(state.session.answers).toMatchObject({ age: 20, region: '臺北市' });
+    expect(state.session.situation).toBe('study'); expect(state.session.query).toBe('');
+    expect(questions.value.map(q => q.field)).toEqual(['is_student']);
+    expect(pendingSwitch.value).toBeNull();
+  });
+
+  it('只有已確認背景時不猜需求；沒有條件的明確方向仍可接續', () => {
+    expect(requestConfirmedConversation(proposal({ target: 'self', facts: [age(20, 'self')], situation: null }))).toBe('applied');
+    expect(state.session.answers.age).toBe(20); expect(state.session.situation).toBeNull();
+    expect(questions.value.some(q => q.field === 'age')).toBe(false);
+    expect(requestConfirmedConversation(proposal({ target: 'self', facts: [], situation: 'housing' }))).toBe('applied');
+    expect(state.session.situation).toBe('housing'); expect(state.session.answers.age).toBe(20);
+  });
+
+  it('新合法提案取代舊提案；無效提案不破壞已在確認的交易', () => {
+    requestTarget('self'); state.session.answers = { ...previousAnswers };
+    expect(requestConfirmedConversation(proposal())).toBe('pending');
+    expect(requestConfirmedConversation(proposal({ facts: [age(76)], situation: 'study' }))).toBe('pending');
+    expect(requestConfirmedConversation(proposal({ facts: [age(999)] }))).toBe('invalid');
+    confirmPending();
+    expect(state.session.answers.age).toBe(76); expect(state.session.situation).toBe('study');
+  });
+});
+
 // 切換搜尋與需求分類使用同一套穩定條件；改答案仍由 startQuestions 明確進入。
 it.each(['self', 'other'] as const)('搜尋切換保留 %s 的已確認條件且不重問', target => {
   requestTarget(target);
@@ -368,4 +506,12 @@ it.each(['self', 'other'] as const)('搜尋切換保留 %s 的已確認條件且
   expect(state.session.answers).toEqual({ age: 20, region: '臺北市', is_student: true });
   expect(questions.value.some(q => ['age', 'region', 'is_student'].includes(q.field))).toBe(false);
   expect(state.view).toBe('results');
+});
+
+it('明確名稱搜尋後不重問通用需求方向，仍保留具體條件題', () => {
+  state.bank!.questions.push(...['need_area', 'explore_context', 'expense_priority', 'benefit_style'].map(field => ({ id: field, field, title: field, kind: 'single' as const, options: [{ label: '選項', value: 'known' }], resource_ids: ['housing'] })));
+  requestTarget('self');
+  searchResources('租屋補助');
+  expect(questions.value.some(q => ['need_area', 'explore_context', 'expense_priority', 'benefit_style'].includes(q.field))).toBe(false);
+  expect(questions.value.some(q => q.field === 'region' || q.field === 'age')).toBe(true);
 });

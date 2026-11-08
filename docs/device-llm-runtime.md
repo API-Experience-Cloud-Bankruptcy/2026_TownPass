@@ -2,6 +2,34 @@
 
 TownPass 使用原版 instruction-tuned Gemma 4 E2B（`google/gemma-4-E2B-it` 的 LiteRT-LM 量化發布），未套用 `training/` 的任何 adapter。模型只整理輸入語意與待確認資料；資格仍由版本化資料與既有規則處理。
 
+## 目前原生解讀契約
+
+原版權重不變。`llm_interpretation.dart` 與 `llm_fact_candidates.dart` 是手機服務與本機檢查共用的純 Dart 契約。Gemma 以 `record_situation` 選擇至多三個既有需求方向；只有當前問卷題目存在時才提供對應的 `answer_choice` 或 `answer_number`。工具不執行外部動作，只有一筆合法候選才交回前端確認。
+
+明確說要的服務會優先於父母、失業等背景聯想；若另有已表達的困難或需求，仍保留模型提出的多方向供確認。這層只調整需求方向，不處理資格。
+
+模型不生成 facts／evidence／人物稱呼。程式只從當次明確原文整理候選，未支援或不確定的描述保持未知；戶籍與居住地、法定家戶身分與經濟困難分開核對。已確認答案、舊搜尋與重複分類索引不再送入模型，避免背景污染新需求。只有原文被明確條件完整涵蓋且沒有需求或疑問時，才直接提供 facts-only 候選。
+
+每次模型請求與最多一次格式重試各用新 session；固定 greedy sampling（temperature=0、topK=1、topP=1、seed=42），4,096-token 視窗、最多768個輸出 tokens。預先計算提示、工具定義及 payload，超過3,000 tokens時省略分類提示，再超過則回 INPUT_TOO_LONG，原文不截斷。僅接受單一合法工具回覆；`clarify`／`off_topic` 兩種無參數控制文字可精確轉換，不從任意文章擷取或修補資料。
+
+本輪結果與未完成項目見 [本機穩定性紀錄](ai-evaluation/2026-11-08/README.md)。
+
+### 本機重現
+
+模型與 Python 環境放在 Git 忽略的 `output/local-gemma/`，不加入 App 或網頁 bundle。以固定來源下載下節同一個 `.litertlm` 並核對 SHA-256，再建立獨立環境：
+
+```sh
+python3 -m venv output/local-gemma/venv
+output/local-gemma/venv/bin/pip install -r tool/requirements-local-llm.txt
+output/local-gemma/venv/bin/python tool/evaluate_local_gemma.py \
+  --model output/local-gemma/models/gemma-4-E2B-it.litertlm \
+  --report output/local-gemma/acceptance.json
+```
+
+預設在 Mac 本機 CPU 執行，使用與手機相同權重及 Dart 提示／輸出驗證；不是雲端推論。題目與預期在 `tool/fixtures/llm_acceptance.json`，記錄每次實際工具輸出、schema 拒絕、語意預期差異、來源雜湊、生成設定與耗時。題目由 AI 編寫，作開發回歸，不能當一般模型正確率或未見基準測試。
+
+`tool/serve_local_gemma.py` 和 `tool/local_gemma_bridge.js` 僅用於隔離瀏覽器的本機整合檢查：服務綁127.0.0.1，只接受指定測試 origin，橋接腳本由測試工具注入，不在產品中載入。對話推論不會呼叫公開模型 API；正常 App 仍只使用原生裝置引擎。檢查結束停止本機測試服務。
+
 ## 固定模型與授權
 
 - 模型：`litert-community/gemma-4-E2B-it-litert-lm`，Apache-2.0。

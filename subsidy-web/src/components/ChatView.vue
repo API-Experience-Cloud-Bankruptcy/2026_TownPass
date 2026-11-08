@@ -7,9 +7,10 @@ import LogoMark from './LogoMark.vue';
 import { vSmoothDetails } from '../chat/smooth-details';
 import { followBottom, forgetTyped, isTyped, keepScroll, markTyped, prefersReducedMotion, releaseFollow, restoreScroll, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, descriptionFor, MAX_AGE, titleFor } from '../domain/questions';
-import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
+import { modelAdapter, ModelInputTooLongError, ModelRequestError, type ModelStatus } from '../domain/model';
 import { explicitSelfAge, InterpretationTurn, type CandidateFact, type ChatChoice, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
 import { FIELD_LABELS, matchFollowupChoice, planFollowups, type FollowupStep } from '../chat/followups';
+import { explicitlyChangesPerson } from '../chat/conversation-input';
 import { matchCurrentChoice, normalizeInput, routeInput, suggestSearchQueries } from '../chat/input-router';
 import { filterCatalog, SITUATIONS } from '../domain/situations';
 import { adaptiveReviewFor } from '../domain/adaptive';
@@ -18,7 +19,6 @@ import { distinctGroups, numberUnit, optionalText } from '../presentation';
 import {
   answerAndAdvance,
   back,
-  applyConfirmedFacts,
   canRefine,
   continueQuestions,
   discoverWithKnownAnswers,
@@ -30,6 +30,7 @@ import {
   questions,
   recommendedCandidates,
   requestTarget,
+  requestConfirmedConversation,
   results,
   searchResources,
   selectNeed,
@@ -237,6 +238,10 @@ function observeChildren() {
   for (const el of log.value.children) resizer.observe(el);
 }
 onActivated(() => {
+  if (lifecycleController.signal.aborted) {
+    lifecycleController = new AbortController();
+    void refreshModel();
+  }
   restoreScroll();
   log.value?.addEventListener('scroll', trackPinned, { passive: true });
   window.addEventListener('touchstart', releaseFollow, { passive: true });
@@ -252,6 +257,12 @@ onActivated(() => {
   followBottom(true);
 });
 onDeactivated(() => {
+  cancelInput();
+  lifecycleController.abort();
+  prepareController?.abort();
+  prepareController = null;
+  preparing.value = false;
+  clearTimeout(statusTimer);
   log.value?.removeEventListener('scroll', trackPinned);
   window.removeEventListener('touchstart', releaseFollow);
   window.removeEventListener('wheel', releaseFollow);
@@ -275,7 +286,7 @@ const turn = new InterpretationTurn();
 const modelStatus = ref<ModelStatus | null>(null);
 const preparing = ref(false);
 const downloadPrompt = ref(false);
-const lifecycleController = new AbortController();
+let lifecycleController = new AbortController();
 const downloadDismissedKey = 'townpass-model-download-dismissed';
 let prepareController: AbortController | null = null;
 let statusTimer: ReturnType<typeof setTimeout> | undefined;
@@ -333,7 +344,7 @@ const context = computed<InterpretationContext>(() => {
   };
 });
 // 包含答案、題目、對象與資料版本；按鈕、返回、換人或資料重載都會使舊結果失效。
-const fingerprint = computed(() => JSON.stringify([context.value, state.session.answers, state.session.situation, state.session.query, state.session.catalogVersion, state.session.rulesVersion, state.session.engineVersion, pendingSwitch.value]));
+const fingerprint = computed(() => JSON.stringify([state.view, context.value, state.session.answers, state.session.situation, state.session.query, state.session.catalogVersion, state.session.rulesVersion, state.session.engineVersion, pendingSwitch.value]));
 watch(fingerprint, () => { turn.cancel(); if (interpreting.value) { const latest = turns.value[turns.value.length - 1]; if (latest && !latest.reply) latest.reply = '查詢內容已變更，剛剛輸入的內容不會套用。'; } interpreting.value = false; followup.value = null; recovery.value = null; clarification.value = null; actionProposal.value = null; searchSuggestions.value = []; }, { flush: 'sync' });
 watch(() => state.session, (_session, previous) => {
   if (previous.target === null && state.session.target !== null) return;
@@ -460,7 +471,8 @@ function factValue(fact: CandidateFact): string {
 const situationLabel = (id: string) => SITUATIONS.find(s => s.id === id)?.label ?? id;
 const followupPlan = computed(() => {
   const f = followup.value; if (!f) return null;
-  return planFollowups({ result: f.result, target: state.session.target, currentSituation: state.session.situation, describe: factValue, situationLabel }, f.answers);
+  const newPerson = explicitlyChangesPerson(f.input);
+  return planFollowups({ result: f.result, target: newPerson ? null : state.session.target, currentSituation: newPerson ? null : state.session.situation, describe: factValue, situationLabel }, f.answers);
 });
 /** 選單暫停：逐題追問或確認意思時，上方原本的選項先收起，避免同時有兩組按鈕。 */
 const pausing = computed(() => !!followup.value || !!actionProposal.value);
@@ -518,21 +530,25 @@ function finishFollowup() {
   const trail = followupTrail(false);
   followup.value = null; followupHint.value = '';
   const { target: chosen, facts, situation, skipped } = outcome;
-  if (chosen && !state.session.target) {
-    requestTarget(chosen);
+  const wasUnselected = !state.session.target;
+  const applied = chosen ? requestConfirmedConversation({ target: chosen, facts, situation, newPerson: explicitlyChangesPerson(f.input) }) : 'invalid';
+  if (applied === 'pending') {
+    const t = turns.value.find(t => t.id === f.turnId);
+    if (t) { t.trail = trail; t.outro = '請先確認換人。確認後會清除前一位的查詢答案，再採用剛才確認的新資料與需求；取消就不改動。'; }
+    return;
+  }
+  if (wasUnselected && applied === 'applied') {
     // 選對象會重設播放紀錄；已經看過的往來與剛答完的問答不要再重打一次。
     for (const t of turns.value) markTyped(`turn:${t.id}:${t.reply}`);
     for (const step of trail) markTyped(step.key);
   }
-  if (situation) selectNeed(situation);
-  const applied = facts.length ? applyConfirmedFacts(facts) : true;
-  const parts = [!applied ? '這些資料還不能直接採用，我們用題目再確認一次。' : facts.length ? `好，已記下${facts.map(factValue).join('、')}。` : '好。'];
+  const parts = [applied === 'invalid' ? '這些資料還不能直接採用，我們用題目再確認一次。' : facts.length ? `好，已記下${facts.map(factValue).join('、')}。` : '好。'];
   if (skipped.length) parts.push(`${skipped.join('；')}。`);
   if (f.result.uncertainties.length) parts.push(`另外還要確認：${f.result.uncertainties.join('、')}。`);
   parts.push(situation ? `接著從「${situationLabel(situation)}」開始找。`
     : !state.session.situation && !state.session.query ? '接著說說需要哪方面的幫忙。'
       : view.value === 'questions' ? '接著繼續目前的問題。' : '');
-  if (applied) parts.push('資格仍以承辦機關審核為準。');
+  if (applied === 'applied') parts.push('資格仍以承辦機關審核為準。');
   const t = turns.value.find(t => t.id === f.turnId);
   if (t) { t.trail = trail; t.outro = parts.join(''); }
   fallbackCount.value = 0;
@@ -697,6 +713,7 @@ async function onInput() {
   if (!text || busy.value || interpreting.value || applyingInput.value || pendingSwitch.value) return;
   if (text.length > 2000) { addInputTurn('（內容過長）', '請每次輸入不超過 2000 字，分段補充。原文仍留在輸入欄。'); return; }
   const normalized = normalizeInput(text);
+  const isCorrection = /^(不是|不對|改成|更正|其實|應該是|剛剛|我是說|補充|另外|還有)/u.test(text);
   const plainConfirmation = !/[?？「」『』"'`“”‘’]/u.test(text);
   const isYes = plainConfirmation && /^(對|是|是的|沒錯|正確|對的|對繼續|請繼續|確認|好|好的|ok|yes)$/u.test(normalized);
   const isNo = plainConfirmation && /^(不是|不對|否|不要|取消|先不要|不要了|算了|no)$/u.test(normalized);
@@ -747,11 +764,18 @@ async function onInput() {
     if (/^(取消|這些先不用|都先不用)$/u.test(normalized)) { dropFollowup(); return; }
     const choiceId = step ? matchFollowupChoice(text, step) : null;
     if (choiceId) { answerFollowup(choiceId, text); return; }
-    followupHint.value = `「${text.slice(0, 30)}」對不上這一題的選項。請點選項回答；想重新說明可以選「我重新說」。`;
-    return;
+    if (isCorrection) {
+      const original = followup.value.input;
+      const prompt = step?.prompt;
+      dropFollowup();
+      clarification.value = { input: original, prompt: prompt ?? '', fingerprint: fingerprint.value };
+    } else {
+      followupHint.value = `「${text.slice(0, 30)}」對不上這一題的選項。請點選項回答；想重新說明可以選「我重新說」。`;
+      return;
+    }
   }
   const routingContext = activeInputContext();
-  const route = routeInput(text, routingContext, state.catalog?.items ?? []);
+  const route = isCorrection && clarification.value ? { kind: 'conversation' as const } : routeInput(text, routingContext, state.catalog?.items ?? []);
   if (route.kind === 'empty') return;
   if (route.kind === 'command') {
     cancelInput();
@@ -763,7 +787,6 @@ async function onInput() {
   const previous = clarification.value?.fingerprint === fingerprint.value ? clarification.value.input : '';
   const previousPrompt = clarification.value?.prompt;
   // 舊說法只用於明確補充／修正，不能讓換話題重複採用前人的條件。
-  const isCorrection = /^(不是|不對|改成|更正|其實|應該是|剛剛|我是說|補充|另外|還有)/u.test(text);
   const inferenceInput = isCorrection && previous && previous.length + text.length + 24 <= 2000
     ? `先前說法：${previous}\n這次補充或修正：${text}` : text;
   cancelInput();
@@ -823,7 +846,10 @@ async function onInput() {
       startFollowup(id, result, localFact ? text : inferenceInput);
     } else showRecovery(id, text, result.kind === 'off_topic' ? '我主要協助找補助與生活資源，我們回到你需要的幫忙。' : '我還不太確定你的意思，先確認一件事。');
   } catch (error) {
-    if (snapshot === fingerprint.value) showRecovery(id, text, error instanceof ModelInputTooLongError ? error.message : '這次沒能讀懂你的意思，原本資料都還在。可以換個說法，或直接選下方選項。');
+    if (snapshot === fingerprint.value) {
+      if (!query.value) query.value = text;
+      showRecovery(id, text, error instanceof ModelInputTooLongError || error instanceof ModelRequestError ? `${error.message} 原文已保留，原本資料都還在。` : '這次整理暫時失敗，原文已保留，原本資料都還在。可以重試或直接選下方選項。');
+    }
   } finally { if (snapshot === fingerprint.value) interpreting.value = false; }
 }
 

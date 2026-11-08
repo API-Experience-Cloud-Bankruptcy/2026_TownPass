@@ -44,18 +44,19 @@ export function parseInterpretation(raw: unknown, requestId: string, input: stri
     for (const fact of value.facts) {
       if (!fact || typeof fact !== 'object' || Array.isArray(fact)) return fail();
       if (Object.keys(fact).some(k => !['field', 'value', 'subject', 'subjectLabel', 'evidence'].includes(k))) return fail();
-      if (!['self', 'other', 'applicant', 'unclear'].includes(fact.subject) || typeof fact.evidence !== 'string' || !fact.evidence.trim() || !input.includes(fact.evidence)) return fail();
+      if (!['self', 'other', 'applicant', 'unclear'].includes(fact.subject) || typeof fact.evidence !== 'string' || !fact.evidence.trim() || fact.evidence.length > 200 || !input.includes(fact.evidence)) return fail();
       if (typeof fact.subjectLabel !== 'string' || fact.subjectLabel.length > 40 || (fact.subject !== 'unclear' && !fact.subjectLabel.trim()) || !input.includes(fact.subjectLabel)) return fail();
       const allowed = context.allowedFacts.find(f => f.field === fact.field);
       if (!allowed || !validFactValue(allowed, fact.value)) return fail();
       // 格式正確仍不代表有法定身分證據：將高風險的地點／經濟推測擋在確認卡之前。
-      if (fact.field === 'region' && !/(戶籍|設籍|戶口)/u.test(fact.evidence)) return fail();
+      if (fact.field === 'region' && !regionEvidenceSupports(fact.value, fact.evidence)) return fail();
       if (fact.field === 'household_type') {
         if (fact.value !== 'general' && !/低收入戶/u.test(fact.evidence)) return fail();
         if (fact.value === 'low_income' && (/中低收入戶/u.test(fact.evidence) || /(不是|沒有|未取得|未核定|不具|並非|可能|好像)/u.test(fact.evidence))) return fail();
         if (fact.value === 'mid_low_income' && (!/中低收入戶/u.test(fact.evidence) || /(不是|沒有|未取得|未核定|不具|並非|可能|好像)/u.test(fact.evidence))) return fail();
-        if (fact.value === 'general' && !/一般戶/u.test(fact.evidence)
-          && (!/(不是|沒有|未取得|未核定|不具|並非)/u.test(fact.evidence) || (fact.evidence.match(/中低收入戶|低收入戶/gu) ?? []).length < 2)) return fail();
+        if (fact.value === 'general' && (/一般戶/u.test(fact.evidence)
+          ? /(不是|沒有|未取得|未核定|不具|並非|可能|好像)/u.test(fact.evidence)
+          : (!/(不是|沒有|未取得|未核定|不具|並非)/u.test(fact.evidence) || (fact.evidence.match(/中低收入戶|低收入戶/gu) ?? []).length < 2))) return fail();
       }
     }
     for (const name of ['details', 'uncertainties'] as const) {
@@ -64,10 +65,11 @@ export function parseInterpretation(raw: unknown, requestId: string, input: stri
     if (!value.situationIds.length && !value.facts.length && !(value.details as string[]).length && !(value.uncertainties as string[]).length) return fail();
     return { kind: 'situation', situationIds: [...new Set(value.situationIds)] as string[], facts: value.facts as CandidateFact[], details: value.details as string[], uncertainties: value.uncertainties as string[] };
   }
-  if (typeof value.evidence !== 'string' || !value.evidence.trim() || !input.includes(value.evidence)) return fail();
+  if (typeof value.evidence !== 'string' || !value.evidence.trim() || value.evidence.length > 200 || !input.includes(value.evidence)) return fail();
   fields.push('evidence');
-  if (value.kind !== 'answer') return fail();
-  if (typeof value.choiceId === 'string' && context.choices.some(c => c.id === value.choiceId)) {
+  if (value.kind !== 'answer' || !context.question) return fail();
+  if (typeof value.choiceId === 'string' && context.choices.some(c => c.id === value.choiceId)
+    && context.question.options.some(c => c.id === value.choiceId)) {
     fields.push('choiceId');
     if (Object.keys(value).some(k => !fields.includes(k))) return fail();
     return { kind: 'answer', choiceId: value.choiceId, evidence: value.evidence };
@@ -80,6 +82,16 @@ export function parseInterpretation(raw: unknown, requestId: string, input: stri
     return { kind: 'answer', numberValue: value.numberValue, evidence: value.evidence };
   }
   return fail();
+}
+
+/** 僅核對已提出的戶籍證據，不從居住地推測戶籍。原生層採相同檢查。 */
+export function regionEvidenceSupports(value: unknown, proof: string): boolean {
+  if (/(不是|不在|並非|沒有|未設籍|不確定|可能|好像)/u.test(proof)) return false;
+  const cities = '臺北|台北|其他縣市|外縣市|新北|桃園|臺中|台中|臺南|台南|高雄|基隆|新竹|苗栗|彰化|南投|雲林|嘉義|屏東|宜蘭|花蓮|臺東|台東|澎湖|金門|連江';
+  const after = new RegExp(`(?:戶籍|設籍|戶口)[^，。；;\\n]{0,8}?(${cities})`, 'u').exec(proof)?.[1];
+  const before = new RegExp(`(${cities})(?:市|縣)?(?:的)?(?:戶籍|戶口)`, 'u').exec(proof)?.[1];
+  const city = after ?? before;
+  return !!city && (value === '臺北市' ? /^(臺北|台北)$/u.test(city) : value === '其他縣市' && !/^(臺北|台北)$/u.test(city));
 }
 
 export function validFactValue(fact: AllowedFact, value: unknown): boolean {

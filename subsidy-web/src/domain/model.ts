@@ -1,6 +1,6 @@
 // 裝置端原始 Gemma 4 E2B 的型別化介面；一般瀏覽器不模擬 AI。
-import { isInTownPass, requestCorrelated } from '../townpass/bridge';
-import { parseInterpretation, type Interpretation, type InterpretationContext } from '../chat/interpretation';
+import { isInTownPass, requestCorrelated, TownPassError } from '../townpass/bridge';
+import { InvalidInterpretationError, parseInterpretation, type Interpretation, type InterpretationContext } from '../chat/interpretation';
 
 export type ModelStatus =
   | { state: 'unavailable'; reason: string }
@@ -16,6 +16,17 @@ export class ModelUnavailableError extends Error {
 }
 export class ModelInputTooLongError extends Error {
   constructor() { super('這段內容較長，請分成兩段補充；原文仍會保留。'); this.name = 'ModelInputTooLongError'; }
+}
+export class ModelRequestError extends Error {
+  readonly code: string;
+  constructor(code: string) {
+    super(code === 'BUSY' ? '模型還在整理上一段內容，請稍候再送出。'
+      : code === 'TIMEOUT' ? '模型整理超過等待時間，請稍後重試或用選項繼續。'
+        : code === 'INVALID_OUTPUT' ? '模型這次未能完整整理內容，請重試或用選項繼續。'
+          : '裝置端模型目前無法使用，請重新載入模型或用選項繼續。');
+    this.name = 'ModelRequestError';
+    this.code = code;
+  }
 }
 let sequence = 0;
 const requestId = () => `${Date.now().toString(36)}-${++sequence}-${Math.random().toString(36).slice(2)}`;
@@ -36,12 +47,22 @@ export class OnDeviceModelAdapter implements ModelAdapter {
   async interpret(input: string, context: InterpretationContext, signal?: AbortSignal): Promise<Interpretation> {
     if (!input.trim() || input.length > 2000) throw new ModelUnavailableError('請輸入 1 至 2000 字的情況。');
     const id = requestId();
-    const raw = await requestCorrelated<unknown>('llm_interpret', { requestId: id, input, context }, { signal, timeoutMs: 180_000 });
+    let raw: unknown;
+    try { raw = await requestCorrelated<unknown>('llm_interpret', { requestId: id, input, context }, { signal, timeoutMs: 180_000 }); }
+    catch (error) {
+      if (error instanceof TownPassError) throw new ModelRequestError(error.code);
+      throw error;
+    }
     if (raw && typeof raw === 'object' && 'error' in raw) {
       const error = (raw as { error: unknown }).error;
       if (error && typeof error === 'object' && 'code' in error && error.code === 'INPUT_TOO_LONG') throw new ModelInputTooLongError();
+      throw new ModelRequestError(error && typeof error === 'object' && 'code' in error ? String(error.code) : 'MODEL_UNAVAILABLE');
     }
-    return parseInterpretation(raw, id, input, context);
+    try { return parseInterpretation(raw, id, input, context); }
+    catch (error) {
+      if (error instanceof InvalidInterpretationError) throw new ModelRequestError('INVALID_OUTPUT');
+      throw error;
+    }
   }
 }
 export const modelAdapter: ModelAdapter = new OnDeviceModelAdapter();

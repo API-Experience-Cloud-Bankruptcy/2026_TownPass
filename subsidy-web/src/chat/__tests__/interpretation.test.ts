@@ -86,3 +86,15 @@ describe('取消與過期非同步結果', () => {
     await expect(turn.run('q', () => 'q', async () => { throw new Error('failed'); })).rejects.toThrow('failed');
   });
 });
+
+it('戶籍證據須支持該值，否定一般戶不能變成一般戶', () => {
+  const fact = { field: 'region', value: '臺北市', subject: 'self', subjectLabel: '我', evidence: '我住臺北，戶籍在桃園' };
+  expect(() => parse(situation([fact]), fact.evidence)).toThrow();
+  expect(parse(situation([{ ...fact, value: '其他縣市' }]), fact.evidence)).toMatchObject({ kind: 'situation' });
+  expect(() => parse(situation([{ ...fact, evidence: '我不是臺北市戶籍' }]), '我不是臺北市戶籍')).toThrow();
+  expect(() => parse(situation([{ ...fact, field: 'household_type', value: 'general', evidence: '我不是一般戶' }]), '我不是一般戶')).toThrow();
+});
+it('沒有當前問題時模型不能以選對象代替處理需求', () => {
+  const home = { ...context, stage: 'home' as const, question: undefined, choices: [{ id: 'target:self', label: '幫自己找' }] };
+  expect(() => parseInterpretation({ requestId: 'one', kind: 'answer', choiceId: 'target:self', evidence: '我' }, 'one', '我需要租屋補助', home)).toThrow();
+});

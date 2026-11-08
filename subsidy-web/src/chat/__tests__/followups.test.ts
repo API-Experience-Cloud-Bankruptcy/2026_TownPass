@@ -49,8 +49,9 @@ describe('一句話拆成逐題追問', () => {
     expect(planFollowups(base, { 'who:2': 'yes' }).current?.id).toBe('person');
     const plan = planFollowups(base, { 'who:2': 'yes', person: 'person:0' });
     expect(plan.current?.id).toBe('fact:age');
-    const done = planFollowups(base, { 'who:2': 'yes', person: 'person:0', 'fact:age': 'yes' });
-    expect(done.outcome?.facts.map(f => f.value)).toEqual([70]);
+    expect(plan.steps.find(step => step.id === 'person')?.choices.map(choice => choice.label)).toEqual(['媽媽', '爸爸']);
+    const done = planFollowups(base, { 'who:2': 'yes', person: 'person:0', 'fact:age': 'yes', 'fact:region': 'yes' });
+    expect(done.outcome?.facts.map(f => f.value)).toEqual([70, '臺北市']);
     expect(done.outcome?.skipped.join()).toContain('爸爸');
 
     const conflict = input({ target: 'self' }, [{ ...lowIncome }, { ...lowIncome, value: 'mid_low_income', evidence: '中低收入戶' }], []);
@@ -74,6 +75,69 @@ describe('一句話拆成逐題追問', () => {
     const plan = planFollowups(input({ target: 'self' }, [], ['living', 'housing']), {});
     expect(plan.current?.choices.map(c => c.id)).toEqual(['situation:living', 'situation:housing', 'no']);
     expect(planFollowups(input({ target: 'self' }, [], ['living', 'housing']), { situation: 'situation:housing' }).outcome?.situation).toBe('housing');
+  });
+
+  it.each([
+    { target: 'self' as const, subject: 'other' as const, subjectLabel: '媽媽', next: 'other' as const },
+    { target: 'other' as const, subject: 'self' as const, subjectLabel: '我', next: 'self' as const },
+  ])('已選 $target 但提及 $subject 時，先明選對象再確認條件及原方向', ({ target, subject, subjectLabel, next }) => {
+    const fact: CandidateFact = { field: 'age', value: 72, subject, subjectLabel, evidence: `${subjectLabel}72歲` };
+    const base = input({ target, currentSituation: 'housing' }, [fact], ['housing']);
+    const first = planFollowups(base, {});
+    expect(first.current?.id).toBe('target');
+    expect(first.current?.note).toContain('清除前一位');
+    expect(first.outcome).toBeNull();
+    const answers = { target: `target:${next}`, 'fact:age': 'yes' };
+    const direction = planFollowups(base, answers);
+    expect(direction.current?.id).toBe('situation');
+    const done = planFollowups(base, { ...answers, situation: 'yes' });
+    expect(done.outcome).toEqual({ target: next, facts: [fact], situation: 'housing', skipped: [] });
+    // 選擇維持原本對象時，不能夾帶另一人的年齡。
+    const kept = planFollowups(base, { target: `target:${target}` });
+    expect(kept.outcome).toMatchObject({ target, facts: [], situation: null });
+    expect(kept.outcome?.skipped.join()).toContain(fact.evidence);
+  });
+
+  it('同句 self 和 other 即使已有對象仍讓人選，僅採用選定者的事實', () => {
+    const self: CandidateFact = { field: 'age', value: 40, subject: 'self', subjectLabel: '我', evidence: '我40歲' };
+    const other: CandidateFact = { field: 'age', value: 72, subject: 'other', subjectLabel: '媽媽', evidence: '媽媽72歲' };
+    const base = input({ target: 'self' }, [self, other], []);
+    expect(planFollowups(base, {}).current?.id).toBe('target');
+    const chosen = planFollowups(base, { target: 'target:other' });
+    expect(chosen.current?.id).toBe('fact:age');
+    expect(chosen.current?.prompt).toContain('媽媽72歲');
+    expect(planFollowups(base, { target: 'target:other', 'fact:age': 'yes' }).outcome?.facts).toEqual([other]);
+  });
+
+  it('不明戶籍確認屬這次申請人後，與媽媽年齡一起採用，不再另選人物', () => {
+    const age: CandidateFact = { field: 'age', value: 72, subject: 'other', subjectLabel: '媽媽', evidence: '媽媽72歲' };
+    const region: CandidateFact = { field: 'region', value: '臺北市', subject: 'unclear', subjectLabel: '', evidence: '戶籍在臺北市' };
+    const base = input({ target: 'other' }, [age, region], []);
+    expect(planFollowups(base, {}).current?.id).toBe('who:1');
+    const answers = { 'who:1': 'yes', 'fact:age': 'yes', 'fact:region': 'yes' };
+    const done = planFollowups(base, answers);
+    expect(done.steps.map(step => step.id)).toEqual(['who:1', 'fact:age', 'fact:region']);
+    expect(done.outcome?.facts).toEqual([age, { ...region, subject: 'applicant', subjectLabel: '對方' }]);
+    const denied = planFollowups(base, { 'who:1': 'no', 'fact:age': 'yes' });
+    expect(denied.outcome?.facts).toEqual([age]);
+  });
+
+  it('我、本人與已確認 applicant 都屬同一位，不製造多人物題', () => {
+    const facts: CandidateFact[] = [
+      { field: 'age', value: 20, subject: 'self', subjectLabel: '我', evidence: '我20歲' },
+      { field: 'is_student', value: true, subject: 'self', subjectLabel: '本人', evidence: '本人還在學' },
+      { field: 'region', value: '臺北市', subject: 'unclear', subjectLabel: '', evidence: '戶籍在臺北市' },
+    ];
+    const base = input({ target: 'self' }, facts, []);
+    const done = planFollowups(base, { 'who:2': 'yes', 'fact:age': 'yes', 'fact:is_student': 'yes', 'fact:region': 'yes' });
+    expect(done.steps.map(step => step.id)).toEqual(['who:2', 'fact:age', 'fact:is_student', 'fact:region']);
+    expect(done.outcome?.facts.map(fact => [fact.field, fact.value])).toEqual([['age', 20], ['is_student', true], ['region', '臺北市']]);
+  });
+
+  it('只有需求而無人物事實時，不補造新主體，也不重問已知對象', () => {
+    const first = planFollowups(input({ target: 'self' }, [], ['housing']), {});
+    expect(first.current?.id).toBe('situation');
+    expect(planFollowups(input({ target: 'self' }, [], ['housing']), { situation: 'yes' }).outcome).toMatchObject({ target: 'self', facts: [], situation: 'housing' });
   });
 });
 
