@@ -16,17 +16,29 @@ function absolute(url: string) {
 }
 function moveTo(element?: HTMLElement | null) {
   if (!element) return;
+  const main = element.closest<HTMLElement>('.app-main');
+  if (!main) return;
   element.focus({ preventScroll: true });
-  element.scrollIntoView({ behavior: prefersReducedMotion() ? 'instant' : 'smooth', block: 'start' });
+  // scrollIntoView 也會捲動 overflow:hidden 的 #app，讓 WebView 頁首消失、底部留白。
+  // 只移動內容區；外層尺寸與頁首位置保持不動。
+  main.scrollTo({
+    top: main.scrollTop + element.getBoundingClientRect().top - main.getBoundingClientRect().top
+      - main.clientTop - (parseFloat(getComputedStyle(main).paddingTop) || 0),
+    behavior: prefersReducedMotion() ? 'instant' : 'smooth',
+  });
 }
 async function navigate() {
   await nextTick();
   if (props.request) moveTo(root.value?.querySelector<HTMLElement>(`[data-resource="${resources.value.find(r => r.id === props.request?.id)?.id ?? ''}"]`));
 }
 async function fill(id: string) {
+  if (selectedForm.value === id) {
+    await nextTick();
+    moveTo(editor.value);
+    return;
+  }
   selectedForm.value = id;
-  await nextTick();
-  moveTo(editor.value);
+  // 首次載入的非同步元件尚未渲染；由 ready 通知後再對準完整表單。
 }
 watch(() => props.request, navigate);
 watch(() => props.item.id, () => { selectedForm.value = ''; });
@@ -47,7 +59,7 @@ onMounted(navigate);
     </section>
     <p v-if="!resources.length" class="muted">目前沒有收錄可下載的表單，請依辦理步驟向受理窗口確認；不代表免附文件。</p>
     <section v-if="selectedForm" ref="editor" class="form-resource" tabindex="-1" aria-label="填寫所選申請表">
-      <FormFillPanel :key="`${item.id}:${selectedForm}`" :item="item" :target="target" :initial-form-id="selectedForm" />
+      <FormFillPanel :key="`${item.id}:${selectedForm}`" :item="item" :target="target" :initial-form-id="selectedForm" @ready="moveTo(editor)" />
     </section>
   </div>
 </template>

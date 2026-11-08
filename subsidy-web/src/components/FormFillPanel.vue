@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 一筆資源的「填寫申請表」面板：選表單 → 一鍵帶入城市通資料並產生 PDF → 下載／分享。
 // 由資源詳情按需載入，關閉面板即釋放本人資料與 PDF。
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { createFilledForm, type FilledForm } from '../domain/form-fill-client';
 import { formAvailability, formPdfUrl } from '../domain/form-fields';
 import { profileFromAccount } from '../domain/form-profile';
@@ -18,6 +18,8 @@ const props = withDefaults(defineProps<{
   /** 測試或呼叫端可替換；預設走城市通橋接。 */
   loadAccount?: () => Promise<Account | null>;
 }>(), { loadAccount: getUserInfo });
+const emit = defineEmits<{ ready: [] }>();
+onMounted(() => emit('ready'));
 
 const availability = computed(() => formAvailability(props.item));
 const forms = computed(() => (availability.value.kind === 'fillable' ? availability.value.forms : []));
