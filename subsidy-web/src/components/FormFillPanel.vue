@@ -14,13 +14,14 @@ import Expand from './motion/Expand.vue';
 const props = withDefaults(defineProps<{
   item: Subsidy;
   target: Target | null;
+  initialFormId?: string;
   /** 測試或呼叫端可替換；預設走城市通橋接。 */
   loadAccount?: () => Promise<Account | null>;
 }>(), { loadAccount: getUserInfo });
 
 const availability = computed(() => formAvailability(props.item));
 const forms = computed(() => (availability.value.kind === 'fillable' ? availability.value.forms : []));
-const selectedId = ref('');
+const selectedId = ref(props.initialFormId ?? '');
 const form = computed(() => forms.value.find((f) => f.id === selectedId.value) ?? forms.value[0] ?? null);
 const busy = ref(false);
 const sharing = ref(false);

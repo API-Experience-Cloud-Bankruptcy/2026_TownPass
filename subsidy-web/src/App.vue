@@ -5,11 +5,13 @@ import ChatView from './components/ChatView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import DetailView from './components/DetailView.vue';
 import LogoMark from './components/LogoMark.vue';
+import Expand from './components/motion/Expand.vue';
 import { dismissSplash, SPLASH_MAX_WAIT_MS } from './brand/splash';
 import BrowseView from './components/BrowseView.vue';
 import PlanItemView from './components/PlanItemView.vue';
 import StepHelpView from './components/StepHelpView.vue';
 import PlanView from './components/PlanView.vue';
+import PlanSyncStatus from './components/PlanSyncStatus.vue';
 import { FONT_SCALE } from './domain/session';
 import {
   back,
@@ -81,13 +83,14 @@ const isChat = computed(() => CHAT_VIEWS.includes(state.view));
 
 // 換頁或換題時把焦點移到新的標題或最新一則提問，讓讀屏與鍵盤使用者知道位置。
 // 對話頁捲到最下面；一般頁捲回頂端。動態題目可能在同一個 qIndex 換成別題，所以也看題目 id。
-function focusView(chat: boolean) {
+// 換頁時一般頁的捲動位置已在進場前定好（onPageEnter），這裡不再捲動（scroll = false）。
+function focusView(chat: boolean, scroll = true) {
   const title = document.getElementById('view-title');
   if (chat) {
     title?.focus({ preventScroll: true });
     followBottom(true);
   } else {
-    document.getElementById('main')?.scrollTo?.(0, 0);
+    if (scroll) document.getElementById('main')?.scrollTo?.(0, 0);
     title?.focus({ preventScroll: true });
   }
 }
@@ -118,15 +121,21 @@ function sectionOf(view: View): Section {
   return root && root !== 'detail' ? sectionOf(root) : 'find';
 }
 const pageTransition = ref('page-fade');
+/** 各頁離開時的捲動位置；按返回回到上一頁時還原，清單不會跳回頂端。 */
+const scrollMemory = new Map<string, number>();
 let lastSection = sectionOf(state.view);
 let lastDepth = state.history.length;
 watch(
   pageKey,
-  () => {
+  (key, oldKey) => {
+    const main = document.getElementById('main');
+    if (oldKey && main) scrollMemory.set(oldKey, main.scrollTop);
     const section = sectionOf(state.view);
     const depth = state.history.length;
+    // 開新對話、換人：舊對話的資料已清空，淡出時內容會整段塌陷，所以舊頁直接收起、新對話淡入。
     pageTransition.value =
-      section !== lastSection ? (SECTION_ORDER[section] > SECTION_ORDER[lastSection] ? 'page-next' : 'page-prev')
+      key.startsWith('chat-') && oldKey?.startsWith('chat-') ? 'page-reset'
+      : section !== lastSection ? (SECTION_ORDER[section] > SECTION_ORDER[lastSection] ? 'page-next' : 'page-prev')
       : depth > lastDepth ? 'page-push'
       : depth < lastDepth ? 'page-pop'
       : 'page-fade';
@@ -144,12 +153,21 @@ function onPageBeforeEnter() {
   shownView.value = state.view;
   if (!isChat.value) document.getElementById('main')?.scrollTo?.(0, 0);
 }
+/**
+ * 新頁剛插入、還是透明時就定好捲動位置：從步驟協助回來對準原本那一步，按返回還原離開時的位置。
+ * 等進場完成才捲，會先看到頂端再瞬間跳過去。
+ */
+function onPageEnter() {
+  if (isChat.value) return;
+  const main = document.getElementById('main');
+  const trigger = state.view === 'planItem' && state.helpReturnId ? document.getElementById(state.helpReturnId) : null;
+  if (trigger) trigger.scrollIntoView({ block: 'center', behavior: 'instant' });
+  else if (main && pageTransition.value === 'page-pop') main.scrollTop = scrollMemory.get(pageKey.value) ?? 0;
+}
 function onPageEntered() {
-  focusView(isChat.value);
+  focusView(isChat.value, false);
   if (state.view === 'planItem' && state.helpReturnId) {
-    const trigger = document.getElementById(state.helpReturnId);
-    trigger?.scrollIntoView({ block: 'center', behavior: 'instant' });
-    trigger?.focus({ preventScroll: true });
+    document.getElementById(state.helpReturnId)?.focus({ preventScroll: true });
     state.helpReturnId = null;
   }
   resumeReady.value = isChat.value;
@@ -207,17 +225,19 @@ const BackBar = defineComponent({
       ]);
   },
 });
-function withBackBar(name: string, view: Component) {
-  return defineComponent({ name, setup: () => () => h('div', { class: 'page-shell' }, [h(BackBar), h(view)]) });
+function withBackBar(name: string, view: Component, sync = false) {
+  return defineComponent({ name, setup: () => () => h('div', { class: 'page-shell' }, [sync ? h(PlanSyncStatus) : null, h(BackBar), h(view)]) });
 }
 const DetailPage = withBackBar('DetailPage', DetailView);
-const PlanItemPage = withBackBar('PlanItemPage', PlanItemView);
+const PlanItemPage = withBackBar('PlanItemPage', PlanItemView, true);
 const StepHelpPage = withBackBar('StepHelpPage', StepHelpView);
+// 行動單的儲存狀態列屬於頁面本身，跟著換頁一起滑入滑出，不在轉場外面另外淡出而推擠新頁面。
+const PlanPage = defineComponent({ name: 'PlanPage', setup: () => () => h('div', { class: 'page-shell' }, [h(PlanSyncStatus), h(PlanView)]) });
 
 const page = computed<Component | null>(() =>
   isChat.value ? ChatView
   : state.view === 'detail' ? DetailPage
-  : state.view === 'plan' ? PlanView
+  : state.view === 'plan' ? PlanPage
   : state.view === 'planItem' ? PlanItemPage
   : state.view === 'stepHelp' ? StepHelpPage
   : state.view === 'browse' ? BrowseView
@@ -299,34 +319,28 @@ const dialogTitle = computed(() =>
   </header>
 
   <main id="main" class="app-main" :class="{ 'app-main--chat': shownChat, 'app-main--page': shownView === 'detail' || PLAN_VIEWS.includes(shownView) }">
-    <Transition name="fade">
+    <Expand>
       <p v-if="state.loadError" class="status-line status-line--error" role="alert">
         {{ state.loadError }}
         <button type="button" class="btn btn--text" @click="init">重試</button>
       </p>
-    </Transition>
-    <Transition name="fade">
+    </Expand>
+    <Expand>
       <p v-if="state.notice" class="status-line no-print" role="status">
         {{ state.notice }}
         <button type="button" class="btn btn--text" @click="state.notice = ''">知道了</button>
       </p>
-    </Transition>
-    <Transition name="fade">
+    </Expand>
+    <Expand>
       <p v-if="planSync.state.phase === 'error' || planSync.state.phase === 'conflict'" class="status-line status-line--error no-print" role="alert">
         {{ planSync.state.error }}
         <button v-if="planSync.state.phase === 'conflict'" type="button" class="btn btn--text" @click="planSync.load(true)">載入最新行動單（取代本頁修改）</button>
         <button v-else type="button" class="btn btn--text" @click="planSync.retry()">重新儲存</button>
       </p>
-    </Transition>
+    </Expand>
     <p v-if="state.catalog?.origin === 'snapshot'" class="muted no-print">暫用已儲存的資料；開啟官方網站仍需要網路。</p>
-    <Transition name="fade">
-      <p v-if="shownView !== 'stepHelp' && PLAN_VIEWS.includes(shownView) && !['error', 'conflict'].includes(planSync.state.phase)" class="status-line no-print" role="status">
-        <span class="sync-dot" :class="`sync-dot--${planSync.state.phase}`" aria-hidden="true"></span>
-        <Transition name="fade" mode="out-in"><span :key="planSync.state.phase">{{ planSync.state.phase === 'saved' ? '已存入資料庫，離開後可繼續準備' : planSync.state.phase === 'saving' ? '正在儲存行動單…' : '正在讀取已儲存的行動單…' }}</span></Transition>
-      </p>
-    </Transition>
 
-    <Transition :name="pageTransition" mode="out-in" @before-enter="onPageBeforeEnter" @after-enter="onPageEntered">
+    <Transition :name="pageTransition" mode="out-in" @before-enter="onPageBeforeEnter" @enter="onPageEnter" @after-enter="onPageEntered">
       <KeepAlive :include="['ChatView', 'BrowseView']" :max="2">
         <component :is="page" v-if="page" :key="pageKey" />
       </KeepAlive>

@@ -6,6 +6,7 @@ import { regionText } from '../domain/documents';
 import { SOURCE_KIND_LABEL } from '../domain/route';
 import ExternalLink from './ExternalLink.vue';
 import LinkedText from './LinkedText.vue';
+import Expand from './motion/Expand.vue';
 
 const item = computed(() => state.planItemId && state.personalPlan.planIds.includes(state.planItemId) ? itemsById.value.get(state.planItemId) : undefined);
 const help = computed(() => item.value && state.helpStep !== null ? buildStepHelp(item.value, state.helpStep) : null);
@@ -72,14 +73,22 @@ async function copyInquiry() {
           <button v-for="problem in help.others" :key="problem.id" type="button" class="btn" :aria-pressed="selected?.id === problem.id" @click="selected = problem">{{ problem.label }}</button>
         </div>
       </details>
-      <Transition name="rise" mode="out-in">
-        <div v-if="selected" :key="selected.id" class="help-page__advice" role="status">
-          <h3>{{ selected.label }}</h3>
-          <p>{{ selected.action }}</p>
-          <p v-if="selected.id === 'visit' && help.route.methods.length" class="muted">此方案列出的方式：{{ help.route.methods.join('、') }}。這一步能否改用其他方式，仍須確認。</p>
-          <p v-if="selected.id === 'deadline' && help.route.deadline"><LinkedText :text="help.route.deadline" /></p>
-        </div>
-      </Transition>
+      <!-- 第一次選擇時建議區塊由高度 0 展開，下方內容跟著滑下去；之後換選項才在原位淡出淡入。
+           外框以負邊距抵掉格線間距，展開時間距由 padding 一起長出來，不會先跳 12px。 -->
+      <div class="help-page__advice-slot">
+        <Expand>
+          <div v-if="selected" class="help-page__advice-wrap">
+            <Transition name="rise" mode="out-in">
+              <div :key="selected.id" class="help-page__advice" role="status">
+                <h3>{{ selected.label }}</h3>
+                <p>{{ selected.action }}</p>
+                <p v-if="selected.id === 'visit' && help.route.methods.length" class="muted">此方案列出的方式：{{ help.route.methods.join('、') }}。這一步能否改用其他方式，仍須確認。</p>
+                <p v-if="selected.id === 'deadline' && help.route.deadline"><LinkedText :text="help.route.deadline" /></p>
+              </div>
+            </Transition>
+          </div>
+        </Expand>
+      </div>
     </section>
 
     <section class="help-page__contact" aria-labelledby="contact-title">
@@ -135,6 +144,8 @@ async function copyInquiry() {
 .help-page__choices { display: flex; flex-wrap: wrap; gap: 8px; }
 .help-page .btn { white-space: normal; min-height: 48px; }
 .help-page__choices .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.help-page__advice-slot { margin-top: -12px; }
+.help-page__advice-wrap { padding-top: 12px; }
 .help-page__advice { padding: 20px; background: var(--highlight-soft); border-radius: var(--radius-panel); }
 .help-page__contact { border-top: 1px solid var(--line); padding-top: 24px; }
 .help-page__inquiry { padding: 20px; background: var(--surface-brand); border-radius: var(--radius-panel); user-select: text; }

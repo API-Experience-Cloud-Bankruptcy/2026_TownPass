@@ -5,7 +5,7 @@
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 import LogoMark from './LogoMark.vue';
 import { vSmoothDetails } from '../chat/smooth-details';
-import { followBottom, forgetTyped, isTyped, markTyped, prefersReducedMotion, releaseFollow, trackPinned, type Line } from '../chat/typing';
+import { followBottom, forgetTyped, isTyped, keepScroll, markTyped, prefersReducedMotion, releaseFollow, restoreScroll, trackPinned, type Line } from '../chat/typing';
 import { answerOf, describeAnswer, descriptionFor, MAX_AGE, titleFor } from '../domain/questions';
 import { modelAdapter, ModelInputTooLongError, type ModelStatus } from '../domain/model';
 import { explicitSelfAge, InterpretationTurn, type CandidateFact, type ChatChoice, type FactField, type Interpretation, type InterpretationContext } from '../chat/interpretation';
@@ -38,6 +38,7 @@ import {
   state,
   tab,
   uncertainCandidates,
+  type View,
 } from '../store';
 import BotMessage from './chat/BotMessage.vue';
 import TurnMessages from './chat/TurnMessages.vue';
@@ -49,7 +50,12 @@ import ConfirmDialog from './ConfirmDialog.vue';
 const target = computed(() => state.session.target ?? 'self');
 const ask = computed(() => (target.value === 'other' ? '對方' : '你'));
 const busy = computed(() => state.loading || !state.catalog);
-const view = computed(() => state.view);
+// 對話顯示的步驟。切到其他分頁或詳情時停在最後一步：換頁淡出中與 KeepAlive 暫存期間，
+// 舊的對話不會因新頁面的狀態把結果、選項整段拿掉（淡出時內容先跳一下、捲動位置也會被夾掉）。
+const CHAT_STEPS: View[] = ['home', 'needs', 'search', 'questions', 'results'];
+const lastStep = ref<View>(CHAT_STEPS.includes(state.view) ? state.view : 'home');
+watch(() => state.view, (v) => { if (CHAT_STEPS.includes(v)) lastStep.value = v; }, { flush: 'sync' });
+const view = computed(() => (CHAT_STEPS.includes(state.view) ? state.view : lastStep.value));
 const past = (step: 'home' | 'needs') =>
   step === 'home' ? view.value !== 'home' && !!state.session.target : ['questions', 'results'].includes(view.value);
 
@@ -111,7 +117,7 @@ function collapseFlow(run: () => void) {
   if (!el?.animate || reduce) { run(); return; }
   const style = getComputedStyle(document.documentElement);
   const dur = parseFloat(style.getPropertyValue('--dur-expand')) || 300;
-  const ease = style.getPropertyValue('--ease-exit').trim() || 'ease-in';
+  const ease = style.getPropertyValue('--ease-collapse').trim() || 'ease-in-out';
   const h = el.getBoundingClientRect().height;
   // 鎖住高度，避免 overflow:hidden 讓 flex 子項一下子縮到可視範圍。
   el.style.flexShrink = '0';
@@ -226,19 +232,21 @@ let mutations: MutationObserver | null = null;
 function observeChildren() {
   if (!resizer || !log.value) return;
   resizer.disconnect();
-  resizer.observe(log.value);
+  // 對話區本身看外框（鍵盤收放）；看 content-box 的話，捲動地板改 padding 又會觸發自己，形成 ResizeObserver 迴圈。
+  resizer.observe(log.value, { box: 'border-box' });
   for (const el of log.value.children) resizer.observe(el);
 }
 onActivated(() => {
+  restoreScroll();
   log.value?.addEventListener('scroll', trackPinned, { passive: true });
   window.addEventListener('touchstart', releaseFollow, { passive: true });
   window.addEventListener('wheel', releaseFollow, { passive: true });
   if (log.value && typeof ResizeObserver !== 'undefined') {
-    resizer = new ResizeObserver(() => followBottom());
+    resizer = new ResizeObserver(() => { keepScroll(); followBottom(); });
     observeChildren();
   }
   if (log.value && typeof MutationObserver !== 'undefined') {
-    mutations = new MutationObserver(() => { observeChildren(); followBottom(); });
+    mutations = new MutationObserver(() => { observeChildren(); keepScroll(); followBottom(); });
     mutations.observe(log.value, { childList: true });
   }
   followBottom(true);
@@ -461,6 +469,8 @@ function showQuestionBubble(q: Question): boolean {
   if (q !== current.value || view.value !== 'questions') return true;
   return !pausing.value && !recovery.value && !interpreting.value;
 }
+/** 畫面上有內容的題目（泡泡、答案或打字紀錄至少一項）；從這份清單移除的題目會收合離場。 */
+const beatQuestions = computed(() => shownQuestions.value.filter((q) => showQuestionBubble(q) || q !== current.value || turnsAt(`q:${q.id}`).length));
 /** 每題的 key 帶著前面的答案：改了前面的答案，後面重新出現的題目會重新打字。 */
 function followupKey(step: FollowupStep): string {
   const f = followup.value!; const steps = followupPlan.value!.steps;
@@ -891,9 +901,10 @@ async function onInput() {
             <BotMessage v-if="typedNeed?.reply && typedNeed.query === state.session.query && typedNeed.situation === state.session.situation" :msg-key="`search:${typedNeed.query}:${typedNeed.reply}`" :lines="[{ text: typedNeed.reply }]" />
 
             <!-- 3. 問答：同一題留在原地，後面的訊息收合離開 -->
-            <template v-for="q in shownQuestions" :key="q.id">
-              <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
-                <div v-if="showQuestionBubble(q) || q !== current || turnsAt(`q:${q.id}`).length" :key="q.id" class="chat-beat">
+            <!-- 用 TransitionGroup：整題從清單移除（例如直接看結果）時也會收合離場。
+                 v-for 外包 Transition 時，Transition 本身卸載會直接拿掉內容，一格內消失。 -->
+            <TransitionGroup name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+                <div v-for="q in beatQuestions" :key="q.id" class="chat-beat">
                   <TurnMessages :turns="turnsAt(`q:${q.id}`)" />
                   <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
                   <BotMessage v-if="showQuestionBubble(q)" :key="q.id" :msg-key="`q:${q.id}`" :lines="qLines(q, q === current && view === 'questions')" :active="q === current && view === 'questions'">
@@ -942,8 +953,7 @@ async function onInput() {
                     <UserMessage v-if="q !== current" :key="`${q.id}:answer`" :text="answerText(q)" edit-label="修改答案" @edit="editQuestion(q)" />
                   </Transition>
                 </div>
-              </Transition>
-            </template>
+            </TransitionGroup>
 
             <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
               <div v-if="view === 'questions' && !current" key="q-terminal" class="chat-beat">
@@ -1052,9 +1062,8 @@ async function onInput() {
       <!-- 逐題追問：一題一則訊息，答完才出現下一題；全部答完才一次套用 -->
       <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
       <div v-if="followup && followupPlan" key="followup" class="chat-span">
-        <template v-for="step in followupPlan.steps" :key="followupKey(step)">
-          <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
-            <div :key="followupKey(step)" class="chat-beat">
+        <TransitionGroup name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+            <div v-for="step in followupPlan.steps" :key="followupKey(step)" class="chat-beat">
               <BotMessage :msg-key="followupKey(step)" :lines="[{ text: step.prompt, tone: 'title' }, { text: step.note ?? '', tone: 'muted' }]">
                 <template v-if="step === followupPlan.current" #after>
                   <div class="replies" role="group" :aria-label="step.prompt">
@@ -1073,8 +1082,7 @@ async function onInput() {
                 <UserMessage v-if="step !== followupPlan.current" :key="step.id" :text="followupAnswerText(step)" edit-label="修改這一題" @edit="editFollowup(step)" />
               </Transition>
             </div>
-          </Transition>
-        </template>
+        </TransitionGroup>
       </div>
       </Transition>
       <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">

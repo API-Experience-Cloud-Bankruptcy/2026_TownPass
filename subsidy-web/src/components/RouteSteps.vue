@@ -8,9 +8,12 @@ import { sourceExcerpt } from '../presentation';
 import { detailAnswers } from '../store';
 import ExternalLink from './ExternalLink.vue';
 import LinkedText from './LinkedText.vue';
+import { documentResource, formResources } from '../domain/form-resources';
 
 /** hideDeadline：詳情頁已在「要先注意」列出期限時不重複。 */
 const props = defineProps<{ item: Subsidy; hideDeadline?: boolean }>();
+const emit = defineEmits<{ 'open-resource': [id: string] }>();
+const resources = computed(() => formResources(props.item));
 const route = computed(() => buildRoute(props.item, detailAnswers.value));
 const documentGroups = computed(() => [
   { label: '地區或判斷依據待確認', documents: route.value.pendingDocuments },
@@ -49,6 +52,7 @@ const total = computed(() => route.value.steps.length);
         <ul v-if="route.documents.length" class="steps">
           <li v-for="(d, i) in route.documents" :key="i" class="row-static">
             <span>{{ d.name }}<span v-if="d.required === false" class="muted">（非必要）</span></span>
+            <button v-if="documentResource(d.name, resources)" type="button" class="btn btn--text" @click="emit('open-resource', documentResource(d.name, resources)!.id)">查看表單／下載<span class="sr-only">：{{ d.name }}</span></button>
             <span v-if="d.condition && d.condition !== d.name" class="muted">條件：{{ d.condition }}</span>
             <span v-if="d.notes && d.notes !== d.name" class="muted">備註：{{ d.notes }}</span>
             <span v-if="d.regions?.length" class="muted">原文地區：{{ d.regions.join('、') }}</span>

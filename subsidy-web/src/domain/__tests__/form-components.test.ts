@@ -3,6 +3,7 @@ import { createSSRApp } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it } from 'vitest';
 import FormFillPanel from '../../components/FormFillPanel.vue';
+import FormResourcesPanel from '../../components/FormResourcesPanel.vue';
 import { realItem } from './real-data';
 import type { Target } from '../types';
 
@@ -36,3 +37,21 @@ describe('FormFillPanel', () => {
   });
 });
 
+
+ describe('FormResourcesPanel', () => {
+  it('先列原始檔案，使用者選擇填寫前不載入個資或產生 PDF', async () => {
+    const html = await render(FormResourcesPanel, { item: realItem('WEL-0067'), target: 'self' });
+    expect(html).toContain('開啟／下載原始檔案');
+    expect(html).toContain('填寫這份表單');
+    expect(html).not.toContain('帶入資料，產生申請表');
+  });
+  it('替他人仍可下載，但不提供自動帶入入口', async () => {
+    const html = await render(FormResourcesPanel, { item: realItem('WEL-0067'), target: 'other' });
+    expect(html).toContain('開啟／下載原始檔案');
+    expect(html).not.toContain('填寫這份表單');
+  });
+  it('未收錄檔案不宣稱免附文件', async () => {
+    const html = await render(FormResourcesPanel, { item: realItem('WEL-0002'), target: 'self' });
+    expect(html).toContain('不代表免附文件');
+  });
+});

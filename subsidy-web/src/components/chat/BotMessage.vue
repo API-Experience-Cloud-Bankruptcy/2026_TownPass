@@ -90,10 +90,13 @@ function releaseHeight(el: Element) {
   (el as HTMLElement).style.maxHeight = '';
 }
 
-/** 每一行拆成已打出（visible）與尚未打出（rest，隱形佔位）兩段。 */
+/**
+ * 每一行拆成已打出（visible）與尚未打出（rest，隱形佔位）兩段。
+ * 空行也保留位置（不顯示）：題目答完後說明行改成空字串時，那一行收合離場，而不是整則泡泡瞬間變矮。
+ */
 const visible = computed(() => {
   let left = shown.value;
-  return content.value.map((l) => {
+  return props.lines.map((l) => {
     const cut = Math.min(l.text.length, Math.max(0, left));
     left -= l.text.length;
     return { ...l, visible: l.text.slice(0, cut), rest: l.text.slice(cut), typing: cut > 0 || left + l.text.length === 0 };
@@ -114,13 +117,16 @@ const visible = computed(() => {
         @click="!done && finish()"
       >
         <template v-if="!waiting">
-          <p
-            v-for="(l, i) in visible"
-            :key="i"
-            class="bubble__line"
-            :class="l.tone ? `bubble__line--${l.tone}` : ''"
-            aria-hidden="true"
-          >{{ l.visible }}<span v-if="!done && l.rest && l.typing" class="caret"></span><span v-if="l.rest" class="bubble__ghost">{{ l.rest }}</span></p>
+          <template v-for="(l, i) in visible" :key="i">
+            <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">
+              <p
+                v-if="l.text"
+                class="bubble__line"
+                :class="l.tone ? `bubble__line--${l.tone}` : ''"
+                aria-hidden="true"
+              >{{ l.visible }}<span v-if="!done && l.rest && l.typing" class="caret"></span><span v-if="l.rest" class="bubble__ghost">{{ l.rest }}</span></p>
+            </Transition>
+          </template>
         </template>
         <span class="sr-only">{{ content.map((l) => l.text).join('。') }}</span>
         <Transition name="chat-out" @before-leave="holdHeight" @after-leave="releaseHeight" @leave-cancelled="releaseHeight">

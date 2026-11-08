@@ -6,6 +6,7 @@ import { prefersReducedMotion } from '../chat/typing';
 import { mergeDocuments, OTHER_REGION_TITLE, regionText } from '../domain/documents';
 import { buildPlanText } from '../domain/export';
 import { PLAN_STATUS_LABEL, planProgress } from '../domain/plan-progress';
+import { documentResource, formResources } from '../domain/form-resources';
 import { buildRoute } from '../domain/route';
 import { applicationStatusAlert, benefitLabel, progressText, sourceExcerpt } from '../presentation';
 import {
@@ -19,7 +20,10 @@ import Expand from './motion/Expand.vue';
 import PlanExport from './PlanExport.vue';
 import StepHelp from './StepHelp.vue';
 
-const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
+const FormResourcesPanel = defineAsyncComponent(() => import('./FormResourcesPanel.vue'));
+const resourceRequest = ref<{ id: string } | null>(null);
+const resources = computed(() => item.value ? formResources(item.value) : []);
+function openResource(id: string) { resourceRequest.value = { id }; formOpen.value = true; }
 
 const item = computed(() => (state.planItemId && state.personalPlan.planIds.includes(state.planItemId) ? itemsById.value.get(state.planItemId) : undefined));
 const answers = computed(() => state.personalPlan.answers);
@@ -115,6 +119,7 @@ function onLeave(event: AnimationEvent) {
 onBeforeUnmount(() => { window.clearTimeout(leaveTimer); cancelAnimationFrame(popFrame); });
 
 const formOpen = ref(false);
+watch(() => item.value?.id, () => { resourceRequest.value = null; formOpen.value = false; });
 const exportOpen = ref(false);
 const included = ref<string[]>([]);
 const planText = computed(() => item.value ? buildPlanText({
@@ -237,6 +242,7 @@ const planText = computed(() => item.value ? buildPlanText({
               <span v-if="alsoUsedIn(d.usedBy)" class="muted">也用在：{{ alsoUsedIn(d.usedBy) }}</span>
             </span>
           </label>
+          <button v-if="documentResource(d.name, resources)" type="button" class="btn btn--text" @click="openResource(documentResource(d.name, resources)!.id)">查看表單／下載<span class="sr-only">：{{ d.name }}</span></button>
         </li>
       </ul>
       <details v-if="ownOtherRegion.length" class="more">
@@ -272,9 +278,9 @@ const planText = computed(() => item.value ? buildPlanText({
 
     <div class="more-group card card--list">
       <details class="more" :open="formOpen" @toggle="formOpen = ($event.target as HTMLDetailsElement).open">
-        <summary>申請表與填寫</summary>
+        <summary>申請表、附件與下載</summary>
         <div class="more__body">
-          <FormFillPanel v-if="formOpen" :key="item.id" :item="item" target="self" />
+          <FormResourcesPanel v-if="formOpen" :request="resourceRequest" :key="item.id" :item="item" target="self" />
         </div>
       </details>
       <details class="more" :open="exportOpen" @toggle="exportOpen = ($event.target as HTMLDetailsElement).open">

@@ -222,6 +222,7 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);       /* 一般：快速出發、緩緩停下 */
   --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.15); /* 彈出：稍微超過再回到定位 */
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);       /* 離場：加速離開 */
+  --ease-collapse: cubic-bezier(0.4, 0, 0.2, 1); /* 收合高度：前後平均，大區塊不會第一格就跳一大段 */
   --dur-fast: 120ms;   /* 按壓、顏色 */
   --dur: 150ms;        /* hover、邊框 */
   --dur-slow: 240ms;   /* 淡入、卡片出現、進度變化 */

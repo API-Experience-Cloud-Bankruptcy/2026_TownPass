@@ -13,11 +13,13 @@ import SourceText from './SourceText.vue';
 import { plainLanguageFor } from '../domain/plain-language';
 import { sourceConditions } from '../domain/source-content';
 
-const FormFillPanel = defineAsyncComponent(() => import('./FormFillPanel.vue'));
+const FormResourcesPanel = defineAsyncComponent(() => import('./FormResourcesPanel.vue'));
+const resourceRequest = ref<{ id: string } | null>(null);
+function openResource(id: string) { resourceRequest.value = { id }; formOpen.value = true; }
 const ChecklistView = defineAsyncComponent(() => import('./ChecklistView.vue'));
 const pdfOpen = ref(false);
 const formOpen = ref(false);
-watch([() => state.detailId, () => state.session.target], () => { formOpen.value = false; });
+watch([() => state.detailId, () => state.session.target], () => { formOpen.value = false; resourceRequest.value = null; });
 
 const item = computed(() => (state.detailId ? itemsById.value.get(state.detailId) : undefined));
 const plain = computed(() => item.value ? plainLanguageFor(item.value) : null);
@@ -125,11 +127,11 @@ const applyLink = computed(() => route.value?.links.find((l) => l.kind === 'appl
     </Expand>
 
     <div class="card-stack">
-      <RouteSteps :item="item" hide-deadline />
+      <RouteSteps :item="item" hide-deadline @open-resource="openResource" />
       <details class="more card card--list" :open="formOpen" @toggle="formOpen = ($event.target as HTMLDetailsElement).open">
-        <summary>申請表與填寫</summary>
+        <summary>申請表、附件與下載</summary>
         <div class="more__body">
-          <FormFillPanel v-if="formOpen" :key="`${item.id}:${state.detailTarget}`" :item="item" :target="state.detailTarget" />
+          <FormResourcesPanel v-if="formOpen" :request="resourceRequest" :key="`${item.id}:${state.detailTarget}`" :item="item" :target="state.detailTarget" />
         </div>
       </details>
       <div class="more-group card card--list">

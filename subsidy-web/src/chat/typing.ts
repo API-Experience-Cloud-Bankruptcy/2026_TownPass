@@ -63,13 +63,76 @@ export function prefersReducedMotion(): boolean {
 let pinned = true;
 let autoUntil = 0;
 
+/**
+ * 捲動地板：選項收合時對話內容變短，若已捲到接近底部，瀏覽器會把捲動位置往上夾，
+ * 整段對話看起來先往下掉、接著又被自動捲動拉回。內容縮短時在底部補上剛好的留白
+ * （--chat-floor），讓目前位置維持不動；新訊息長出來或使用者往上捲時留白自然消失。
+ * 留白最多對話區高度的 FLOOR_MAX：一次收掉一大段（換需求、改答案）時，超過的部分照常隨收合動畫往下，
+ * 不會停在一片空白。
+ */
+const FLOOR_MAX = 0.4;
+const scrollState = new WeakMap<HTMLElement, { top: number; floor: number }>();
+
+function stateOf(log: HTMLElement) {
+  let s = scrollState.get(log);
+  if (!s) scrollState.set(log, (s = { top: log.scrollTop, floor: 0 }));
+  return s;
+}
+
+function setFloor(log: HTMLElement, s: { floor: number }, px: number): void {
+  if (px === s.floor) return;
+  s.floor = px;
+  log.style.setProperty('--chat-floor', `${px}px`);
+}
+
+/** 內容長高或縮短後呼叫（ResizeObserver／MutationObserver）：補足地板並還原被夾掉的捲動位置。 */
+export function keepScroll(): void {
+  if (typeof window === 'undefined') return;
+  const log = document.querySelector<HTMLElement>('.chat__log');
+  if (!log?.clientHeight) return;
+  const s = stateOf(log);
+  const natural = log.scrollHeight - s.floor;
+  // 只在原位置捲不到時才算被夾；其他捲動變化（使用者、平滑捲動）由 trackPinned 記錄。
+  const clamped = log.scrollTop < s.top - 1 && log.scrollHeight - log.clientHeight < s.top - 1;
+  const cap = Math.round(log.clientHeight * FLOOR_MAX);
+  setFloor(log, s, Math.min(cap, Math.max(0, Math.ceil(s.top + log.clientHeight - natural))));
+  if (clamped) {
+    log.scrollTop = s.top;
+    // 超過上限時還原不到原位，以實際停下的位置為準。
+    s.top = log.scrollTop;
+  }
+}
+
+/**
+ * 回到「找資源」時還原離開前的捲動位置。KeepAlive 暫存期間元素不在畫面上，瀏覽器會把捲動歸零，
+ * 不還原的話回來時整段對話會從頂端一路捲下來。
+ */
+export function restoreScroll(): void {
+  if (typeof window === 'undefined') return;
+  const log = document.querySelector<HTMLElement>('.chat__log');
+  const s = log && scrollState.get(log);
+  if (log && s && Math.abs(log.scrollTop - s.top) > 1) log.scrollTop = s.top;
+}
+
 /** 捲動時記錄使用者是否停在底部附近；往上翻閱時就不再自動跟著捲。 */
 export function trackPinned(): void {
   if (typeof window === 'undefined') return;
+  const log = document.querySelector<HTMLElement>('.chat__log');
+  if (log?.clientHeight) {
+    const s = stateOf(log);
+    // 往上移且原本的位置已經捲不到：是內容變短被瀏覽器夾住，不是使用者往上捲。
+    // 平滑捲動途中被夾時，這個事件比 ResizeObserver 先到，所以在這裡就補地板、還原位置。
+    if (log.scrollTop < s.top - 1 && log.scrollHeight - log.clientHeight < s.top - 1) {
+      keepScroll();
+      return;
+    }
+    s.top = log.scrollTop;
+    // 往上捲時地板只降不升，捲回來不會多出空白。
+    if (s.floor) setFloor(log, s, Math.min(s.floor, Math.max(0, Math.ceil(s.top + log.clientHeight - (log.scrollHeight - s.floor)))));
+  }
   // 自己發起的平滑捲動途中離底部還遠，不能因此判定使用者往上翻。
   if (performance.now() < autoUntil) return;
-  const log = document.querySelector<HTMLElement>('.chat__log');
-  if (log?.clientHeight) pinned = log.scrollTop + log.clientHeight >= log.scrollHeight - 160;
+  if (log?.clientHeight) pinned = log.scrollTop + log.clientHeight >= log.scrollHeight - stateOf(log).floor - 160;
 }
 
 /**

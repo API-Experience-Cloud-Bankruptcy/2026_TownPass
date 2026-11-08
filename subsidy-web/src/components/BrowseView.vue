@@ -27,6 +27,11 @@ const categories = computed(() => BROWSE_CATEGORIES.map(c => ({ ...c, count: all
 const selected = computed(() => BROWSE_CATEGORIES.find(c => c.id === category.value));
 const showingItems = computed(() => showAll.value || !!category.value || !!applied.value);
 const items = computed(() => browseCatalog(state.catalog?.items ?? [], { today: today.value, category: category.value, query: applied.value, includeUncertain: true, includeUpcoming: true }));
+/**
+ * 換分類或關鍵字時整份清單一起淡出淡入。不逐項做增刪與位移動畫：上百列同時量位置、滑動，
+ * 手機上會卡，列也會從畫面外飛過來。
+ */
+const listKey = computed(() => `${showAll.value}|${category.value ?? ''}|${applied.value}`);
 const headingText = computed(() => {
   const q = applied.value ? `・「${applied.value}」` : '';
   if (showAll.value) return `全部福利與補助${q}`;
@@ -125,7 +130,7 @@ function chooseAll() { reset(); showAll.value = true; focusHeading(); }
           </h2>
         </div>
         <Transition name="fade" mode="out-in">
-          <TransitionGroup v-if="items.length" key="list" name="list" tag="ul" class="rows browse-results">
+          <ul v-if="items.length" :key="listKey" class="rows browse-results">
             <li v-for="item in items" :key="item.id">
               <button type="button" class="row" @click="openDetail(item.id)">
                 <span class="row__main">
@@ -139,7 +144,7 @@ function chooseAll() { reset(); showAll.value = true; focusHeading(); }
                 <span class="row__chev" aria-hidden="true">›</span>
               </button>
             </li>
-          </TransitionGroup>
+          </ul>
           <p v-else key="empty" class="browse-empty" role="status">找不到符合的補助，試試較短的關鍵字。</p>
         </Transition>
       </section>
