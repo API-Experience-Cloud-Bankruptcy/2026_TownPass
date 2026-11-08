@@ -1725,6 +1725,50 @@ li.wheel__item + li.wheel__item {
 .composer > * {
   pointer-events: auto;
 }
+/* 漸層毛玻璃：只在輸入框以下，越往底部模糊越強、白霧越濃。
+   單層 backdrop-filter 只能整片同一種模糊，所以疊五層、各自用遮罩只露出下半段，
+   往下累積成漸進式模糊；最上面再蓋一層由透明漸到 --bg 的霧面。 */
+.composer > .composer__veil {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 從輸入框頂端開始，輸入框上方的訊息保持清楚。 */
+  top: var(--space-2);
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--bg) 35%, transparent) 45%,
+    color-mix(in srgb, var(--bg) 72%, transparent) 100%
+  );
+}
+.composer__veil > i {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--from), #000 var(--to));
+  mask-image: linear-gradient(to bottom, transparent var(--from), #000 var(--to));
+  -webkit-backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(var(--blur));
+}
+.composer__veil > i:nth-child(1) { --blur: 1px;  --from: 0%;  --to: 25%; }
+.composer__veil > i:nth-child(2) { --blur: 2px;  --from: 15%; --to: 40%; }
+.composer__veil > i:nth-child(3) { --blur: 4px;  --from: 30%; --to: 60%; }
+.composer__veil > i:nth-child(4) { --blur: 8px;  --from: 50%; --to: 80%; }
+.composer__veil > i:nth-child(5) { --blur: 14px; --from: 70%; --to: 100%; }
+/* 不支援 backdrop-filter 或使用者要求降低透明度：改用實色漸層，確保字仍讀得到。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .composer > .composer__veil {
+    background: linear-gradient(to bottom, transparent, var(--bg) 55%);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .composer__veil > i { display: none; }
+  .composer > .composer__veil {
+    background: linear-gradient(to bottom, transparent, var(--bg) 40%);
+  }
+}
 .composer__input {
   flex: 1;
   min-width: 0;

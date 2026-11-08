@@ -1107,6 +1107,8 @@ async function onInput() {
     </section>
 
     <form class="composer no-print conversation-composer" @submit.prevent="onInput">
+      <!-- 漸層毛玻璃：多層模糊疊加，越接近底部越霧 -->
+      <div class="composer__veil" aria-hidden="true"><i /><i /><i /><i /><i /></div>
       <label class="sr-only" for="chat-search">輸入選項、補助名稱，或說說需要什麼幫忙</label>
       <input
         id="chat-search"
